@@ -1,0 +1,65 @@
+{
+  "_preload-helper-D6lyH8Qx.js": {
+    "file": "assets/preload-helper-D6lyH8Qx.js",
+    "name": "preload-helper"
+  },
+  "node_modules/@wordpress/latex-to-mathml/build-module/index.mjs": {
+    "file": "assets/index-Ct2z7L49.js",
+    "name": "index",
+    "src": "node_modules/@wordpress/latex-to-mathml/build-module/index.mjs",
+    "isDynamicEntry": true
+  },
+  "node_modules/@wordpress/vips/build-module/vips-worker.mjs": {
+    "file": "assets/vips-worker-DyXa2jGk.js",
+    "name": "vips-worker",
+    "src": "node_modules/@wordpress/vips/build-module/vips-worker.mjs",
+    "isDynamicEntry": true
+  },
+  "resources/css/addon.css": {
+    "file": "assets/addon-Cw_u4755.css",
+    "src": "resources/css/addon.css",
+    "isEntry": true,
+    "name": "addon",
+    "names": [
+      "addon.css"
+    ]
+  },
+  "resources/js/addon.js": {
+    "file": "assets/addon-DXj1Neik.js",
+    "name": "addon",
+    "src": "resources/js/addon.js",
+    "isEntry": true,
+    "imports": [
+      "_preload-helper-D6lyH8Qx.js"
+    ],
+    "dynamicImports": [
+      "resources/js/gutenberg/mount.jsx"
+    ]
+  },
+  "resources/js/editor-window.js": {
+    "file": "assets/editor-window-BFEI6MQQ.js",
+    "name": "editor-window",
+    "src": "resources/js/editor-window.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/gutenberg/mount.jsx",
+      "_preload-helper-D6lyH8Qx.js"
+    ]
+  },
+  "resources/js/gutenberg/mount.jsx": {
+    "file": "assets/mount-CLO-_qll.js",
+    "name": "mount",
+    "src": "resources/js/gutenberg/mount.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_preload-helper-D6lyH8Qx.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@wordpress/vips/build-module/vips-worker.mjs",
+      "node_modules/@wordpress/latex-to-mathml/build-module/index.mjs"
+    ],
+    "css": [
+      "assets/mount-CF0eq6Kd.css"
+    ]
+  }
+}

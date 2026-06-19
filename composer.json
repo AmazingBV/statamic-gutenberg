@@ -1,0 +1,37 @@
+{
+    "name": "amazingbv/statamic-gutenberg",
+    "autoload": {
+        "psr-4": {
+            "Amazingbv\\StatamicGutenberg\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Amazingbv\\StatamicGutenberg\\Tests\\": "tests"
+        }
+    },
+    "require": {
+        "statamic/cms": "^6.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.8"
+    },
+    "config": {
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Statamic Gutenberg",
+            "description": "Statamic Gutenberg addon"
+        },
+        "laravel": {
+            "providers": [
+                "Amazingbv\\StatamicGutenberg\\ServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
