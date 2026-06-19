@@ -209,7 +209,7 @@ export function GutenbergWindow({
             <header className="sgb-window__header">
                 <div>
                     <div className="sgb-window__eyebrow">{payload.fieldLabel || 'Content'}</div>
-                    <h1>{payload.title || title || 'Gutenberg Editor'}</h1>
+                    <h1>Gutenberg Editor</h1>
                 </div>
 
                 <div className="sgb-window__actions">
@@ -239,7 +239,6 @@ export function GutenbergWindow({
                 meta={payload.meta || {}}
                 onChange={handleChange}
                 variant="fullscreen"
-                title={payload.title || title}
             />
         </div>
     );

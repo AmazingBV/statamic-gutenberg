@@ -12,6 +12,8 @@ export default defineConfig({
                 'resources/js/addon.js',
                 'resources/js/editor-window.js',
                 'resources/css/addon.css',
+                'resources/js/frontend.js',
+                'resources/css/frontend.css',
             ],
             publicDirectory: 'resources/dist',
         }),

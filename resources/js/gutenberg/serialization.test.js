@@ -8,6 +8,7 @@ import {
     normalizeAllowedBlocks,
     parseSerialized,
     serializeBlocks,
+    stripTransientMediaUrls,
 } from './serialization';
 
 beforeAll(() => {
@@ -85,8 +86,18 @@ describe('Gutenberg serialization helpers', () => {
 
         expect(media).toEqual({
             url: '/storage/assets/hero.jpg',
+            source_url: '/storage/assets/hero.jpg',
             alt: 'Hero',
             title: 'Hero image',
+            caption: '',
         });
+    });
+
+    it('strips transient blob media urls before saved content is parsed or serialized', () => {
+        const input = '<!-- wp:cover {"url":"blob:https://site.test/temp-id"} --><div class="wp-block-cover"><img src="blob:https://site.test/temp-id"><p>Cover</p></div><!-- /wp:cover -->';
+        const stripped = stripTransientMediaUrls(input);
+
+        expect(stripped).toContain('"url":""');
+        expect(stripped).not.toContain('blob:');
     });
 });

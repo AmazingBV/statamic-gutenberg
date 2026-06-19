@@ -1,0 +1,196 @@
+@import "@wordpress/block-library/build-style/elements.css";
+@import "@wordpress/block-library/build-style/style.css";
+@import "@wordpress/block-library/build-style/theme.css";
+
+:where(.sgb-content) {
+    --wp--style--global--content-size: 760px;
+    --wp--style--global--wide-size: 1120px;
+    --wp--style--block-gap: 1.5rem;
+    --wp--preset--font-size--small: 0.875rem;
+    --wp--preset--font-size--medium: 1.25rem;
+    --wp--preset--font-size--large: 2.25rem;
+    --wp--preset--font-size--x-large: 2.75rem;
+    --sgb-accent: #315bc7;
+    --sgb-muted: #667085;
+}
+
+.sgb-content {
+    display: grid;
+    grid-template-columns:
+        [full-start] minmax(16px, 1fr)
+        [wide-start] minmax(0, calc((var(--wp--style--global--wide-size) - var(--wp--style--global--content-size)) / 2))
+        [content-start] minmax(0, var(--wp--style--global--content-size))
+        [content-end] minmax(0, calc((var(--wp--style--global--wide-size) - var(--wp--style--global--content-size)) / 2))
+        [wide-end] minmax(16px, 1fr)
+        [full-end];
+    gap: var(--wp--style--block-gap);
+}
+
+.sgb-content > * {
+    grid-column: content;
+    margin-block-start: 0;
+    margin-block-end: 0;
+}
+
+.sgb-content > .alignwide {
+    grid-column: wide;
+}
+
+.sgb-content > .alignfull {
+    grid-column: full;
+}
+
+.sgb-content :where(.is-layout-flow, .is-layout-constrained, .wp-block-group, .wp-block-column) > * {
+    margin-block-start: 0;
+    margin-block-end: 0;
+}
+
+.sgb-content :where(.is-layout-flow, .is-layout-constrained, .wp-block-group, .wp-block-column) > * + * {
+    margin-block-start: var(--wp--style--block-gap);
+}
+
+.sgb-content :where(.is-layout-flex) {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--wp--style--block-gap);
+}
+
+.sgb-content :where(.is-layout-grid) {
+    display: grid;
+    gap: var(--wp--style--block-gap);
+}
+
+.sgb-content :where(.wp-block-heading) {
+    font-weight: 700;
+}
+
+.sgb-content :where(ul.wp-block-list) {
+    list-style-type: disc;
+}
+
+.sgb-content :where(ol.wp-block-list) {
+    list-style-type: decimal;
+}
+
+.sgb-content :where(.wp-block-list) {
+    list-style-position: outside;
+    padding-inline-start: 1.625em;
+}
+
+.sgb-content :where(.wp-block-list li) {
+    display: list-item;
+}
+
+.sgb-content :where(.wp-block-media-text img, .wp-block-media-text video) {
+    height: auto;
+    width: 100%;
+}
+
+.sgb-content :where(.wp-block-audio audio, .wp-block-video video) {
+    width: 100%;
+}
+
+.sgb-custom-block {
+    display: grid;
+    gap: 16px;
+    padding: 28px;
+    border: 1px solid #d8dee4;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.sgb-custom-block--hero {
+    background: #f9fafb;
+}
+
+.sgb-custom-block--cta {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.sgb-custom-block__content {
+    display: grid;
+    gap: 14px;
+}
+
+.sgb-button,
+.wp-block-button__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 6px;
+    background: var(--sgb-accent);
+    color: #ffffff;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.sgb-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483000;
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    background: rgba(15, 23, 42, 0.86);
+}
+
+.sgb-lightbox[hidden] {
+    display: none;
+}
+
+.sgb-lightbox__image {
+    max-width: min(100%, 1200px);
+    max-height: calc(100vh - 96px);
+    object-fit: contain;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+}
+
+.sgb-lightbox__close,
+.sgb-lightbox__nav {
+    position: absolute;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.sgb-lightbox__close {
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.sgb-lightbox__nav {
+    top: 50%;
+    width: 48px;
+    height: 64px;
+    transform: translateY(-50%);
+    font-size: 42px;
+    line-height: 1;
+}
+
+.sgb-lightbox__nav--previous {
+    left: 18px;
+}
+
+.sgb-lightbox__nav--next {
+    right: 18px;
+}
+
+@media (max-width: 700px) {
+    .sgb-custom-block--cta {
+        grid-template-columns: 1fr;
+    }
+
+    .sgb-lightbox {
+        padding: 16px;
+    }
+}

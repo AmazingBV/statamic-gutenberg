@@ -47,3 +47,19 @@ php artisan optimize:clear
 ```
 
 The addon should now be available in Statamic as the `gutenberg` fieldtype.
+
+Add the frontend assets to the site layout:
+
+```antlers
+<head>
+    {{ gutenberg:styles }}
+</head>
+<body>
+    <main class="sgb-content">
+        {{ content }}
+    </main>
+    {{ gutenberg:scripts }}
+</body>
+```
+
+`sgb-content` provides WordPress block layout widths, grid/flex layout helpers, and standard block spacing. The frontend assets include WordPress core block styles plus small Statamic-compatible JS for lightbox, accordion, tabs, and fit-text behavior.

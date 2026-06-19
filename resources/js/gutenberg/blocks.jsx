@@ -11,6 +11,11 @@ export function registerGutenbergBlocks() {
         return;
     }
 
+    if (typeof window !== 'undefined') {
+        window.__experimentalEnableBlockExperiments = true;
+        window.__experimentalEnableFormBlocks = true;
+    }
+
     registerCoreBlocks();
     registerStatamicBlocks();
     registered = true;

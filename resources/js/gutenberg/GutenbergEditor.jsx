@@ -39,7 +39,7 @@ function sameOriginUrl(value) {
     return url;
 }
 
-export function GutenbergEditor({ value, config, meta, onChange, variant = 'field', title = '' }) {
+export function GutenbergEditor({ value, config, meta, onChange, variant = 'field' }) {
     const lastSerialized = useRef(value || '');
     const [blocks, setBlocks] = useState(() => parseSerialized(value));
     const [assetQuery, setAssetQuery] = useState('');
@@ -284,9 +284,6 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                     <div className="sgb-editor__workspace">
                         <main className="sgb-editor__stage">
                             <div className="sgb-page-frame">
-                                {isFullscreen && title ? (
-                                    <h1 className="sgb-page-title">{title}</h1>
-                                ) : null}
                                 <BlockTools>
                                     <WritingFlow>
                                         <ObserveTyping>

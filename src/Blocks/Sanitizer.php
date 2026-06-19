@@ -56,6 +56,17 @@ class Sanitizer
         'font-style',
         'font-weight',
         'gap',
+        'grid-auto-columns',
+        'grid-auto-flow',
+        'grid-auto-rows',
+        'grid-column',
+        'grid-column-end',
+        'grid-column-start',
+        'grid-row',
+        'grid-row-end',
+        'grid-row-start',
+        'grid-template-columns',
+        'grid-template-rows',
         'height',
         'justify-content',
         'letter-spacing',
@@ -76,6 +87,10 @@ class Sanitizer
         'padding-left',
         'padding-right',
         'padding-top',
+        'place-content',
+        'place-items',
+        'place-self',
+        'row-gap',
         'text-align',
         'text-decoration',
         'text-transform',
@@ -224,6 +239,7 @@ class Sanitizer
 
         return str_starts_with($normalized, 'javascript:')
             || str_starts_with($normalized, 'vbscript:')
+            || str_starts_with($normalized, 'blob:')
             || (str_starts_with($normalized, 'data:') && ! str_starts_with($normalized, 'data:image/'));
     }
 }

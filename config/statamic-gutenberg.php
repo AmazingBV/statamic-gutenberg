@@ -1,20 +1,12 @@
 <?php
 
+use Amazingbv\StatamicGutenberg\Blocks\CoreBlocks;
+
 return [
-    'allowed_blocks' => [
-        'core/paragraph',
-        'core/heading',
-        'core/list',
-        'core/quote',
-        'core/image',
-        'core/buttons',
-        'core/button',
-        'core/columns',
-        'core/column',
-        'core/group',
+    'allowed_blocks' => array_merge(CoreBlocks::names(), [
         'statamic/hero',
         'statamic/cta',
-    ],
+    ]),
 
     'assets_container' => 'assets',
 

@@ -80,6 +80,24 @@ class BlockRenderer
             'core/columns' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-columns'),
             'core/column' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-column'),
             'core/buttons' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-buttons'),
+            'core/accordion' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-accordion', ['div'], [
+                'data-sgb-accordion-autoclose' => $this->truthy($block->attribute('autoclose', false)) ? 'true' : 'false',
+            ]),
+            'core/tabs' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-tabs', ['div'], [
+                'data-sgb-active-tab-index' => (string) max(0, (int) $block->attribute('activeTabIndex', 0)),
+            ]),
+            'core/tab-list' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-tab-list', ['div'], [
+                'role' => 'tablist',
+            ]),
+            'core/tab-panels' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-tab-panels'),
+            'core/tab' => $this->renderWrapperBlock($block, $inner, $options, 'button', 'wp-block-tab', ['button'], [
+                'type' => 'button',
+                'role' => 'tab',
+            ]),
+            'core/tab-panel' => $this->renderWrapperBlock($block, $inner, $options, 'section', 'wp-block-tab-panel', ['section'], [
+                'role' => 'tabpanel',
+                'data-sgb-tab-label' => (string) $block->attribute('label', ''),
+            ]),
             'core/heading' => $this->renderHeading($block, $options),
             'core/image' => $this->renderImage($block, $options),
             default => $this->sanitize($block->renderableHtml(), $options),
@@ -92,22 +110,23 @@ class BlockRenderer
         array $options,
         string $fallbackTag,
         string $baseClass,
-        array $allowedTags = ['div']
+        array $allowedTags = ['div'],
+        array $extraAttributes = []
     ): string {
         $fragment = $this->firstElementFragment($this->sanitize($block->renderableHtml(), $options));
 
         if (! $fragment) {
             return sprintf(
-                '<%s class="%s">%s</%s>',
+                '<%s%s>%s</%s>',
                 $fallbackTag,
-                e($baseClass),
+                $this->renderAttributes(array_merge(['class' => $baseClass], $extraAttributes)),
                 $inner,
                 $fallbackTag
             );
         }
 
         $tag = in_array($fragment['tag'], $allowedTags, true) ? $fragment['tag'] : $fallbackTag;
-        $attributes = $fragment['attributes'];
+        $attributes = array_merge($fragment['attributes'], $extraAttributes);
         $attributes['class'] = $this->mergeClasses($attributes['class'] ?? '', [$baseClass]);
 
         return sprintf(
