@@ -1,23 +1,49 @@
 # Statamic Gutenberg
 
-> Statamic Gutenberg is a Statamic addon that does something pretty neat.
+Statamic addon for editing and rendering Gutenberg block content in a Laravel + Statamic project.
 
-## Features
+## Internal Developer Install
 
-This addon does:
+Clone this repository into the Statamic project's addon namespace directory:
 
-- This
-- And this
-- And even this
-
-## How to Install
-
-You can install this addon via Composer:
-
-``` bash
-composer require amazingbv/statamic-gutenberg
+```bash
+cd /path/to/laravel-statamic-project
+mkdir -p addons/amazingbv
+git clone <repo-url> addons/amazingbv/statamic-gutenberg
 ```
 
-## How to Use
+Install the addon's PHP and JavaScript dependencies:
 
-Here's where you can explain how to use this wonderful addon.
+```bash
+cd addons/amazingbv/statamic-gutenberg
+composer install
+npm install
+npm run build
+```
+
+Register the local addon in the main Laravel + Statamic project's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "addons/amazingbv/statamic-gutenberg"
+        }
+    ],
+    "require": {
+        "amazingbv/statamic-gutenberg": "*"
+    }
+}
+```
+
+Then install and publish the addon assets from the project root:
+
+```bash
+cd /path/to/laravel-statamic-project
+composer update amazingbv/statamic-gutenberg
+php artisan vendor:publish --tag=statamic-gutenberg --force
+php artisan optimize:clear
+```
+
+The addon should now be available in Statamic as the `gutenberg` fieldtype.
