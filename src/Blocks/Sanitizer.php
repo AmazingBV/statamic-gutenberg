@@ -48,6 +48,7 @@ class Sanitizer
         'display',
         'fill',
         'flex-basis',
+        'flex-direction',
         'flex-grow',
         'flex-shrink',
         'flex-wrap',
@@ -193,7 +194,7 @@ class Sanitizer
                 continue;
             }
 
-            if (in_array($name, ['href', 'src', 'xlink:href', 'srcset'], true) && $this->isDangerousUrl($value)) {
+            if (in_array($name, ['action', 'formaction', 'href', 'poster', 'src', 'xlink:href', 'srcset'], true) && $this->isDangerousUrl($value)) {
                 $element->removeAttributeNode($attribute);
             }
         }

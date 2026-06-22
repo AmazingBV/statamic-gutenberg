@@ -4,6 +4,82 @@ namespace Amazingbv\StatamicGutenberg\Blocks;
 
 class CoreBlocks
 {
+    private const FRONTEND_VIEW_BLOCKS = [
+        'core/accordion',
+        'core/file',
+        'core/form',
+        'core/image',
+        'core/navigation',
+        'core/playlist',
+        'core/query',
+        'core/search',
+        'core/tabs',
+    ];
+
+    private const RUNTIME_FALLBACK_BLOCKS = [
+        'core/archives',
+        'core/avatar',
+        'core/block',
+        'core/breadcrumbs',
+        'core/calendar',
+        'core/categories',
+        'core/comment-author-avatar',
+        'core/comment-author-name',
+        'core/comment-content',
+        'core/comment-date',
+        'core/comment-edit-link',
+        'core/comment-reply-link',
+        'core/comments-pagination-next',
+        'core/comments-pagination-numbers',
+        'core/comments-pagination-previous',
+        'core/comments-title',
+        'core/comments',
+        'core/footnotes',
+        'core/icon',
+        'core/latest-comments',
+        'core/latest-posts',
+        'core/loginout',
+        'core/navigation-overlay-close',
+        'core/navigation',
+        'core/page-list',
+        'core/page-list-item',
+        'core/pattern',
+        'core/playlist-track',
+        'core/post-author',
+        'core/post-author-biography',
+        'core/post-author-name',
+        'core/post-comments-count',
+        'core/post-comments-form',
+        'core/post-comments-link',
+        'core/post-content',
+        'core/post-date',
+        'core/post-excerpt',
+        'core/post-featured-image',
+        'core/post-navigation-link',
+        'core/post-terms',
+        'core/post-time-to-read',
+        'core/post-title',
+        'core/query',
+        'core/query-pagination-next',
+        'core/query-pagination-numbers',
+        'core/query-pagination-previous',
+        'core/query-title',
+        'core/query-total',
+        'core/read-more',
+        'core/rss',
+        'core/search',
+        'core/site-logo',
+        'core/site-tagline',
+        'core/site-title',
+        'core/social-link',
+        'core/tag-cloud',
+        'core/template-part',
+        'core/term-count',
+        'core/term-description',
+        'core/term-name',
+        'core/terms-query',
+    ];
+
     public static function names(): array
     {
         return [
@@ -129,5 +205,20 @@ class CoreBlocks
             'core/verse',
             'core/video',
         ];
+    }
+
+    public static function frontendViewBlocks(): array
+    {
+        return self::FRONTEND_VIEW_BLOCKS;
+    }
+
+    public static function runtimeFallbackBlocks(): array
+    {
+        return self::RUNTIME_FALLBACK_BLOCKS;
+    }
+
+    public static function hasRuntimeFallback(string $name): bool
+    {
+        return in_array($name, self::RUNTIME_FALLBACK_BLOCKS, true);
     }
 }

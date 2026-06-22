@@ -40,6 +40,11 @@
     grid-column: full;
 }
 
+.sgb-content > :where(.wp-block-columns, .wp-block-group) {
+    grid-column: full !important;
+    width: 100%;
+}
+
 .sgb-content :where(.is-layout-flow, .is-layout-constrained, .wp-block-group, .wp-block-column) > * {
     margin-block-start: 0;
     margin-block-end: 0;
@@ -50,13 +55,45 @@
 }
 
 .sgb-content :where(.is-layout-flex) {
-    align-items: center;
+    align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
     gap: var(--wp--style--block-gap);
+    justify-content: flex-start;
+}
+
+.sgb-content :where(.wp-block-columns.is-layout-flex) {
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.sgb-content :where(.wp-block-columns) {
+    align-items: flex-start !important;
+    justify-content: flex-start;
+}
+
+.sgb-content :where(.is-layout-flex.is-vertical) {
+    flex-direction: column;
+}
+
+.sgb-content :where(.is-layout-flex.is-nowrap) {
+    flex-wrap: nowrap;
+}
+
+.sgb-content :where(.is-layout-flex.is-content-justification-center) {
+    justify-content: center;
+}
+
+.sgb-content :where(.is-layout-flex.is-content-justification-right) {
+    justify-content: flex-end;
+}
+
+.sgb-content :where(.is-layout-flex.is-content-justification-space-between) {
+    justify-content: space-between;
 }
 
 .sgb-content :where(.is-layout-grid) {
+    align-items: flex-start;
     display: grid;
     gap: var(--wp--style--block-gap);
 }
@@ -89,6 +126,62 @@
 
 .sgb-content :where(.wp-block-audio audio, .wp-block-video video) {
     width: 100%;
+}
+
+.sgb-content :where(.wp-block-embed__wrapper) {
+    position: relative;
+}
+
+.sgb-content :where(.wp-block-embed.is-type-video .wp-block-embed__wrapper) {
+    aspect-ratio: 16 / 9;
+}
+
+.sgb-content :where(.wp-block-embed iframe) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.sgb-content :where(.wp-block-icon svg) {
+    display: block;
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+}
+
+.sgb-content :where(.sgb-core-fallback) {
+    display: grid;
+    gap: 4px;
+    padding: 1rem;
+    border: 1px solid #d8dee4;
+    border-radius: 6px;
+    background: #f9fafb;
+    color: #475467;
+}
+
+.sgb-content :where(.sgb-core-fallback strong) {
+    color: #111827;
+}
+
+.sgb-content :where(.sgb-screen-reader-text) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+}
+
+.sgb-content :where(.sgb-core-fallback-search .wp-block-search__inside-wrapper) {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.sgb-content :where(.sgb-core-fallback-search .wp-block-search__input) {
+    min-width: 0;
+    flex: 1;
 }
 
 .sgb-custom-block {

@@ -48,6 +48,19 @@ php artisan optimize:clear
 
 The addon should now be available in Statamic as the `gutenberg` fieldtype.
 
+Optional icon block source in the Statamic project:
+
+```php
+// resources/statamic-gutenberg/icons.php
+return [
+    'check' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+    'alert' => [
+        'label' => 'Alert',
+        'svg' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 2 22h20z"/></svg>',
+    ],
+];
+```
+
 Add the frontend assets to the site layout:
 
 ```antlers

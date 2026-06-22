@@ -55,18 +55,121 @@ export function isBlockAllowed(name, allowedBlocks) {
 }
 
 export function createImageBlock(asset) {
-    return createBlock('core/image', {
-        url: asset.url,
-        alt: asset.alt || '',
-    });
+    return createBlock('core/image', attributesForAssetBlock('core/image', asset));
 }
 
 export function createImageMedia(asset) {
+    return createMediaPayload(asset);
+}
+
+export function createMediaPayload(asset = {}) {
+    const mediaType = mediaTypeForAsset(asset);
+    const url = asset.url || asset.source_url || '';
+    const title = asset.title || asset.filename || '';
+    const imageSizes = mediaType === 'image'
+        ? (asset.sizes || {
+            full: { url },
+            large: { url },
+        })
+        : {};
+    const mediaDetailSizes = mediaType === 'image'
+        ? (asset.media_details?.sizes || {
+            full: { source_url: url },
+            large: { source_url: url },
+        })
+        : {};
+
     return {
-        url: asset.url,
-        source_url: asset.url,
+        url,
+        source_url: url,
+        link: asset.link || url,
         alt: asset.alt || '',
-        title: asset.title || asset.filename || '',
+        alt_text: asset.alt_text || asset.alt || '',
+        title,
         caption: asset.caption || '',
+        filename: asset.filename || title,
+        mime: asset.mime || asset.mime_type || '',
+        mime_type: asset.mime_type || asset.mime || '',
+        type: mediaType,
+        media_type: mediaType,
+        sizes: imageSizes,
+        media_details: {
+            ...(asset.media_details || {}),
+            sizes: mediaDetailSizes,
+        },
     };
+}
+
+export function createAssetBlock(asset) {
+    const media = createMediaPayload(asset);
+
+    if (media.media_type === 'audio') {
+        return createBlock('core/audio', attributesForAssetBlock('core/audio', asset));
+    }
+
+    if (media.media_type === 'video') {
+        return createBlock('core/video', attributesForAssetBlock('core/video', asset));
+    }
+
+    if (media.media_type === 'image') {
+        return createImageBlock(asset);
+    }
+
+    return createBlock('core/file', attributesForAssetBlock('core/file', asset));
+}
+
+export function attributesForAssetBlock(blockName, asset = {}) {
+    const media = createMediaPayload(asset);
+    const url = media.url;
+    const title = media.title || media.filename || '';
+
+    switch (blockName) {
+        case 'core/audio':
+            return {
+                src: url,
+                caption: media.caption || '',
+            };
+
+        case 'core/cover':
+            return {
+                url,
+                alt: media.alt || '',
+                backgroundType: media.media_type === 'video' ? 'video' : 'image',
+                useFeaturedImage: false,
+            };
+
+        case 'core/file':
+            return {
+                href: url,
+                fileName: title,
+                textLinkHref: url,
+                downloadButtonText: 'Download',
+            };
+
+        case 'core/media-text':
+            return {
+                mediaUrl: url,
+                mediaAlt: media.alt || '',
+                mediaType: media.media_type === 'video' ? 'video' : 'image',
+                useFeaturedImage: false,
+            };
+
+        case 'core/video':
+            return {
+                src: url,
+                caption: media.caption || '',
+            };
+
+        case 'core/image':
+        default:
+            return {
+                url,
+                alt: media.alt || '',
+                caption: media.caption || '',
+            };
+    }
+}
+
+export function mediaTypeForAsset(asset = {}) {
+    return asset.media_type || asset.type || 'file';
 }

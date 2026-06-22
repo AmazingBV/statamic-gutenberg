@@ -19,6 +19,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('list-style-type: decimal', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-list li.block-editor-block-list__block', $css);
         $this->assertStringContainsString('list-style: inherit', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .sgb-core-fallback', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text', $css);
         $this->assertStringContainsString('display: grid', $css);
@@ -31,6 +33,14 @@ class EditorCssParityTest extends TestCase
         $editor = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergEditor.jsx');
         $window = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergWindow.jsx');
 
+        $this->assertStringContainsString("@wordpress/block-library/build-style/editor.css", $editor);
+        $this->assertStringContainsString("@wordpress/block-library/build-style/style.css", $editor);
+        $this->assertStringContainsString("@wordpress/block-library/build-style/theme.css", $editor);
+        $this->assertStringContainsString('alignWide: true', $editor);
+        $this->assertStringContainsString('supportsLayout: true', $editor);
+        $this->assertStringContainsString("contentSize: CONTENT_SIZE", $editor);
+        $this->assertStringContainsString("wideSize: WIDE_SIZE", $editor);
+        $this->assertStringContainsString("blockGap: true", $editor);
         $this->assertStringNotContainsString('sgb-page-title', $css.$editor);
         $this->assertStringContainsString('<h1>Gutenberg Editor</h1>', $window);
         $this->assertStringNotContainsString('title={payload.title || title}', $window);

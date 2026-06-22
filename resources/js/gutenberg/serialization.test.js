@@ -84,12 +84,16 @@ describe('Gutenberg serialization helpers', () => {
             title: 'Hero image',
         });
 
-        expect(media).toEqual({
+        expect(media.id).toBeUndefined();
+        expect(media).toMatchObject({
             url: '/storage/assets/hero.jpg',
             source_url: '/storage/assets/hero.jpg',
             alt: 'Hero',
+            alt_text: 'Hero',
             title: 'Hero image',
             caption: '',
+            media_type: 'file',
+            type: 'file',
         });
     });
 

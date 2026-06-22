@@ -14,6 +14,7 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('@wordpress/block-library/build-style/theme.css', $css);
         $this->assertStringContainsString('.sgb-content :where(.is-layout-grid)', $css);
         $this->assertStringContainsString('.sgb-content :where(ul.wp-block-list)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.sgb-core-fallback)', $css);
         $this->assertStringContainsString('.sgb-lightbox', $css);
     }
 
@@ -25,6 +26,10 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('initTabs', $js);
         $this->assertStringContainsString('initLightbox', $js);
         $this->assertStringContainsString('initFitText', $js);
+        $this->assertStringContainsString('initSearchBlocks', $js);
+        $this->assertStringContainsString('initNavigationBlocks', $js);
+        $this->assertStringContainsString('initFileBlocks', $js);
+        $this->assertStringContainsString('initFormBlocks', $js);
     }
 
     public function test_frontend_assets_are_exposed_through_manager_and_tag(): void

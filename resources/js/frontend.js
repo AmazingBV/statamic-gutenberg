@@ -309,9 +309,195 @@ function initTabs(root = document) {
     });
 }
 
+function initSearchBlocks(root = document) {
+    root.querySelectorAll('.wp-block-search.wp-block-search__button-only').forEach((search) => {
+        if (search.dataset.sgbSearchReady === 'true') {
+            return;
+        }
+
+        search.dataset.sgbSearchReady = 'true';
+        const input = search.querySelector('.wp-block-search__input');
+        const button = search.querySelector('.wp-block-search__button');
+
+        if (! input || ! button) {
+            return;
+        }
+
+        const closeSearch = () => {
+            if (! input.value) {
+                search.classList.add('wp-block-search__searchfield-hidden');
+            }
+        };
+
+        button.addEventListener('click', (event) => {
+            if (! search.classList.contains('wp-block-search__searchfield-hidden')) {
+                return;
+            }
+
+            event.preventDefault();
+            search.classList.remove('wp-block-search__searchfield-hidden');
+            input.focus();
+        });
+
+        search.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeSearch();
+                button.focus();
+            }
+        });
+
+        search.addEventListener('focusout', (event) => {
+            if (! search.contains(event.relatedTarget)) {
+                closeSearch();
+            }
+        });
+    });
+}
+
+function initNavigationBlocks(root = document) {
+    const syncModalClass = () => {
+        const hasOpenMenu = Boolean(document.querySelector('.wp-block-navigation__responsive-container.is-menu-open'));
+        document.documentElement.classList.toggle('has-modal-open', hasOpenMenu);
+    };
+
+    const setOverlayOpen = (container, open) => {
+        container.classList.toggle('is-menu-open', open);
+        container.setAttribute('aria-hidden', open ? 'false' : 'true');
+        syncModalClass();
+
+        if (open) {
+            container.querySelector('.wp-block-navigation__responsive-container-close, a, button')?.focus();
+        }
+    };
+
+    root.querySelectorAll('.wp-block-navigation').forEach((navigation) => {
+        if (navigation.dataset.sgbNavigationReady === 'true') {
+            return;
+        }
+
+        navigation.dataset.sgbNavigationReady = 'true';
+        navigation.querySelectorAll('.wp-block-navigation-submenu__toggle, button.wp-block-navigation-item__content[aria-expanded]')
+            .forEach((toggle) => {
+                if (! toggle.hasAttribute('aria-expanded')) {
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+    });
+
+    root.addEventListener('click', (event) => {
+        const openButton = event.target.closest('.wp-block-navigation__responsive-container-open');
+
+        if (openButton) {
+            const navigation = openButton.closest('.wp-block-navigation');
+            const container = navigation?.querySelector('.wp-block-navigation__responsive-container');
+
+            if (container) {
+                event.preventDefault();
+                setOverlayOpen(container, true);
+            }
+
+            return;
+        }
+
+        const closeButton = event.target.closest('.wp-block-navigation__responsive-container-close');
+
+        if (closeButton) {
+            const container = closeButton.closest('.wp-block-navigation__responsive-container');
+
+            if (container) {
+                event.preventDefault();
+                setOverlayOpen(container, false);
+            }
+
+            return;
+        }
+
+        const submenuToggle = event.target.closest('.wp-block-navigation-submenu__toggle, button.wp-block-navigation-item__content[aria-expanded]');
+
+        if (! submenuToggle) {
+            return;
+        }
+
+        const item = submenuToggle.closest('.has-child, .wp-block-navigation-submenu');
+        const submenu = item?.querySelector(':scope > .wp-block-navigation__submenu-container');
+
+        if (! item || ! submenu) {
+            return;
+        }
+
+        event.preventDefault();
+        const open = submenuToggle.getAttribute('aria-expanded') !== 'true';
+        submenuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        item.classList.toggle('is-open', open);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') {
+            return;
+        }
+
+        document.querySelectorAll('.wp-block-navigation__responsive-container.is-menu-open')
+            .forEach((container) => setOverlayOpen(container, false));
+    });
+}
+
+function initFileBlocks(root = document) {
+    root.querySelectorAll('.wp-block-file__embed').forEach((embed) => {
+        if (embed.dataset.sgbFileReady === 'true' || embed.textContent.trim()) {
+            return;
+        }
+
+        embed.dataset.sgbFileReady = 'true';
+        const url = embed.getAttribute('data');
+
+        if (! url) {
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.textContent = 'Open file';
+        embed.appendChild(link);
+    });
+}
+
+function initFormBlocks(root = document) {
+    root.querySelectorAll('form.wp-block-form').forEach((form) => {
+        if (form.dataset.sgbFormReady === 'true') {
+            return;
+        }
+
+        form.dataset.sgbFormReady = 'true';
+
+        form.addEventListener('submit', (event) => {
+            const action = form.getAttribute('action') || '';
+
+            if (action && (action.startsWith('mailto:') || action.startsWith('http') || action.startsWith('/'))) {
+                return;
+            }
+
+            event.preventDefault();
+            let status = form.querySelector('[data-sgb-form-status]');
+
+            if (! status) {
+                status = document.createElement('p');
+                status.dataset.sgbFormStatus = 'true';
+                status.setAttribute('role', 'status');
+                form.appendChild(status);
+            }
+
+            status.textContent = 'Form endpoint is not configured.';
+        });
+    });
+}
+
 onReady(() => {
     initFitText();
     initLightbox();
     initAccordions();
     initTabs();
+    initSearchBlocks();
+    initNavigationBlocks();
+    initFileBlocks();
+    initFormBlocks();
 });

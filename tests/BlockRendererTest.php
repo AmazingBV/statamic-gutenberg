@@ -9,25 +9,29 @@ use Amazingbv\StatamicGutenberg\GutenbergManager;
 
 class BlockRendererTest extends TestCase
 {
-    public function test_default_config_allows_all_installed_core_blocks(): void
+    public function test_default_config_allows_only_the_home_block_profile(): void
     {
         $allowed = app(BlockRegistry::class)->allowedBlocks();
 
         $this->assertGreaterThanOrEqual(121, count(CoreBlocks::names()));
+        $this->assertLessThan(count(CoreBlocks::names()), count($allowed));
         $this->assertContains('core/cover', $allowed);
         $this->assertContains('core/media-text', $allowed);
         $this->assertContains('core/gallery', $allowed);
-        $this->assertContains('core/query', $allowed);
         $this->assertContains('core/table', $allowed);
         $this->assertContains('core/video', $allowed);
+        $this->assertContains('core/icon', $allowed);
         $this->assertContains('statamic/hero', $allowed);
+        $this->assertNotContains('core/query', $allowed);
+        $this->assertNotContains('core/form', $allowed);
+        $this->assertNotContains('core/tabs', $allowed);
     }
 
     public function test_it_renders_allowed_core_blocks_and_sanitizes_html(): void
     {
         $html = '<!-- wp:paragraph --><p onclick="alert(1)">Hello<script>alert(1)</script></p><!-- /wp:paragraph -->';
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('<p>Hello</p>', $rendered);
         $this->assertStringNotContainsString('onclick', $rendered);
@@ -45,7 +49,7 @@ class BlockRendererTest extends TestCase
             '<!-- wp:video --><figure class="wp-block-video"><video controls src="/storage/movie.mp4"></video></figure><!-- /wp:video -->',
         ]);
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('class="wp-block-cover is-light"', $rendered);
         $this->assertStringContainsString('class="wp-block-media-text"', $rendered);
@@ -59,7 +63,7 @@ class BlockRendererTest extends TestCase
     {
         $html = '<!-- wp:cover {"url":"blob:https://site.test/temp"} --><div class="wp-block-cover"><img class="wp-block-cover__image-background" src="blob:https://site.test/temp"><p>Cover</p></div><!-- /wp:cover -->';
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('class="wp-block-cover"', $rendered);
         $this->assertStringContainsString('<p>Cover</p>', $rendered);
@@ -70,7 +74,7 @@ class BlockRendererTest extends TestCase
     {
         $html = '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->';
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('margin-top: var(--wp--preset--spacing--40)', $rendered);
         $this->assertStringContainsString('padding: 12px', $rendered);
@@ -83,12 +87,24 @@ class BlockRendererTest extends TestCase
     {
         $html = '<!-- wp:group --><div class="wp-block-group is-layout-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;position:absolute"><p>Grid</p></div><!-- /wp:group -->';
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('display: grid', $rendered);
         $this->assertStringContainsString('grid-template-columns: repeat(3,minmax(0,1fr))', $rendered);
         $this->assertStringContainsString('gap: 1rem', $rendered);
         $this->assertStringNotContainsString('position', $rendered);
+    }
+
+    public function test_it_strips_dangerous_form_action_urls_from_core_form_markup(): void
+    {
+        $html = '<!-- wp:form --><form class="wp-block-form" action="javascript:alert(1)"><button formaction="javascript:alert(2)">Send</button></form><!-- /wp:form -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-form"', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
+        $this->assertStringNotContainsString('formaction', $rendered);
+        $this->assertStringNotContainsString('action=', $rendered);
     }
 
     public function test_it_adds_frontend_interaction_metadata_for_core_accordion_and_tabs(): void
@@ -98,13 +114,48 @@ class BlockRendererTest extends TestCase
             '<!-- wp:tabs {"activeTabIndex":1} --><div class="wp-block-tabs"><!-- wp:tab-list --><div class="wp-block-tab-list"><!-- wp:tab --><button type="button" role="tab" class="wp-block-tab"></button><!-- /wp:tab --><!-- wp:tab --><button type="button" role="tab" class="wp-block-tab"></button><!-- /wp:tab --></div><!-- /wp:tab-list --><!-- wp:tab-panels --><div class="wp-block-tab-panels"><!-- wp:tab-panel {"label":"First"} --><section class="wp-block-tab-panel"><p>First panel</p></section><!-- /wp:tab-panel --><!-- wp:tab-panel {"label":"Second"} --><section class="wp-block-tab-panel"><p>Second panel</p></section><!-- /wp:tab-panel --></div><!-- /wp:tab-panels --></div><!-- /wp:tabs -->',
         ]);
 
-        $rendered = (string) app(BlockRenderer::class)->render($html);
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('data-sgb-accordion-autoclose="true"', $rendered);
         $this->assertStringContainsString('data-sgb-active-tab-index="1"', $rendered);
         $this->assertStringContainsString('role="tablist"', $rendered);
         $this->assertStringContainsString('data-sgb-tab-label="First"', $rendered);
         $this->assertStringContainsString('data-sgb-tab-label="Second"', $rendered);
+    }
+
+    public function test_it_renders_fallback_markup_for_runtime_core_blocks_without_saved_html(): void
+    {
+        $html = implode('', [
+            '<!-- wp:search {"label":"Find","buttonText":"Go","placeholder":"Search site"} /-->',
+            '<!-- wp:site-title {"level":2,"isLink":false} /-->',
+            '<!-- wp:latest-posts {"postsToShow":3} /-->',
+            '<!-- wp:post-title /-->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-search sgb-core-fallback-search', $rendered);
+        $this->assertStringContainsString('placeholder="Search site"', $rendered);
+        $this->assertStringContainsString('>Go</button>', $rendered);
+        $this->assertStringContainsString('class="wp-block-site-title"', $rendered);
+        $this->assertStringContainsString('data-sgb-core-fallback="core/latest-posts"', $rendered);
+        $this->assertStringContainsString('data-sgb-core-fallback="core/post-title"', $rendered);
+    }
+
+    public function test_it_renders_nested_fallbacks_inside_runtime_core_container_blocks(): void
+    {
+        $html = implode('', [
+            '<!-- wp:query {"tagName":"section"} --><section class="wp-block-query"><!-- wp:post-template --><ul class="wp-block-post-template"><!-- wp:post-title /--></ul><!-- /wp:post-template --></section><!-- /wp:query -->',
+            '<!-- wp:playlist --><figure class="wp-block-playlist"><ol class="wp-block-playlist__tracklist"><!-- wp:playlist-track /--></ol></figure><!-- /wp:playlist -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-query"', $rendered);
+        $this->assertStringContainsString('class="wp-block-post-template"', $rendered);
+        $this->assertStringContainsString('data-sgb-core-fallback="core/post-title"', $rendered);
+        $this->assertStringContainsString('class="wp-block-playlist"', $rendered);
+        $this->assertStringContainsString('data-sgb-core-fallback="core/playlist-track"', $rendered);
     }
 
     public function test_it_preserves_wrapper_block_attributes(): void
@@ -160,5 +211,12 @@ class BlockRendererTest extends TestCase
         ]);
 
         $this->assertSame('<strong>Facade</strong>', $rendered);
+    }
+
+    private function allCoreAllowedOptions(): array
+    {
+        return [
+            'allowed_blocks' => array_merge(CoreBlocks::names(), ['statamic/hero', 'statamic/cta']),
+        ];
     }
 }

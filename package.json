@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "@statamic/cms": "file:./vendor/statamic/cms/resources/dist-package",
+        "@wordpress/api-fetch": "^7.48.1",
         "@wordpress/block-editor": "^15.21.1",
         "@wordpress/block-library": "^9.48.1",
         "@wordpress/blocks": "^15.21.1",

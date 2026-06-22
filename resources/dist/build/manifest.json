@@ -16,7 +16,7 @@
     "isDynamicEntry": true
   },
   "resources/css/addon.css": {
-    "file": "assets/addon-BIDcBwJ6.css",
+    "file": "assets/addon-s-dg6giO.css",
     "src": "resources/css/addon.css",
     "isEntry": true,
     "name": "addon",
@@ -25,7 +25,7 @@
     ]
   },
   "resources/css/frontend.css": {
-    "file": "assets/frontend-zytGg8pi.css",
+    "file": "assets/frontend-DPK9QWqA.css",
     "src": "resources/css/frontend.css",
     "isEntry": true,
     "name": "frontend",
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/addon.js": {
-    "file": "assets/addon-BnOiDOJ6.js",
+    "file": "assets/addon-JPHJOQtE.js",
     "name": "addon",
     "src": "resources/js/addon.js",
     "isEntry": true,
@@ -46,7 +46,7 @@
     ]
   },
   "resources/js/editor-window.js": {
-    "file": "assets/editor-window-Bfk1_-KI.js",
+    "file": "assets/editor-window-B6xCnCXt.js",
     "name": "editor-window",
     "src": "resources/js/editor-window.js",
     "isEntry": true,
@@ -56,13 +56,13 @@
     ]
   },
   "resources/js/frontend.js": {
-    "file": "assets/frontend-Mmrzs43I.js",
+    "file": "assets/frontend-C31Ej149.js",
     "name": "frontend",
     "src": "resources/js/frontend.js",
     "isEntry": true
   },
   "resources/js/gutenberg/mount.jsx": {
-    "file": "assets/mount-p0dBHi2Q.js",
+    "file": "assets/mount-DPPECpSc.js",
     "name": "mount",
     "src": "resources/js/gutenberg/mount.jsx",
     "isDynamicEntry": true,
@@ -74,7 +74,7 @@
       "node_modules/@wordpress/latex-to-mathml/build-module/index.mjs"
     ],
     "css": [
-      "assets/mount-CF0eq6Kd.css"
+      "assets/mount-CN9I6mcw.css"
     ]
   }
 }
