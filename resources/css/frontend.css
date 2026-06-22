@@ -43,7 +43,11 @@
 
 .sgb-content > .alignfull,
 .site-content.sgb-content > .alignfull {
-    grid-column: wide;
+    grid-column: 1 / -1;
+    width: 100vw;
+    max-width: none;
+    margin-inline-start: calc(50% - 50vw);
+    margin-inline-end: calc(50% - 50vw);
 }
 
 .sgb-content > :where(.wp-block-columns, .wp-block-group) {
@@ -56,7 +60,32 @@
 
 .sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull),
 .site-content.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull) {
-    grid-column: wide;
+    grid-column: 1 / -1;
+    width: 100vw;
+    max-width: none;
+    margin-inline-start: calc(50% - 50vw);
+    margin-inline-end: calc(50% - 50vw);
+}
+
+.sgb-content :where(.wp-block-cover__inner-container) {
+    width: 100%;
+    z-index: 1;
+}
+
+.sgb-content :where(.is-layout-constrained) > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+    max-width: var(--wp--style--global--content-size);
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+}
+
+.sgb-content :where(.is-layout-constrained) > .alignwide {
+    max-width: var(--wp--style--global--wide-size);
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+}
+
+.sgb-content :where(.is-layout-constrained) > .alignfull {
+    max-width: none;
 }
 
 .sgb-content :where(.is-layout-flow, .is-layout-constrained, .wp-block-group, .wp-block-column) > * {

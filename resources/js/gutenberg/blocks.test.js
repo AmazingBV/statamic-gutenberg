@@ -1,6 +1,9 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { WIDE_FULL_ALIGNMENTS, withWideFullAlignSupport } from './blockSupport';
+import {
+    WIDE_FULL_ALIGNMENTS,
+    withWideFullAlignSupport,
+} from './blockSupport';
 
 describe('registerGutenbergBlocks', () => {
     it('enables experimental and form core blocks before registering block-library blocks', () => {
@@ -34,8 +37,12 @@ describe('registerGutenbergBlocks', () => {
         expect(withWideFullAlignSupport({ supports: { align: 'center' } }).supports.align).toEqual(['center', 'wide', 'full']);
         expect(withWideFullAlignSupport({ supports: { align: ['left', 'wide'] } }).supports.align).toEqual(['left', 'wide', 'full']);
 
-        const settings = { supports: { align: true } };
-        expect(withWideFullAlignSupport(settings)).toBe(settings);
+        const settings = withWideFullAlignSupport({ supports: { align: true } });
+        expect(settings.supports.align).toBe(true);
+        expect(settings.attributes.align).toEqual({
+            type: 'string',
+            enum: ['left', 'center', 'right', 'wide', 'full', ''],
+        });
     });
 
     it('adds editor wrapper styles for group flex and grid layouts', () => {

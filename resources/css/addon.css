@@ -795,6 +795,22 @@
     z-index: 1;
 }
 
+.sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-constrained) > :where(:not(.alignleft):not(.alignright):not(.alignfull)) {
+    max-width: var(--wp--style--global--content-size);
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+}
+
+.sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-constrained) > .alignwide {
+    max-width: var(--wp--style--global--wide-size);
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+}
+
+.sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-constrained) > .alignfull {
+    max-width: none;
+}
+
 .sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text {
     direction: ltr;
     display: grid;

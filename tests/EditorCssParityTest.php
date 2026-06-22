@@ -22,6 +22,10 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
         $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * + *', $css);
+        $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-constrained) > :where(:not(.alignleft):not(.alignright):not(.alignfull))', $css);
+        $this->assertStringContainsString('max-width: var(--wp--style--global--content-size)', $css);
+        $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-constrained) > .alignwide', $css);
+        $this->assertStringContainsString('max-width: var(--wp--style--global--wide-size)', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .sgb-core-fallback', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text', $css);
@@ -40,6 +44,9 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("@wordpress/block-library/build-style/theme.css", $editor);
         $this->assertStringContainsString('alignWide: true', $editor);
         $this->assertStringContainsString('supportsLayout: true', $editor);
+        $this->assertStringContainsString('__unstableIsBlockBasedTheme: false', $editor);
+        $this->assertStringContainsString('const ROOT_BLOCK_LAYOUT = {', $editor);
+        $this->assertStringContainsString('<BlockList layout={ROOT_BLOCK_LAYOUT} />', $editor);
         $this->assertStringContainsString("import '@wordpress/format-library';", $editor);
         $this->assertStringContainsString('hasFixedToolbar: false', $editor);
         $this->assertStringContainsString('inserterMediaCategories: []', $editor);

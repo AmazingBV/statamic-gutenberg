@@ -59,6 +59,29 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-video"', $rendered);
     }
 
+    public function test_it_applies_constrained_layout_attributes_to_cover_inner_blocks(): void
+    {
+        $html = '<!-- wp:cover {"align":"full","layout":{"type":"constrained","contentSize":"640px","wideSize":"980px"}} --><div class="wp-block-cover alignfull"><div class="wp-block-cover__inner-container"><!-- wp:paragraph --><p>Cover title</p><!-- /wp:paragraph --></div></div><!-- /wp:cover -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-cover alignfull"', $rendered);
+        $this->assertStringContainsString('class="wp-block-cover__inner-container is-layout-constrained wp-block-cover-is-layout-constrained"', $rendered);
+        $this->assertStringContainsString('style="--wp--style--global--content-size: 640px; --wp--style--global--wide-size: 980px"', $rendered);
+        $this->assertStringContainsString('<p>Cover title</p>', $rendered);
+    }
+
+    public function test_it_applies_constrained_layout_attributes_to_group_blocks(): void
+    {
+        $html = '<!-- wp:group {"layout":{"type":"constrained","contentSize":"640px","wideSize":"980px"}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained"', $rendered);
+        $this->assertStringContainsString('style="--wp--style--global--content-size: 640px; --wp--style--global--wide-size: 980px"', $rendered);
+        $this->assertStringContainsString('<p>Inner</p>', $rendered);
+    }
+
     public function test_it_removes_transient_blob_media_urls_from_persisted_markup(): void
     {
         $html = '<!-- wp:cover {"url":"blob:https://site.test/temp"} --><div class="wp-block-cover"><img class="wp-block-cover__image-background" src="blob:https://site.test/temp"><p>Cover</p></div><!-- /wp:cover -->';

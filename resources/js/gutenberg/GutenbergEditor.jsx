@@ -40,6 +40,11 @@ registerGutenbergBlocks();
 
 const CONTENT_SIZE = '760px';
 const WIDE_SIZE = '1120px';
+const ROOT_BLOCK_LAYOUT = {
+    type: 'default',
+    contentSize: CONTENT_SIZE,
+    wideSize: WIDE_SIZE,
+};
 
 const COLORS = [
     { name: 'Black', slug: 'black', color: '#111827' },
@@ -73,6 +78,7 @@ const GRADIENTS = [
 const EDITOR_THEME_SETTINGS = {
     alignWide: true,
     supportsLayout: true,
+    __unstableIsBlockBasedTheme: false,
     maxWidth: 760,
     imageDefaultSize: 'full',
     imageSizes: [
@@ -648,7 +654,7 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                                     <WritingFlow>
                                         <ObserveTyping>
                                             <div className="sgb-canvas" ref={editorContentRef}>
-                                                <BlockList />
+                                                <BlockList layout={ROOT_BLOCK_LAYOUT} />
                                             </div>
                                         </ObserveTyping>
                                     </WritingFlow>

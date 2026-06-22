@@ -124,7 +124,7 @@ class BlockRenderer
         $html = trim($this->sanitize($block->renderableHtml(), $options));
 
         if ($html !== '') {
-            return $html;
+            return $this->applyStaticLayoutAttributes($block, $html);
         }
 
         if (! CoreBlocks::hasRuntimeFallback($block->name())) {
@@ -473,12 +473,15 @@ class BlockRenderer
     {
         $layout = $block->attribute('layout', []);
         $classes = [$baseClass];
-        $styles = [];
+        $styles = $this->layoutVariableStyles(is_array($layout) ? $layout : []);
 
         if ($baseClass === 'wp-block-group' && is_array($layout)) {
             $type = (string) ($layout['type'] ?? '');
 
-            if ($type === 'flex') {
+            if ($type === 'constrained') {
+                $classes[] = 'is-layout-constrained';
+                $classes[] = 'wp-block-group-is-layout-constrained';
+            } elseif ($type === 'flex') {
                 $classes[] = 'is-layout-flex';
                 $classes[] = 'wp-block-group-is-layout-flex';
                 $styles[] = 'display: flex';
@@ -521,6 +524,96 @@ class BlockRenderer
         $attributes['style'] = $this->mergeStyles($attributes['style'] ?? '', implode('; ', $styles));
 
         return $attributes;
+    }
+
+    private function applyStaticLayoutAttributes(Block $block, string $html): string
+    {
+        $layout = $block->attribute('layout', []);
+
+        if (! is_array($layout)) {
+            return $html;
+        }
+
+        return match ($block->name()) {
+            'core/cover' => $this->applyCoverLayoutAttributes($html, $layout),
+            default => $html,
+        };
+    }
+
+    private function applyCoverLayoutAttributes(string $html, array $layout): string
+    {
+        if (($layout['type'] ?? '') !== 'constrained' || trim($html) === '' || ! class_exists(DOMDocument::class)) {
+            return $html;
+        }
+
+        $document = $this->loadFragment($html);
+        $wrapper = $document->getElementById('__statamic_gutenberg_fragment__');
+
+        if (! $wrapper) {
+            return $html;
+        }
+
+        foreach ($wrapper->childNodes as $child) {
+            if (! $child instanceof DOMElement || ! $this->elementHasClass($child, 'wp-block-cover')) {
+                continue;
+            }
+
+            foreach ($child->getElementsByTagName('div') as $innerContainer) {
+                if (! $innerContainer instanceof DOMElement || ! $this->elementHasClass($innerContainer, 'wp-block-cover__inner-container')) {
+                    continue;
+                }
+
+                $this->addClasses($innerContainer, ['is-layout-constrained', 'wp-block-cover-is-layout-constrained']);
+                $this->addLayoutVariableStyles($innerContainer, $layout);
+
+                return $this->fragmentHtml($document, $wrapper);
+            }
+        }
+
+        return $html;
+    }
+
+    private function layoutVariableStyles(array $layout): array
+    {
+        $styles = [];
+        $contentSize = $this->safeLayoutSize($layout['contentSize'] ?? null);
+        $wideSize = $this->safeLayoutSize($layout['wideSize'] ?? null);
+
+        if ($contentSize !== null) {
+            $styles[] = '--wp--style--global--content-size: '.$contentSize;
+        }
+
+        if ($wideSize !== null) {
+            $styles[] = '--wp--style--global--wide-size: '.$wideSize;
+        }
+
+        return $styles;
+    }
+
+    private function addLayoutVariableStyles(DOMElement $element, array $layout): void
+    {
+        $styles = implode('; ', $this->layoutVariableStyles($layout));
+
+        if ($styles === '') {
+            return;
+        }
+
+        $element->setAttribute('style', $this->mergeStyles($element->getAttribute('style'), $styles));
+    }
+
+    private function safeLayoutSize(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '' || preg_match('/(?:url|expression|javascript|;|{|}|<|>)/i', $value)) {
+            return null;
+        }
+
+        return preg_match('/^[a-z0-9_.,%()+\-*\/\s]+$/i', $value) ? $value : null;
     }
 
     private function cssJustification(string $value): string
@@ -869,6 +962,11 @@ class BlockRenderer
     private function addClasses(DOMElement $element, array $classes): void
     {
         $element->setAttribute('class', $this->mergeClasses($element->getAttribute('class'), $classes));
+    }
+
+    private function elementHasClass(DOMElement $element, string $class): bool
+    {
+        return in_array($class, preg_split('/\s+/', trim($element->getAttribute('class'))) ?: [], true);
     }
 
     private function mergeClasses(string $existing, array $classes): string

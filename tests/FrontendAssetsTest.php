@@ -20,7 +20,16 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('.sgb-content :where(ul.wp-block-list)', $css);
         $this->assertStringContainsString('.site-content.sgb-content > .alignfull', $css);
         $this->assertStringContainsString('.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull)', $css);
+        $this->assertStringContainsString('grid-column: 1 / -1', $css);
+        $this->assertStringContainsString('width: 100vw', $css);
+        $this->assertStringContainsString('max-width: none', $css);
+        $this->assertStringContainsString('margin-inline-start: calc(50% - 50vw)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.is-layout-constrained) > :where(:not(.alignleft):not(.alignright):not(.alignfull))', $css);
+        $this->assertStringContainsString('max-width: var(--wp--style--global--content-size)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.is-layout-constrained) > .alignwide', $css);
+        $this->assertStringContainsString('max-width: var(--wp--style--global--wide-size)', $css);
         $this->assertStringNotContainsString('grid-column: full !important', $css);
+        $this->assertStringNotContainsString(".site-content.sgb-content > .alignfull {\n    grid-column: wide;", $css);
         $this->assertStringContainsString('.sgb-content :where(.sgb-core-fallback)', $css);
         $this->assertStringContainsString('.sgb-lightbox', $css);
     }
