@@ -13,7 +13,14 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('@wordpress/block-library/build-style/style.css', $css);
         $this->assertStringContainsString('@wordpress/block-library/build-style/theme.css', $css);
         $this->assertStringContainsString('.sgb-content :where(.is-layout-grid)', $css);
+        $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', $css);
+        $this->assertStringContainsString('.site-content.sgb-content > * + *', $css);
+        $this->assertStringContainsString('margin-block-start: 0 !important', $css);
+        $this->assertStringContainsString('.sgb-content :where(.is-layout-flex, .is-layout-grid) > * + *', $css);
         $this->assertStringContainsString('.sgb-content :where(ul.wp-block-list)', $css);
+        $this->assertStringContainsString('.site-content.sgb-content > .alignfull', $css);
+        $this->assertStringContainsString('.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull)', $css);
+        $this->assertStringNotContainsString('grid-column: full !important', $css);
         $this->assertStringContainsString('.sgb-content :where(.sgb-core-fallback)', $css);
         $this->assertStringContainsString('.sgb-lightbox', $css);
     }

@@ -412,6 +412,11 @@
     grid-template-columns: minmax(0, 1fr) 360px;
 }
 
+.sgb-editor .block-editor-inserter__menu .block-editor-tabbed-sidebar__tablist > .block-editor-tabbed-sidebar__tab:nth-child(3),
+.sgb-editor .block-editor-inserter__menu [role="tablist"] > [role="tab"]:nth-child(3) {
+    display: none;
+}
+
 .sgb-editor__stage {
     min-width: 0;
     min-height: 0;
@@ -502,7 +507,27 @@
 }
 
 .sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns, .wp-block-group) {
+    width: 100%;
+}
+
+.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns.alignwide, .wp-block-group.alignwide) {
+    grid-column: wide;
+}
+
+.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns.alignfull, .wp-block-group.alignfull) {
     grid-column: full;
+}
+
+.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion, .wp-block-columns, .wp-block-group):not(.has-text-align-center):not(.has-text-align-right) {
+    text-align: left;
+}
+
+.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion, .wp-block-columns, .wp-block-group) {
+    justify-self: stretch;
+}
+
+.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion) {
+    margin-inline: 0;
     width: 100%;
 }
 
@@ -912,6 +937,15 @@
     margin-block-start: var(--wp--style--block-gap);
 }
 
+.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * {
+    margin-block-start: 0 !important;
+    margin-block-end: 0 !important;
+}
+
+.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * + * {
+    margin-block-start: 0 !important;
+}
+
 .sgb-editor--fullscreen .sgb-page-frame :is(.is-layout-flex) {
     align-items: flex-start;
     display: flex;
@@ -943,6 +977,7 @@
 .sgb-editor .sgb-page-frame :is(.is-layout-grid) {
     display: grid;
     gap: var(--wp--style--block-gap);
+    grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
     align-items: flex-start;
 }
 

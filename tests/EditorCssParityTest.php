@@ -20,6 +20,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-list li.block-editor-block-list__block', $css);
         $this->assertStringContainsString('list-style: inherit', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
+        $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * + *', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .sgb-core-fallback', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text', $css);
@@ -38,11 +40,53 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("@wordpress/block-library/build-style/theme.css", $editor);
         $this->assertStringContainsString('alignWide: true', $editor);
         $this->assertStringContainsString('supportsLayout: true', $editor);
+        $this->assertStringContainsString("import '@wordpress/format-library';", $editor);
+        $this->assertStringContainsString('hasFixedToolbar: false', $editor);
+        $this->assertStringContainsString('inserterMediaCategories: []', $editor);
+        $this->assertStringContainsString('__unstableContentRef={editorContentRef}', $editor);
         $this->assertStringContainsString("contentSize: CONTENT_SIZE", $editor);
         $this->assertStringContainsString("wideSize: WIDE_SIZE", $editor);
         $this->assertStringContainsString("blockGap: true", $editor);
+        $this->assertStringContainsString('.block-editor-tabbed-sidebar__tab:nth-child(3)', $css);
         $this->assertStringNotContainsString('sgb-page-title', $css.$editor);
         $this->assertStringContainsString('<h1>Gutenberg Editor</h1>', $window);
         $this->assertStringNotContainsString('title={payload.title || title}', $window);
+    }
+
+    public function test_editor_keeps_default_full_width_blocks_inside_the_content_grid(): void
+    {
+        $css = file_get_contents(__DIR__.'/../resources/css/addon.css');
+
+        $this->assertStringContainsString(
+            '.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns, .wp-block-group) {',
+            $css
+        );
+        $this->assertStringContainsString(
+            '.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns.alignwide, .wp-block-group.alignwide)',
+            $css
+        );
+        $this->assertStringContainsString(
+            '.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion, .wp-block-columns, .wp-block-group)',
+            $css
+        );
+        $this->assertStringContainsString(
+            '.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion) {',
+            $css
+        );
+        $this->assertStringContainsString('width: 100%', $css);
+        $this->assertStringNotContainsString(
+            ".sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns, .wp-block-group) {\n    grid-column: full;",
+            $css
+        );
+    }
+
+    public function test_file_media_uploads_fall_back_to_file_assets_when_wordpress_passes_no_allowed_types(): void
+    {
+        $editor = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergEditor.jsx');
+
+        $this->assertStringContainsString("values.includes('*')", $editor);
+        $this->assertStringContainsString("type.startsWith('application/')", $editor);
+        $this->assertStringContainsString("requestedViaMediaUpload ? 'file' : 'image'", $editor);
+        $this->assertStringContainsString("typeFromAllowedTypes(allowedTypes) || 'file'", $editor);
     }
 }

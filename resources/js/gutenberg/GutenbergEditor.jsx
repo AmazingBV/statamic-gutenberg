@@ -33,6 +33,7 @@ import '@wordpress/block-editor/build-style/content.css';
 import '@wordpress/block-library/build-style/editor.css';
 import '@wordpress/block-library/build-style/style.css';
 import '@wordpress/block-library/build-style/theme.css';
+import '@wordpress/format-library';
 
 installStatamicApiFetchFallbacks(apiFetch);
 registerGutenbergBlocks();
@@ -191,6 +192,8 @@ const BLOCK_ASSET_TYPES = {
 function typeFromAllowedTypes(allowedTypes = []) {
     const values = Array.isArray(allowedTypes)
         ? allowedTypes.map((type) => String(type).replace(/^mime:/, '').toLowerCase())
+        : allowedTypes
+            ? [String(allowedTypes).replace(/^mime:/, '').toLowerCase()]
         : [];
 
     if (values.includes('audio')) {
@@ -205,7 +208,11 @@ function typeFromAllowedTypes(allowedTypes = []) {
         return 'image';
     }
 
-    if (values.includes('file') || values.includes('application')) {
+    if (
+        values.includes('*')
+        || values.includes('file')
+        || values.some((type) => type === 'application' || type.startsWith('application/'))
+    ) {
         return 'file';
     }
 
@@ -281,6 +288,7 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
     const [assetsUploading, setAssetsUploading] = useState(false);
     const mediaPickerCallbackRef = useRef(null);
     const uploadInputRef = useRef(null);
+    const editorContentRef = useRef(null);
     const selectedBlock = useSelect(
         (select) => select(blockEditorStore).getSelectedBlock(),
         [],
@@ -353,9 +361,11 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
     }, []);
 
     const openAssetPicker = useCallback((options = {}) => {
+        const requestedViaMediaUpload = Object.prototype.hasOwnProperty.call(options, 'allowedTypes')
+            || typeof options.onSelect === 'function';
         const type = typeFromAllowedTypes(options.allowedTypes)
             || supportedTypeForBlock(selectedBlock?.name)
-            || 'image';
+            || (requestedViaMediaUpload ? 'file' : 'image');
 
         mediaPickerCallbackRef.current = typeof options.onSelect === 'function'
             ? {
@@ -475,7 +485,8 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
     const settings = useMemo(() => ({
         ...EDITOR_THEME_SETTINGS,
         allowedBlockTypes,
-        hasFixedToolbar: true,
+        hasFixedToolbar: false,
+        inserterMediaCategories: [],
         __experimentalCanUserUseUnfilteredHTML: false,
         mediaUpload: async ({ allowedTypes, filesList, onFileChange, onError }) => {
             try {
@@ -633,10 +644,10 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                     <div className="sgb-editor__workspace">
                         <main className="sgb-editor__stage">
                             <div className="sgb-page-frame">
-                                <BlockTools>
+                                <BlockTools __unstableContentRef={editorContentRef}>
                                     <WritingFlow>
                                         <ObserveTyping>
-                                            <div className="sgb-canvas">
+                                            <div className="sgb-canvas" ref={editorContentRef}>
                                                 <BlockList />
                                             </div>
                                         </ObserveTyping>
