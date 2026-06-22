@@ -61,6 +61,50 @@ return [
 ];
 ```
 
+Optional Gutenberg theme settings in the Statamic project:
+
+```bash
+mkdir -p resources/vendor/statamic-gutenberg
+$EDITOR resources/vendor/statamic-gutenberg/theme.json
+```
+
+The add-on reads `resources/vendor/statamic-gutenberg/theme.json` when it exists. Settings and styles from that file are applied to both the Gutenberg editor and the frontend output generated through `{{ gutenberg:styles }}`. If the file is missing, the add-on uses its built-in defaults and adds no extra theme CSS.
+
+Theme files referenced from `theme.json` can live next to that file. For example:
+
+```text
+resources/vendor/statamic-gutenberg/theme.json
+resources/vendor/statamic-gutenberg/assets/fonts/proxima-nova/proxima-nova-400-normal.woff2
+```
+
+Reference those files with WordPress-style relative URLs:
+
+```json
+{
+    "settings": {
+        "typography": {
+            "fontFamilies": [
+                {
+                    "name": "Proxima Nova",
+                    "slug": "proxima-nova",
+                    "fontFamily": "\"Proxima Nova\"",
+                    "fontFace": [
+                        {
+                            "fontFamily": "\"Proxima Nova\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "400",
+                            "src": ["file:./assets/fonts/proxima-nova/proxima-nova-400-normal.woff2"]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+```
+
+The add-on serves `file:./...` assets from `resources/vendor/statamic-gutenberg` through `/vendor/statamic-gutenberg/theme/...`.
+
 Add the frontend assets to the site layout:
 
 ```antlers

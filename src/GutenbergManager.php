@@ -13,6 +13,7 @@ class GutenbergManager
         private BlockRegistry $registry,
         private BlockParser $parser,
         private BlockRenderer $renderer,
+        private ThemeJson $themeJson,
     ) {
         //
     }
@@ -41,9 +42,15 @@ class GutenbergManager
 
     public function frontendStyles(): HtmlString
     {
-        return new HtmlString(collect($this->frontendStyleUrls())
+        $styles = collect($this->frontendStyleUrls())
             ->map(fn (string $url) => sprintf('<link rel="stylesheet" href="%s">', e($url)))
-            ->implode("\n"));
+            ->all();
+
+        if ($themeCss = $this->themeJson->frontendCss()) {
+            $styles[] = sprintf('<style data-statamic-gutenberg-theme-json>%s</style>', $themeCss);
+        }
+
+        return new HtmlString(collect($styles)->filter()->implode("\n"));
     }
 
     public function frontendScripts(): HtmlString
@@ -74,6 +81,11 @@ class GutenbergManager
     public function allowedBlocks(?array $fieldAllowed = null): array
     {
         return $this->registry->allowedBlocks($fieldAllowed);
+    }
+
+    public function editorTheme(): ?array
+    {
+        return $this->themeJson->editorPayload();
     }
 
     private function assetUrls(string $entry, string $type): array

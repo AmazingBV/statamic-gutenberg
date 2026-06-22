@@ -76,6 +76,7 @@ class Gutenberg extends Fieldtype
             'iconsUrl' => cp_route('amazingbv.statamic-gutenberg.icons.index'),
             'editorUrl' => cp_route('amazingbv.statamic-gutenberg.editor'),
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
+            'themeJson' => app(GutenbergManager::class)->editorTheme(),
         ];
     }
 

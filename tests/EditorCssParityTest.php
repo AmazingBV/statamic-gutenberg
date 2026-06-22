@@ -46,7 +46,10 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('supportsLayout: true', $editor);
         $this->assertStringContainsString('__unstableIsBlockBasedTheme: false', $editor);
         $this->assertStringContainsString('const ROOT_BLOCK_LAYOUT = {', $editor);
-        $this->assertStringContainsString('<BlockList layout={ROOT_BLOCK_LAYOUT} />', $editor);
+        $this->assertStringContainsString('applyThemeJsonSettings', $editor);
+        $this->assertStringContainsString('meta.themeJson', $editor);
+        $this->assertStringContainsString('data-statamic-gutenberg-theme-json', $editor);
+        $this->assertStringContainsString('<BlockList layout={rootBlockLayout} />', $editor);
         $this->assertStringContainsString("import '@wordpress/format-library';", $editor);
         $this->assertStringContainsString('hasFixedToolbar: false', $editor);
         $this->assertStringContainsString('inserterMediaCategories: []', $editor);

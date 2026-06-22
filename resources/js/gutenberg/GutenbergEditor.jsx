@@ -160,6 +160,170 @@ const EDITOR_THEME_SETTINGS = {
     },
 };
 
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && ! Array.isArray(value);
+}
+
+function clonePlain(value) {
+    if (Array.isArray(value)) {
+        return value.map(clonePlain);
+    }
+
+    if (isPlainObject(value)) {
+        return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, clonePlain(item)]));
+    }
+
+    return value;
+}
+
+function deepMerge(target, source) {
+    const output = clonePlain(target);
+
+    if (! isPlainObject(source)) {
+        return output;
+    }
+
+    Object.entries(source).forEach(([key, value]) => {
+        if (isPlainObject(value) && isPlainObject(output[key])) {
+            output[key] = deepMerge(output[key], value);
+            return;
+        }
+
+        output[key] = clonePlain(value);
+    });
+
+    return output;
+}
+
+function presetList(value) {
+    if (Array.isArray(value)) {
+        return value.filter(isPlainObject);
+    }
+
+    if (isPlainObject(value)) {
+        return Object.values(value).flatMap(presetList);
+    }
+
+    return [];
+}
+
+function ensurePath(target, keys) {
+    let current = target;
+
+    keys.forEach((key) => {
+        if (! isPlainObject(current[key])) {
+            current[key] = {};
+        }
+
+        current = current[key];
+    });
+
+    return current;
+}
+
+function assignThemePreset(settings, path, presets) {
+    if (! presets.length) {
+        return;
+    }
+
+    const target = ensurePath(settings.__experimentalFeatures, path);
+    target.theme = presets;
+    target.default = target.default || [];
+}
+
+function applyThemeJsonSettings(baseSettings, themeJson) {
+    if (! isPlainObject(themeJson) || ! isPlainObject(themeJson.settings)) {
+        return baseSettings;
+    }
+
+    const next = deepMerge(baseSettings, {});
+    const themeSettings = themeJson.settings;
+    next.__experimentalFeatures = deepMerge(next.__experimentalFeatures || {}, themeSettings);
+
+    const color = isPlainObject(themeSettings.color) ? themeSettings.color : {};
+    const palette = presetList(color.palette);
+    const gradients = presetList(color.gradients);
+
+    if (palette.length) {
+        next.colors = palette;
+        assignThemePreset(next, ['color', 'palette'], palette);
+    }
+
+    if (gradients.length) {
+        next.gradients = gradients;
+        assignThemePreset(next, ['color', 'gradients'], gradients);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(color, 'custom')) {
+        next.disableCustomColors = color.custom === false;
+        ensurePath(next.__experimentalFeatures, ['color']).custom = color.custom !== false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(color, 'customGradient')) {
+        next.disableCustomGradients = color.customGradient === false;
+        ensurePath(next.__experimentalFeatures, ['color']).customGradient = color.customGradient !== false;
+    }
+
+    const typography = isPlainObject(themeSettings.typography) ? themeSettings.typography : {};
+    const fontSizes = presetList(typography.fontSizes);
+    const fontFamilies = presetList(typography.fontFamilies);
+
+    if (fontSizes.length) {
+        next.fontSizes = fontSizes;
+        assignThemePreset(next, ['typography', 'fontSizes'], fontSizes);
+    }
+
+    if (fontFamilies.length) {
+        assignThemePreset(next, ['typography', 'fontFamilies'], fontFamilies);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(typography, 'customFontSize')) {
+        next.disableCustomFontSizes = typography.customFontSize === false;
+        ensurePath(next.__experimentalFeatures, ['typography']).customFontSize = typography.customFontSize !== false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(typography, 'lineHeight')) {
+        next.enableCustomLineHeight = typography.lineHeight !== false;
+    }
+
+    const spacing = isPlainObject(themeSettings.spacing) ? themeSettings.spacing : {};
+    const spacingSizes = presetList(spacing.spacingSizes);
+
+    if (spacingSizes.length) {
+        assignThemePreset(next, ['spacing', 'spacingSizes'], spacingSizes);
+    }
+
+    if (Array.isArray(spacing.units)) {
+        next.enableCustomUnits = spacing.units;
+        ensurePath(next.__experimentalFeatures, ['spacing']).units = spacing.units;
+    }
+
+    const layout = isPlainObject(themeSettings.layout) ? themeSettings.layout : {};
+    const layoutFeatures = ensurePath(next.__experimentalFeatures, ['layout']);
+
+    if (layout.contentSize) {
+        layoutFeatures.contentSize = layout.contentSize;
+        next.maxWidth = Number.parseInt(layout.contentSize, 10) || next.maxWidth;
+    }
+
+    if (layout.wideSize) {
+        layoutFeatures.wideSize = layout.wideSize;
+    }
+
+    if (themeJson.css) {
+        next.styles = [
+            ...(Array.isArray(next.styles) ? next.styles : []),
+            { css: themeJson.css },
+        ];
+    }
+
+    return next;
+}
+
+function layoutSizeFromSettings(settings, key, fallback) {
+    return settings.__experimentalFeatures?.layout?.[key] || fallback;
+}
+
 function sameOriginUrl(value) {
     const url = new URL(value, window.location.origin);
 
@@ -278,7 +442,7 @@ function registerStatamicMediaUploadFilter() {
 
 registerStatamicMediaUploadFilter();
 
-export function GutenbergEditor({ value, config, meta, onChange, variant = 'field' }) {
+export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 'field' }) {
     if (typeof window !== 'undefined' && meta?.iconsUrl) {
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
@@ -488,7 +652,7 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
 
     const isFullscreen = variant === 'fullscreen';
 
-    const settings = useMemo(() => ({
+    const settings = useMemo(() => applyThemeJsonSettings({
         ...EDITOR_THEME_SETTINGS,
         allowedBlockTypes,
         hasFixedToolbar: false,
@@ -508,7 +672,13 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                 onError?.(error.message);
             }
         },
-    }), [allowedBlockTypes, assetFolder, uploadFiles]);
+    }, meta.themeJson), [allowedBlockTypes, assetFolder, uploadFiles, meta.themeJson]);
+
+    const rootBlockLayout = useMemo(() => ({
+        ...ROOT_BLOCK_LAYOUT,
+        contentSize: layoutSizeFromSettings(settings, 'contentSize', CONTENT_SIZE),
+        wideSize: layoutSizeFromSettings(settings, 'wideSize', WIDE_SIZE),
+    }), [settings]);
 
     const toolbar = (
         <div className="sgb-toolbar">
@@ -628,10 +798,14 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
             </div>
         </div>
     ) : null;
+    const themeJsonCss = typeof meta.themeJson?.css === 'string' ? meta.themeJson.css : '';
 
     return (
         <SlotFillProvider>
             <div className={`sgb-editor sgb-editor--${variant}`}>
+                {themeJsonCss ? (
+                    <style data-statamic-gutenberg-theme-json>{themeJsonCss}</style>
+                ) : null}
                 <BlockEditorProvider
                     value={blocks}
                     onInput={commitBlocks}
@@ -648,7 +822,7 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                                     <WritingFlow>
                                         <ObserveTyping>
                                             <div className="sgb-canvas" ref={editorContentRef}>
-                                                <BlockList layout={ROOT_BLOCK_LAYOUT} />
+                                                <BlockList layout={rootBlockLayout} />
                                             </div>
                                         </ObserveTyping>
                                     </WritingFlow>

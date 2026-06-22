@@ -44,6 +44,8 @@ return [
 
     'icons_path' => resource_path('statamic-gutenberg/icons.php'),
 
+    'theme_json_path' => resource_path('vendor/statamic-gutenberg/theme.json'),
+
     'icons' => [],
 
     'render_mode' => 'blade',

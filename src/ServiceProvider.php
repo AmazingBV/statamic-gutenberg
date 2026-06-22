@@ -6,7 +6,9 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\Sanitizer;
+use Amazingbv\StatamicGutenberg\Http\Controllers\ThemeAssetController;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
+use Illuminate\Support\Facades\Route;
 use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
@@ -28,12 +30,17 @@ class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(Sanitizer::class);
         $this->app->singleton(BlockRenderer::class);
         $this->app->singleton(IconRepository::class);
+        $this->app->singleton(ThemeJson::class);
         $this->app->singleton(GutenbergManager::class);
         $this->app->alias(GutenbergManager::class, 'statamic-gutenberg');
     }
 
     public function bootAddon()
     {
+        Route::get('/vendor/statamic-gutenberg/theme/{path}', ThemeAssetController::class)
+            ->where('path', '.*')
+            ->name('statamic-gutenberg.theme-assets');
+
         if (! class_exists('Gutenberg')) {
             class_alias(\Amazingbv\StatamicGutenberg\Facades\Gutenberg::class, 'Gutenberg');
         }
