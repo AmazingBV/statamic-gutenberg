@@ -15,7 +15,7 @@ import {
 import { Button, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
-import { plus, image as imageIcon, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
+import { plus, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
 import {
@@ -524,12 +524,6 @@ export function GutenbergEditor({ value, config, meta, onChange, variant = 'fiel
                             variant="primary"
                         />
                     )}
-                />
-                <Button
-                    icon={imageIcon}
-                    label="Open Statamic assets"
-                    onClick={() => openAssetPicker()}
-                    variant="secondary"
                 />
             </div>
         </div>

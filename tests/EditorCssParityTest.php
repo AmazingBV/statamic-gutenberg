@@ -54,6 +54,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("contentSize: CONTENT_SIZE", $editor);
         $this->assertStringContainsString("wideSize: WIDE_SIZE", $editor);
         $this->assertStringContainsString("blockGap: true", $editor);
+        $this->assertStringNotContainsString('image as imageIcon', $editor);
+        $this->assertStringNotContainsString('label="Open Statamic assets"', $editor);
         $this->assertStringContainsString('.block-editor-tabbed-sidebar__tab:nth-child(3)', $css);
         $this->assertStringNotContainsString('sgb-page-title', $css.$editor);
         $this->assertStringContainsString('<h1>Gutenberg Editor</h1>', $window);
