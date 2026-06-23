@@ -10,7 +10,7 @@ export function parseSerialized(value) {
     try {
         return parse(stripTransientMediaUrls(value));
     } catch (error) {
-        console.warn('Unable to parse Gutenberg content.', error);
+        console.warn('Unable to parse block editor content.', error);
 
         return [];
     }
@@ -20,7 +20,7 @@ export function serializeBlocks(blocks) {
     try {
         return stripTransientMediaUrls(serialize(blocks || []));
     } catch (error) {
-        console.warn('Unable to serialize Gutenberg blocks.', error);
+        console.warn('Unable to serialize block editor blocks.', error);
 
         return '';
     }

@@ -43,7 +43,7 @@ function findEntryTitle() {
         return inputValue;
     }
 
-    return document.querySelector('h1')?.textContent?.trim() || 'Gutenberg Editor';
+    return document.querySelector('h1')?.textContent?.trim() || 'Block Editor';
 }
 
 function payload(nextValue = value.value) {
@@ -88,7 +88,7 @@ async function refreshEditorMeta() {
             meta.patterns = json.data;
         }
     } catch (error) {
-        console.warn('Unable to load Statamic Gutenberg patterns.', error);
+        console.warn('Unable to load block editor patterns.', error);
     }
 
     return meta;
@@ -192,8 +192,8 @@ async function openEditor() {
         editorMeta.value = await refreshEditorMeta();
         renderEditor();
     } catch (error) {
-        console.warn('Unable to open Gutenberg editor overlay.', error);
-        editorError.value = 'Unable to open the Gutenberg editor overlay.';
+        console.warn('Unable to open block editor overlay.', error);
+        editorError.value = 'Unable to open the block editor overlay.';
         closeEditor();
     } finally {
         editorLoading.value = false;
@@ -276,7 +276,7 @@ watch(value, () => {
         <div class="sgb-fieldtype__panel">
             <div class="sgb-fieldtype__summary">
                 <div>
-                    <div class="sgb-fieldtype__eyebrow">Gutenberg</div>
+                    <div class="sgb-fieldtype__eyebrow">Block Editor</div>
                     <div class="sgb-fieldtype__title">Full-size page overlay</div>
                     <div class="sgb-fieldtype__meta">
                         <span>{{ blockCount }} blocks</span>
@@ -291,7 +291,7 @@ watch(value, () => {
                     :disabled="editorLoading"
                     @click="openEditor"
                 >
-                    {{ editorLoading ? 'Opening...' : 'Open Gutenberg editor' }}
+                    {{ editorLoading ? 'Opening...' : 'Open Block Editor' }}
                 </button>
             </div>
 

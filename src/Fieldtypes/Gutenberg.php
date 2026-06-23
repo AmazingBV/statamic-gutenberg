@@ -16,11 +16,11 @@ class Gutenberg extends Fieldtype
     {
         return [
             [
-                'display' => 'Gutenberg',
+                'display' => 'Block Editor',
                 'fields' => [
                     'allowed_blocks' => [
                         'display' => 'Allowed Blocks',
-                        'instructions' => 'Use Gutenberg block names such as core/paragraph or statamic/hero.',
+                        'instructions' => 'Use block names such as core/paragraph or statamic/hero.',
                         'type' => 'list',
                         'default' => config('statamic-gutenberg.allowed_blocks', []),
                     ],

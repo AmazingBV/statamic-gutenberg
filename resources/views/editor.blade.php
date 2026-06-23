@@ -4,7 +4,7 @@
 
     $addon = Addon::get('amazingbv/statamic-gutenberg');
     $addonDirectory = $addon?->directory() ?? base_path('addons/amazingbv/statamic-gutenberg').'/';
-    $pageTitle = $title ?: 'Gutenberg Editor';
+    $pageTitle = $title ?: 'Block Editor';
 @endphp
 
 <!doctype html>

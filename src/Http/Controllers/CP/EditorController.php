@@ -12,7 +12,7 @@ class EditorController extends CpController
     {
         return view('statamic-gutenberg::editor', [
             'channel' => (string) $request->query('channel', ''),
-            'title' => (string) $request->query('title', 'Gutenberg Editor'),
+            'title' => (string) $request->query('title', 'Block Editor'),
         ]);
     }
 }

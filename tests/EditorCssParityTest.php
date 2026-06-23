@@ -65,7 +65,7 @@ class EditorCssParityTest extends TestCase
         $this->assertStringNotContainsString('label="Open Statamic assets"', $editor);
         $this->assertStringContainsString('.block-editor-tabbed-sidebar__tab:nth-child(3)', $css);
         $this->assertStringNotContainsString('sgb-page-title', $css.$editor);
-        $this->assertStringContainsString('<h1>Gutenberg Editor</h1>', $window);
+        $this->assertStringContainsString('<h1>Block Editor</h1>', $window);
         $this->assertStringNotContainsString('title={payload.title || title}', $window);
     }
 

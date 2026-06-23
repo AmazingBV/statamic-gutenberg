@@ -1,4 +1,4 @@
-title: Gutenberg Pattern
+title: Pattern
 tabs:
   main:
     display: Main
@@ -69,7 +69,7 @@ tabs:
             field:
               type: list
               display: Block Types
-              instructions: Optional Gutenberg block names this pattern targets, such as core/post-content.
+              instructions: Optional block names this pattern targets, such as core/post-content.
           -
             handle: post_types
             field:

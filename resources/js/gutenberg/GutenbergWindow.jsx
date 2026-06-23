@@ -178,8 +178,8 @@ export function GutenbergWindow({
 
     const closeWithoutApplying = useCallback(() => {
         const message = value === lastAppliedValue
-            ? 'Close the Gutenberg editor without applying changes?'
-            : 'Close without applying? Your Gutenberg changes will be lost.';
+            ? 'Close the block editor without applying changes?'
+            : 'Close without applying? Your block editor changes will be lost.';
 
         if (window.confirm && ! window.confirm(message)) {
             return;
@@ -197,7 +197,7 @@ export function GutenbergWindow({
         return (
             <div className="sgb-window sgb-window--empty">
                 <div className="sgb-window__empty">
-                    <h1>Open this editor from a Gutenberg field</h1>
+                    <h1>Open this editor from a block editor field</h1>
                     <p>The full-size editor needs field data from the Statamic entry form.</p>
                 </div>
             </div>
@@ -209,7 +209,7 @@ export function GutenbergWindow({
             <header className="sgb-window__header">
                 <div>
                     <div className="sgb-window__eyebrow">{payload.fieldLabel || 'Content'}</div>
-                    <h1>Gutenberg Editor</h1>
+                    <h1>Block Editor</h1>
                 </div>
 
                 <div className="sgb-window__actions">

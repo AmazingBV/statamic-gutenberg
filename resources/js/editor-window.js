@@ -13,7 +13,7 @@ function mountStandaloneEditor() {
         || params.get('channel')
         || window.sessionStorage.getItem('statamic-gutenberg:last-channel')
         || ''
-    const title = root.dataset.title || params.get('title') || document.title || 'Gutenberg Editor'
+    const title = root.dataset.title || params.get('title') || document.title || 'Block Editor'
 
     if (channel) {
         window.sessionStorage.setItem('statamic-gutenberg:last-channel', channel)

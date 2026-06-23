@@ -23,8 +23,8 @@
     },
     "extra": {
         "statamic": {
-            "name": "Statamic Gutenberg",
-            "description": "Statamic Gutenberg addon"
+            "name": "Statamic Block Editor",
+            "description": "Block editor addon for Statamic"
         },
         "laravel": {
             "providers": [
