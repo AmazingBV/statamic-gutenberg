@@ -6,6 +6,8 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\Sanitizer;
+use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
+use Amazingbv\StatamicGutenberg\Http\Controllers\CustomBlockAssetController;
 use Amazingbv\StatamicGutenberg\Http\Controllers\ThemeAssetController;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
@@ -26,10 +28,13 @@ class ServiceProvider extends AddonServiceProvider
 
     public function register()
     {
+        require_once __DIR__.'/Support/helpers.php';
+
         $this->app->singleton(BlockParser::class);
         $this->app->singleton(BlockRegistry::class);
         $this->app->singleton(Sanitizer::class);
         $this->app->singleton(BlockRenderer::class);
+        $this->app->singleton(CustomBlockRepository::class);
         $this->app->singleton(IconRepository::class);
         $this->app->singleton(PatternRepository::class);
         $this->app->singleton(ThemeJson::class);
@@ -51,6 +56,10 @@ class ServiceProvider extends AddonServiceProvider
         Route::get('/vendor/statamic-gutenberg/theme/{path}', ThemeAssetController::class)
             ->where('path', '.*')
             ->name('statamic-gutenberg.theme-assets');
+
+        Route::get('/vendor/statamic-gutenberg/blocks/{path}', CustomBlockAssetController::class)
+            ->where('path', '.*')
+            ->name('statamic-gutenberg.custom-block-assets');
 
         if (! class_exists('Gutenberg')) {
             class_alias(\Amazingbv\StatamicGutenberg\Facades\Gutenberg::class, 'Gutenberg');

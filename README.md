@@ -1,6 +1,6 @@
-# Statamic Gutenberg
+# Statamic Block Editor
 
-Statamic addon for editing and rendering Gutenberg block content in a Laravel + Statamic project.
+Statamic addon for editing and rendering WordPress block editor content in a Laravel + Statamic project.
 
 ## Internal Developer Install
 
@@ -48,13 +48,13 @@ php artisan optimize:clear
 
 The addon should now be available in Statamic as the `gutenberg` fieldtype.
 
-Optional internal Gutenberg pattern management can be installed with:
+Optional internal pattern management can be installed with:
 
 ```bash
 php artisan vendor:publish --tag=statamic-gutenberg-patterns
 ```
 
-This publishes a `gutenberg_patterns` collection, a `gutenberg_pattern_categories` taxonomy, and matching blueprints. Pattern entries use a Gutenberg field for their content. Published entries appear in the editor's standard Patterns tab; entries marked `synced` are inserted as Gutenberg `core/block` references, while `unsynced` entries are inserted as editable copied blocks.
+This publishes a `gutenberg_patterns` collection, a `gutenberg_pattern_categories` taxonomy, and matching blueprints. Pattern entries use a block editor field for their content. Published entries appear in the editor's standard Patterns tab; entries marked `synced` are inserted as `core/block` references, while `unsynced` entries are inserted as editable copied blocks.
 
 Optional icon block source in the Statamic project:
 
@@ -69,14 +69,14 @@ return [
 ];
 ```
 
-Optional Gutenberg theme settings in the Statamic project:
+Optional block editor theme settings in the Statamic project:
 
 ```bash
 mkdir -p resources/vendor/statamic-gutenberg
 $EDITOR resources/vendor/statamic-gutenberg/theme.json
 ```
 
-The add-on reads `resources/vendor/statamic-gutenberg/theme.json` when it exists. Settings and styles from that file are applied to both the Gutenberg editor and the frontend output generated through `{{ gutenberg:styles }}`. If the file is missing, the add-on uses its built-in defaults and adds no extra theme CSS.
+The add-on reads `resources/vendor/statamic-gutenberg/theme.json` when it exists. Settings and styles from that file are applied to both the block editor and the frontend output generated through `{{ gutenberg:styles }}`. If the file is missing, the add-on uses its built-in defaults and adds no extra theme CSS.
 
 Theme files referenced from `theme.json` can live next to that file. For example:
 
@@ -112,6 +112,50 @@ Reference those files with WordPress-style relative URLs:
 ```
 
 The add-on serves `file:./...` assets from `resources/vendor/statamic-gutenberg` through `/vendor/statamic-gutenberg/theme/...`.
+
+## Custom Blocks
+
+Custom blocks live in the Statamic project, not in the add-on:
+
+```text
+resources/vendor/statamic-gutenberg/blocks/custom-slider/block.json
+resources/vendor/statamic-gutenberg/blocks/custom-slider/block-src.js
+resources/vendor/statamic-gutenberg/blocks/custom-slider/block.js
+resources/vendor/statamic-gutenberg/blocks/custom-slider/block.php
+resources/vendor/statamic-gutenberg/blocks/custom-slider/block.css
+resources/vendor/statamic-gutenberg/blocks/custom-slider/view.js
+```
+
+Each block gets its own subdirectory with a WordPress-compatible `block.json`. The add-on discovers all direct child directories with a `block.json` and registers those blocks in the editor. Relative `file:./...` assets are served from `/vendor/statamic-gutenberg/blocks/...`.
+
+Supported `block.json` fields include `name`, `title`, `category`, `icon`, `description`, `attributes`, `supports`, `parent`, `ancestor`, `editorScript`, `script`, `viewScript`, `viewScriptModule`, `editorStyle`, `style`, `viewStyle`, and `render`.
+
+Conventions:
+
+- `block.js` is loaded in the editor when no explicit `editorScript` is set.
+- `block.css` is loaded in both the editor and frontend when no explicit style field is set.
+- `view.js` is loaded on the frontend when no explicit `viewScript` is set.
+- `block.php` is used for frontend rendering when no explicit `render` field is set.
+- `block-src.js` is used as an editor fallback when there is no explicit script field and no `block.js`.
+
+`block.php` receives WordPress-like variables:
+
+```php
+<?php
+
+return '<section'.get_block_wrapper_attributes(['class' => 'custom-slider']).'>'.$content.'</section>';
+```
+
+Available variables are `$attributes`, `$content`, `$block`, `$metadata`, `$renderer`, and `$render_blocks`. Container blocks can use `$render_blocks($childBlock->innerBlocks())` to render nested block content.
+
+An internal custom tabs example can be placed at:
+
+```text
+resources/vendor/statamic-gutenberg/blocks/custom-tabs/
+resources/vendor/statamic-gutenberg/blocks/custom-tab-item/
+```
+
+The parent `amazing/tabs` block uses `block.php` for frontend markup and `view.js` for tab switching. The child `amazing/tab-item` block stores the tab label and nested content.
 
 Add the frontend assets to the site layout:
 

@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg;
 use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
+use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Illuminate\Support\HtmlString;
 
@@ -16,6 +17,7 @@ class GutenbergManager
         private BlockRenderer $renderer,
         private ThemeJson $themeJson,
         private PatternRepository $patterns,
+        private CustomBlockRepository $customBlocks,
     ) {
         //
     }
@@ -44,7 +46,7 @@ class GutenbergManager
 
     public function frontendStyles(): HtmlString
     {
-        $styles = collect($this->frontendStyleUrls())
+        $styles = collect($this->assetUrls('resources/css/frontend.css', 'css'))
             ->map(fn (string $url) => sprintf('<link rel="stylesheet" href="%s">', e($url)))
             ->all();
 
@@ -52,13 +54,24 @@ class GutenbergManager
             $styles[] = sprintf('<style data-statamic-gutenberg-theme-json>%s</style>', $themeCss);
         }
 
+        $styles = [
+            ...$styles,
+            ...collect($this->customBlocks->frontendStyleUrls())
+                ->map(fn (string $url) => sprintf('<link rel="stylesheet" href="%s">', e($url)))
+                ->all(),
+        ];
+
         return new HtmlString(collect($styles)->filter()->implode("\n"));
     }
 
     public function frontendScripts(): HtmlString
     {
-        return new HtmlString(collect($this->frontendScriptUrls())
-            ->map(fn (string $url) => sprintf('<script type="module" src="%s"></script>', e($url)))
+        return new HtmlString(collect($this->frontendScriptAssets())
+            ->map(fn (array $asset) => sprintf(
+                '<script%s src="%s"></script>',
+                ($asset['module'] ?? false) ? ' type="module"' : '',
+                e($asset['src'])
+            ))
             ->implode("\n"));
     }
 
@@ -72,12 +85,38 @@ class GutenbergManager
 
     public function frontendStyleUrls(): array
     {
-        return $this->assetUrls('resources/css/frontend.css', 'css');
+        return array_values(array_unique([
+            ...$this->assetUrls('resources/css/frontend.css', 'css'),
+            ...$this->customBlocks->frontendStyleUrls(),
+        ]));
     }
 
     public function frontendScriptUrls(): array
     {
-        return $this->assetUrls('resources/js/frontend.js', 'js');
+        return collect($this->frontendScriptAssets())
+            ->pluck('src')
+            ->values()
+            ->all();
+    }
+
+    public function editorCustomBlocks(): array
+    {
+        return $this->customBlocks->editorPayload();
+    }
+
+    private function frontendScriptAssets(): array
+    {
+        $assets = collect($this->assetUrls('resources/js/frontend.js', 'js'))
+            ->map(fn (string $url) => ['src' => $url, 'module' => true])
+            ->all();
+
+        return collect([
+            ...$assets,
+            ...$this->customBlocks->frontendScriptAssets(),
+        ])
+            ->unique(fn (array $asset) => (($asset['module'] ?? false) ? 'module:' : 'script:').($asset['src'] ?? ''))
+            ->values()
+            ->all();
     }
 
     public function allowedBlocks(?array $fieldAllowed = null): array

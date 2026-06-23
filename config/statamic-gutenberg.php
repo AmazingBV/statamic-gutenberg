@@ -47,6 +47,8 @@ return [
 
     'theme_json_path' => resource_path('vendor/statamic-gutenberg/theme.json'),
 
+    'custom_blocks_path' => resource_path('vendor/statamic-gutenberg/blocks'),
+
     'patterns' => [
         'collection' => 'gutenberg_patterns',
         'taxonomy' => 'gutenberg_pattern_categories',

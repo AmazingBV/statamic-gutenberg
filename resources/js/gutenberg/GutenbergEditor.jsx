@@ -16,6 +16,7 @@ import { Button, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpr
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 import { plus, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
+import { loadCustomBlockAssets, normalizeCustomBlocks } from './customBlocks';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
 import { applyPatternSettings } from './patternSettings';
@@ -456,6 +457,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         : (typeof window !== 'undefined' && isPlainObject(window.StatamicGutenbergPatterns)
             ? window.StatamicGutenbergPatterns
             : {});
+    const customBlocks = useMemo(() => normalizeCustomBlocks(meta?.customBlocks), [meta]);
 
     if (typeof window !== 'undefined' && isPlainObject(patternSettings)) {
         window.StatamicGutenbergPatterns = patternSettings;
@@ -470,6 +472,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
     const [assetPicker, setAssetPicker] = useState(null);
     const [assetsLoading, setAssetsLoading] = useState(false);
     const [assetsUploading, setAssetsUploading] = useState(false);
+    const [customBlocksReady, setCustomBlocksReady] = useState(() => customBlocks.length === 0);
     const mediaPickerCallbackRef = useRef(null);
     const uploadInputRef = useRef(null);
     const editorContentRef = useRef(null);
@@ -483,6 +486,29 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         () => normalizeAllowedBlocks(config, meta),
         [config, meta],
     );
+
+    useEffect(() => {
+        let cancelled = false;
+
+        if (! customBlocks.length) {
+            setCustomBlocksReady(true);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        setCustomBlocksReady(false);
+
+        loadCustomBlockAssets(customBlocks).finally(() => {
+            if (! cancelled) {
+                setCustomBlocksReady(true);
+            }
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [customBlocks]);
 
     useEffect(() => {
         const nextValue = value || '';
@@ -813,6 +839,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         </div>
     ) : null;
     const themeJsonCss = typeof meta.themeJson?.css === 'string' ? meta.themeJson.css : '';
+
+    if (! customBlocksReady) {
+        return (
+            <SlotFillProvider>
+                <div className={`sgb-editor sgb-editor--${variant}`}>
+                    <div className="sgb-assets__empty"><Spinner /> Loading custom blocks...</div>
+                </div>
+            </SlotFillProvider>
+        );
+    }
 
     return (
         <SlotFillProvider>

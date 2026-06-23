@@ -4,9 +4,12 @@ namespace Amazingbv\StatamicGutenberg\Blocks;
 
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
+use Amazingbv\StatamicGutenberg\Support\BlockWrapperContext;
+use Amazingbv\StatamicGutenberg\Support\WpBlock;
 use DOMDocument;
 use DOMElement;
 use Illuminate\Support\HtmlString;
+use Stringable;
 use Statamic\Facades\Entry;
 use Throwable;
 
@@ -75,7 +78,49 @@ class BlockRenderer
             ])->render();
         }
 
+        if (is_array($definition) && isset($definition['custom_block'])) {
+            return $this->renderCustomBlock($block, $inner, $definition['custom_block'], $options);
+        }
+
         return $this->renderCoreBlock($block, $inner, $options);
+    }
+
+    private function renderCustomBlock(Block $block, string $inner, array $definition, array $options): string
+    {
+        $render = $definition['render'] ?? null;
+
+        if (is_string($render) && is_file($render)) {
+            $attributes = $block->attributes();
+            $content = $inner;
+            $metadata = is_array($definition['metadata'] ?? null) ? $definition['metadata'] : [];
+            $renderer = $this;
+            $wpBlock = new WpBlock($block, $this, $options);
+            $render_blocks = fn (array $blocks): string => $this->renderBlocks($blocks, $options);
+
+            return (string) BlockWrapperContext::withBlock($block, function () use (
+                $render,
+                $attributes,
+                $content,
+                $metadata,
+                $wpBlock,
+                $renderer,
+                $render_blocks
+            ): string {
+                $block = $wpBlock;
+
+                ob_start();
+                $result = include $render;
+                $output = (string) ob_get_clean();
+
+                if (is_string($result) || $result instanceof Stringable) {
+                    return (string) $result;
+                }
+
+                return $output;
+            });
+        }
+
+        return trim($this->sanitize($block->renderableHtml(), $options));
     }
 
     private function renderCoreBlock(Block $block, string $inner, array $options): string
