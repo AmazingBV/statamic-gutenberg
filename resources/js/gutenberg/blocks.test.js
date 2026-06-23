@@ -132,4 +132,24 @@ describe('registerGutenbergBlocks', () => {
         expect(patternSettingsSource).toContain('__experimentalBlockPatternCategories');
         expect(patternSettingsSource).toContain('reusableBlocksForInserter');
     });
+
+    it('adds native-style editor controls for history, list view and code mode', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+        const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');
+
+        expect(source).toContain('HISTORY_LIMIT');
+        expect(source).toContain('undoEdit');
+        expect(source).toContain('redoEdit');
+        expect(source).toContain('onKeyDownCapture={handleEditorKeyDown}');
+        expect(source).toContain("key === 'z'");
+        expect(source).toContain("key === 'y'");
+        expect(source).toContain('sgb-editor__workspace--list-open');
+        expect(source).toContain('sgb-list-view');
+        expect(source).toContain('switchEditorMode');
+        expect(source).toContain('Code editor');
+        expect(source).toContain('Visual editor');
+        expect(source).toContain('sgb-code-editor');
+        expect(windowSource).toContain('value !== lastAppliedValue');
+        expect(windowSource).not.toContain('Close the block editor without applying changes?');
+    });
 });

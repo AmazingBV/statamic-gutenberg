@@ -12,10 +12,19 @@ import {
     __experimentalListView as ListView,
     store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { Button, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpress/components';
+import { Button, DropdownMenu, MenuGroup, MenuItem, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
-import { plus, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
+import {
+    code as codeIcon,
+    listView as listViewIcon,
+    moreVertical,
+    plus,
+    redo as redoIcon,
+    undo as undoIcon,
+    update as refreshIcon,
+    upload as uploadIcon,
+} from '@wordpress/icons';
 import { loadCustomBlockAssets, prepareCustomBlockRegistry } from './customBlocks';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
@@ -47,6 +56,7 @@ const ROOT_BLOCK_LAYOUT = {
     contentSize: CONTENT_SIZE,
     wideSize: WIDE_SIZE,
 };
+const HISTORY_LIMIT = 120;
 
 const COLORS = [
     { name: 'Black', slug: 'black', color: '#111827' },
@@ -463,8 +473,15 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         window.StatamicGutenbergPatterns = patternSettings;
     }
 
-    const lastSerialized = useRef(value || '');
+    const initialValue = value || '';
+    const lastSerialized = useRef(initialValue);
+    const historyRef = useRef({ undo: [], redo: [] });
+    const historyCurrentRef = useRef(initialValue);
     const [blocks, setBlocks] = useState(() => parseSerialized(value));
+    const [codeValue, setCodeValue] = useState(initialValue);
+    const [editorMode, setEditorMode] = useState('visual');
+    const [historyDepths, setHistoryDepths] = useState({ undo: 0, redo: 0 });
+    const [isListViewOpen, setListViewOpen] = useState(() => variant === 'fullscreen');
     const [assetQuery, setAssetQuery] = useState('');
     const [assets, setAssets] = useState([]);
     const [assetFolders, setAssetFolders] = useState([]);
@@ -515,16 +532,130 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
         if (nextValue !== lastSerialized.current) {
             lastSerialized.current = nextValue;
+            historyCurrentRef.current = nextValue;
+            historyRef.current = { undo: [], redo: [] };
+            setHistoryDepths({ undo: 0, redo: 0 });
+            setCodeValue(nextValue);
             setBlocks(parseSerialized(nextValue));
         }
     }, [value]);
 
+    const updateHistoryDepths = useCallback(() => {
+        setHistoryDepths({
+            undo: historyRef.current.undo.length,
+            redo: historyRef.current.redo.length,
+        });
+    }, []);
+
+    const recordHistory = useCallback((serialized) => {
+        const current = historyCurrentRef.current;
+
+        if (serialized === current) {
+            return;
+        }
+
+        historyRef.current.undo.push(current);
+
+        if (historyRef.current.undo.length > HISTORY_LIMIT) {
+            historyRef.current.undo.shift();
+        }
+
+        historyRef.current.redo = [];
+        historyCurrentRef.current = serialized;
+        updateHistoryDepths();
+    }, [updateHistoryDepths]);
+
+    const applySerializedValue = useCallback((serialized) => {
+        historyCurrentRef.current = serialized;
+        lastSerialized.current = serialized;
+        setCodeValue(serialized);
+        setBlocks(parseSerialized(serialized));
+        onChange(serialized);
+        updateHistoryDepths();
+    }, [onChange, updateHistoryDepths]);
+
     const commitBlocks = useCallback((nextBlocks) => {
         setBlocks(nextBlocks);
         const serialized = serializeBlocks(nextBlocks);
+        recordHistory(serialized);
         lastSerialized.current = serialized;
+        setCodeValue(serialized);
         onChange(serialized);
-    }, [onChange]);
+    }, [onChange, recordHistory]);
+
+    const handleCodeChange = useCallback((event) => {
+        const serialized = event.target.value;
+
+        recordHistory(serialized);
+        lastSerialized.current = serialized;
+        setCodeValue(serialized);
+        onChange(serialized);
+    }, [onChange, recordHistory]);
+
+    const undoEdit = useCallback(() => {
+        const previous = historyRef.current.undo.pop();
+
+        if (previous === undefined) {
+            updateHistoryDepths();
+            return;
+        }
+
+        historyRef.current.redo.push(historyCurrentRef.current);
+        applySerializedValue(previous);
+    }, [applySerializedValue, updateHistoryDepths]);
+
+    const redoEdit = useCallback(() => {
+        const next = historyRef.current.redo.pop();
+
+        if (next === undefined) {
+            updateHistoryDepths();
+            return;
+        }
+
+        historyRef.current.undo.push(historyCurrentRef.current);
+        applySerializedValue(next);
+    }, [applySerializedValue, updateHistoryDepths]);
+
+    const switchEditorMode = useCallback((mode) => {
+        if (mode === editorMode) {
+            return;
+        }
+
+        if (mode === 'code') {
+            const serialized = serializeBlocks(blocks);
+            lastSerialized.current = serialized;
+            setCodeValue(serialized);
+        } else {
+            setBlocks(parseSerialized(codeValue));
+        }
+
+        setEditorMode(mode);
+    }, [blocks, codeValue, editorMode]);
+
+    const handleEditorKeyDown = useCallback((event) => {
+        const key = event.key.toLowerCase();
+
+        if ((! event.metaKey && ! event.ctrlKey) || event.altKey) {
+            return;
+        }
+
+        if (key === 'z') {
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (event.shiftKey) {
+                redoEdit();
+            } else {
+                undoEdit();
+            }
+        }
+
+        if (key === 'y' && ! event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            redoEdit();
+        }
+    }, [redoEdit, undoEdit]);
 
     const fetchAssets = useCallback(async () => {
         if (! meta.assetsUrl || ! assetPicker) {
@@ -735,6 +866,64 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                         />
                     )}
                 />
+                <Button
+                    icon={undoIcon}
+                    label="Undo"
+                    disabled={historyDepths.undo === 0}
+                    onClick={undoEdit}
+                />
+                <Button
+                    icon={redoIcon}
+                    label="Redo"
+                    disabled={historyDepths.redo === 0}
+                    onClick={redoEdit}
+                />
+                {isFullscreen ? (
+                    <Button
+                        icon={listViewIcon}
+                        label="List view"
+                        isPressed={isListViewOpen}
+                        disabled={editorMode === 'code'}
+                        onClick={() => setListViewOpen((isOpen) => ! isOpen)}
+                    />
+                ) : null}
+            </div>
+            <div className="sgb-toolbar__group sgb-toolbar__group--end">
+                <DropdownMenu
+                    icon={moreVertical}
+                    label="Options"
+                    popoverProps={{ className: 'sgb-options-menu' }}
+                    menuProps={{ className: 'sgb-options-menu__menu' }}
+                >
+                    {({ onClose }) => (
+                        <>
+                            <MenuGroup label="Editor">
+                                <MenuItem
+                                    icon={editorMode === 'visual' ? listViewIcon : undefined}
+                                    isSelected={editorMode === 'visual'}
+                                    role="menuitemradio"
+                                    onClick={() => {
+                                        switchEditorMode('visual');
+                                        onClose();
+                                    }}
+                                >
+                                    Visual editor
+                                </MenuItem>
+                                <MenuItem
+                                    icon={codeIcon}
+                                    isSelected={editorMode === 'code'}
+                                    role="menuitemradio"
+                                    onClick={() => {
+                                        switchEditorMode('code');
+                                        onClose();
+                                    }}
+                                >
+                                    Code editor
+                                </MenuItem>
+                            </MenuGroup>
+                        </>
+                    )}
+                </DropdownMenu>
             </div>
         </div>
     );
@@ -852,7 +1041,10 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
     return (
         <SlotFillProvider>
-            <div className={`sgb-editor sgb-editor--${variant}`}>
+            <div
+                className={`sgb-editor sgb-editor--${variant} sgb-editor--mode-${editorMode}`}
+                onKeyDownCapture={handleEditorKeyDown}
+            >
                 {themeJsonCss ? (
                     <style data-statamic-gutenberg-theme-json>{themeJsonCss}</style>
                 ) : null}
@@ -865,26 +1057,46 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                     <BlockEditorKeyboardShortcuts />
                     {toolbar}
                     {assetBrowser}
-                    <div className="sgb-editor__workspace">
-                        <main className="sgb-editor__stage">
-                            <div className="sgb-page-frame">
-                                <BlockTools __unstableContentRef={editorContentRef}>
-                                    <WritingFlow>
-                                        <ObserveTyping>
-                                            <div className="sgb-canvas" ref={editorContentRef}>
-                                                <BlockList layout={rootBlockLayout} />
-                                            </div>
-                                        </ObserveTyping>
-                                    </WritingFlow>
-                                </BlockTools>
-                            </div>
-                        </main>
-                        {isFullscreen ? (
-                            <aside className="sgb-inspector">
-                                <section className="sgb-inspector__section">
-                                    <h2>Document outline</h2>
+                    <div
+                        className={[
+                            'sgb-editor__workspace',
+                            isFullscreen && isListViewOpen && editorMode === 'visual' ? 'sgb-editor__workspace--list-open' : '',
+                            editorMode === 'code' ? 'sgb-editor__workspace--code' : '',
+                        ].filter(Boolean).join(' ')}
+                    >
+                        {isFullscreen && isListViewOpen && editorMode === 'visual' ? (
+                            <aside className="sgb-list-view">
+                                <section className="sgb-list-view__section">
+                                    <h2>List view</h2>
                                     <ListView />
                                 </section>
+                            </aside>
+                        ) : null}
+                        <main className={`sgb-editor__stage${editorMode === 'code' ? ' sgb-editor__stage--code' : ''}`}>
+                            {editorMode === 'code' ? (
+                                <textarea
+                                    className="sgb-code-editor"
+                                    spellCheck={false}
+                                    value={codeValue}
+                                    aria-label="Gutenberg code editor"
+                                    onChange={handleCodeChange}
+                                />
+                            ) : (
+                                <div className="sgb-page-frame">
+                                    <BlockTools __unstableContentRef={editorContentRef}>
+                                        <WritingFlow>
+                                            <ObserveTyping>
+                                                <div className="sgb-canvas" ref={editorContentRef}>
+                                                    <BlockList layout={rootBlockLayout} />
+                                                </div>
+                                            </ObserveTyping>
+                                        </WritingFlow>
+                                    </BlockTools>
+                                </div>
+                            )}
+                        </main>
+                        {isFullscreen && editorMode === 'visual' ? (
+                            <aside className="sgb-inspector">
                                 <section className="sgb-inspector__section">
                                     <h2>Block settings</h2>
                                     <BlockInspector />

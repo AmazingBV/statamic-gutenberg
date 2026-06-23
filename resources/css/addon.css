@@ -194,7 +194,7 @@
 
 .sgb-editor--fullscreen {
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
     border: 0;
     border-radius: 0;
@@ -236,6 +236,18 @@
     display: flex;
     gap: 8px;
     align-items: center;
+}
+
+.sgb-toolbar__group--end {
+    margin-left: auto;
+}
+
+.sgb-options-menu {
+    z-index: 2147482001 !important;
+}
+
+.sgb-options-menu__menu {
+    min-width: 220px;
 }
 
 .sgb-assets {
@@ -434,6 +446,14 @@
     grid-template-columns: minmax(0, 1fr) 360px;
 }
 
+.sgb-editor--fullscreen .sgb-editor__workspace--list-open {
+    grid-template-columns: 300px minmax(0, 1fr) 360px;
+}
+
+.sgb-editor--fullscreen .sgb-editor__workspace--code {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .sgb-editor .block-editor-inserter__menu .block-editor-tabbed-sidebar__tablist > .block-editor-tabbed-sidebar__tab:nth-child(3),
 .sgb-editor .block-editor-inserter__menu [role="tablist"] > [role="tab"]:nth-child(3) {
     display: none;
@@ -448,6 +468,32 @@
 .sgb-editor--fullscreen .sgb-editor__stage {
     overflow: auto;
     padding: 32px;
+}
+
+.sgb-editor--fullscreen .sgb-editor__stage--code {
+    padding: 16px;
+    background: #ffffff;
+}
+
+.sgb-code-editor {
+    display: block;
+    width: 100%;
+    min-height: calc(100vh - 160px);
+    padding: 18px;
+    border: 1px solid #d8dee4;
+    border-radius: 6px;
+    background: #0f172a;
+    color: #f8fafc;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: none;
+    tab-size: 2;
+}
+
+.sgb-code-editor:focus {
+    border-color: var(--sgb-accent);
+    outline: 2px solid rgba(49, 91, 199, 0.2);
 }
 
 .sgb-page-frame {
@@ -1122,12 +1168,32 @@
     background: #ffffff;
 }
 
+.sgb-list-view {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    border-right: 1px solid #d8dee4;
+    background: #ffffff;
+}
+
 .sgb-inspector__section {
     padding: 16px;
     border-bottom: 1px solid #e5e7eb;
 }
 
+.sgb-list-view__section {
+    padding: 16px;
+}
+
 .sgb-inspector__section h2 {
+    margin: 0 0 12px;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.sgb-list-view__section h2 {
     margin: 0 0 12px;
     color: #111827;
     font-size: 13px;
@@ -1216,6 +1282,11 @@
     .sgb-inspector {
         border-top: 1px solid #d8dee4;
         border-left: 0;
+    }
+
+    .sgb-list-view {
+        border-right: 0;
+        border-bottom: 1px solid #d8dee4;
     }
 }
 

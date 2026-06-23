@@ -29,9 +29,8 @@ class IconRepository
     private function configuredIcons(): array
     {
         $icons = config('statamic-gutenberg.icons', []);
-        $path = config('statamic-gutenberg.icons_path');
 
-        if (is_string($path) && is_file($path)) {
+        foreach ($this->iconPaths() as $path) {
             $fileIcons = require $path;
 
             if (is_array($fileIcons)) {
@@ -40,6 +39,25 @@ class IconRepository
         }
 
         return is_array($icons) ? $icons : [];
+    }
+
+    private function iconPaths(): array
+    {
+        $paths = [];
+        $configured = config('statamic-gutenberg.icons_path');
+
+        if (is_string($configured) && $configured !== '') {
+            $paths[] = $configured;
+        }
+
+        $paths[] = resource_path('vendor/statamic-gutenberg/icons.php');
+        $paths[] = resource_path('statamic-gutenberg/icons.php');
+
+        return collect($paths)
+            ->filter(fn ($path) => is_string($path) && is_file($path))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function normalizeIcon(mixed $icon, string $fallbackName): ?array

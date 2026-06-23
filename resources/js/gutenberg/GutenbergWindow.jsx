@@ -177,11 +177,7 @@ export function GutenbergWindow({
     }, [embedded, onSave, sendToOpener, value]);
 
     const closeWithoutApplying = useCallback(() => {
-        const message = value === lastAppliedValue
-            ? 'Close the block editor without applying changes?'
-            : 'Close without applying? Your block editor changes will be lost.';
-
-        if (window.confirm && ! window.confirm(message)) {
+        if (value !== lastAppliedValue && window.confirm && ! window.confirm('Close without applying? Your block editor changes will be lost.')) {
             return;
         }
 

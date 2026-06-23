@@ -85,7 +85,7 @@ return [
     | ];
     |
     */
-    'icons_path' => resource_path('statamic-gutenberg/icons.php'),
+    'icons_path' => resource_path('vendor/statamic-gutenberg/icons.php'),
 
     /*
     |--------------------------------------------------------------------------

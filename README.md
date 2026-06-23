@@ -248,7 +248,7 @@ Main options:
 | --- | --- |
 | `allowed_blocks` | Global default allowlist for blocks in the editor and renderer. |
 | `assets_container` | Default Statamic Asset container for media browse/upload. |
-| `icons_path` | PHP file in the host project with Icon block definitions. |
+| `icons_path` | PHP file in the host project with Icon block definitions, defaulting to `resources/vendor/statamic-gutenberg/icons.php`. |
 | `theme_json_path` | Optional project-local `theme.json` path. |
 | `custom_blocks_path` | Folder where project-local custom blocks live. |
 | `patterns` | Collection, taxonomy, and field handles used for Statamic-managed patterns. |
@@ -459,7 +459,7 @@ The Icon block reads icons from config and from a project-local PHP file.
 Default file path:
 
 ```text
-resources/statamic-gutenberg/icons.php
+resources/vendor/statamic-gutenberg/icons.php
 ```
 
 Example:
@@ -492,7 +492,8 @@ You can also define icons directly in config:
 ```
 
 The file-based `icons_path` is preferred for project icons because it keeps SVG
-markup out of the published config.
+markup out of the published config. The legacy
+`resources/statamic-gutenberg/icons.php` path is still read as a fallback.
 
 ## Patterns
 
