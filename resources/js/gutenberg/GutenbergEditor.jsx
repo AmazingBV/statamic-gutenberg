@@ -16,7 +16,7 @@ import { Button, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpr
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 import { plus, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
-import { loadCustomBlockAssets, normalizeCustomBlocks } from './customBlocks';
+import { loadCustomBlockAssets, prepareCustomBlockRegistry } from './customBlocks';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
 import { applyPatternSettings } from './patternSettings';
@@ -457,7 +457,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         : (typeof window !== 'undefined' && isPlainObject(window.StatamicGutenbergPatterns)
             ? window.StatamicGutenbergPatterns
             : {});
-    const customBlocks = useMemo(() => normalizeCustomBlocks(meta?.customBlocks), [meta]);
+    const customBlocks = useMemo(() => prepareCustomBlockRegistry(meta?.customBlocks), [meta]);
 
     if (typeof window !== 'undefined' && isPlainObject(patternSettings)) {
         window.StatamicGutenbergPatterns = patternSettings;

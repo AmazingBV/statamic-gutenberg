@@ -15,10 +15,18 @@ const SCRIPT_REGISTRY_KEY = '__statamicGutenbergCustomBlockScripts';
 const STYLE_SELECTOR = 'link[data-sgb-custom-block-style]';
 const BLOCKS_WRAPPED_KEY = '__statamicGutenbergBlocksWrapped';
 
-export function loadCustomBlockAssets(customBlocks = []) {
+export function prepareCustomBlockRegistry(customBlocks = []) {
     const items = normalizeCustomBlocks(customBlocks);
 
     exposeWordPressGlobals(items);
+    registerFallbackBlocks(items);
+
+    return items;
+}
+
+export function loadCustomBlockAssets(customBlocks = []) {
+    const items = prepareCustomBlockRegistry(customBlocks);
+
     appendStyles(items.flatMap((block) => block.editorStyles || []));
 
     return Promise.all(items.flatMap((block) => block.editorScripts || []).map(loadScriptAsset))
@@ -67,11 +75,11 @@ function exposeWordPressGlobals(customBlocks) {
     window.StatamicGutenberg = {
         ...(window.StatamicGutenberg || {}),
         registerBlockType(name, settings = {}) {
-            if (wp.blocks.getBlockType(name)) {
-                return wp.blocks.getBlockType(name);
-            }
+            const existing = wp.blocks.getBlockType(name);
 
-            const metadata = window.StatamicGutenbergCustomBlocks?.[name]?.metadata || { name };
+            if (existing && ! (existing.__statamicGutenbergFallback && hasCustomEdit(settings))) {
+                return existing;
+            }
 
             return wp.blocks.registerBlockType(name, settings);
         },
@@ -83,7 +91,11 @@ function wrapBlocksApi(blockApi) {
         return blockApi;
     }
 
+    const getBlockType = blockApi.getBlockType.bind(blockApi);
     const registerBlockType = blockApi.registerBlockType.bind(blockApi);
+    const unregisterBlockType = typeof blockApi.unregisterBlockType === 'function'
+        ? blockApi.unregisterBlockType.bind(blockApi)
+        : null;
 
     return {
         ...blockApi,
@@ -101,12 +113,37 @@ function wrapBlocksApi(blockApi) {
             }
 
             if (typeof nameOrMetadata === 'string') {
+                replaceFallbackBlock(name, settings, getBlockType, unregisterBlockType);
+
                 return registerBlockType(nameOrMetadata, mergeBlockSettings(customMetadata, settings));
             }
+
+            replaceFallbackBlock(
+                name,
+                mergeBlockSettings(nameOrMetadata, settings),
+                getBlockType,
+                unregisterBlockType,
+            );
 
             return registerBlockType(mergeBlockSettings(customMetadata, nameOrMetadata), settings);
         },
     };
+}
+
+function replaceFallbackBlock(name, settings, getBlockType, unregisterBlockType) {
+    if (! name || ! unregisterBlockType || ! hasCustomEdit(settings)) {
+        return;
+    }
+
+    const existing = getBlockType(name);
+
+    if (existing?.__statamicGutenbergFallback) {
+        unregisterBlockType(name);
+    }
+}
+
+function hasCustomEdit(settings) {
+    return Boolean(settings && typeof settings === 'object' && typeof settings.edit === 'function');
 }
 
 function mergeBlockSettings(metadata = {}, settings = {}) {
@@ -190,6 +227,7 @@ function registerFallbackBlocks(customBlocks) {
 
         blocks.registerBlockType(block.name, {
             ...block.metadata,
+            __statamicGutenbergFallback: true,
             edit: CustomBlockPlaceholderEdit,
             save: () => null,
         });
