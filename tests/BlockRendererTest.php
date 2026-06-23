@@ -6,6 +6,7 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\CoreBlocks;
 use Amazingbv\StatamicGutenberg\GutenbergManager;
+use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 
 class BlockRendererTest extends TestCase
 {
@@ -15,6 +16,7 @@ class BlockRendererTest extends TestCase
 
         $this->assertGreaterThanOrEqual(121, count(CoreBlocks::names()));
         $this->assertLessThan(count(CoreBlocks::names()), count($allowed));
+        $this->assertContains('core/block', $allowed);
         $this->assertContains('core/cover', $allowed);
         $this->assertContains('core/media-text', $allowed);
         $this->assertContains('core/gallery', $allowed);
@@ -25,6 +27,15 @@ class BlockRendererTest extends TestCase
         $this->assertNotContains('core/query', $allowed);
         $this->assertNotContains('core/form', $allowed);
         $this->assertNotContains('core/tabs', $allowed);
+    }
+
+    public function test_core_block_is_allowed_with_older_published_config(): void
+    {
+        config(['statamic-gutenberg.allowed_blocks' => ['core/paragraph']]);
+
+        $allowed = app(BlockRegistry::class)->allowedBlocks();
+
+        $this->assertSame(['core/paragraph', 'core/block'], $allowed);
     }
 
     public function test_it_renders_allowed_core_blocks_and_sanitizes_html(): void
@@ -106,6 +117,23 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('url(', $rendered);
     }
 
+    public function test_it_preserves_text_alignment_and_color_markup(): void
+    {
+        $html = implode('', [
+            '<!-- wp:paragraph {"style":{"typography":{"textAlign":"justify"}},"textColor":"blue"} --><p class="has-text-align-justify has-blue-color has-text-color" style="text-align:justify">Paragraph</p><!-- /wp:paragraph -->',
+            '<!-- wp:heading {"style":{"typography":{"textAlign":"right"}},"textColor":"red"} --><h2 class="has-text-align-right has-red-color has-text-color" style="text-align:right">Heading</h2><!-- /wp:heading -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="has-text-align-justify has-blue-color has-text-color"', $rendered);
+        $this->assertStringContainsString('style="text-align: justify"', $rendered);
+        $this->assertStringContainsString('has-text-align-right', $rendered);
+        $this->assertStringContainsString('has-red-color', $rendered);
+        $this->assertStringContainsString('wp-block-heading', $rendered);
+        $this->assertStringContainsString('style="text-align: right"', $rendered);
+    }
+
     public function test_it_preserves_safe_grid_layout_styles(): void
     {
         $html = '<!-- wp:group --><div class="wp-block-group is-layout-grid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;position:absolute"><p>Grid</p></div><!-- /wp:group -->';
@@ -163,6 +191,34 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-site-title"', $rendered);
         $this->assertStringContainsString('data-sgb-core-fallback="core/latest-posts"', $rendered);
         $this->assertStringContainsString('data-sgb-core-fallback="core/post-title"', $rendered);
+    }
+
+    public function test_it_renders_synced_patterns_from_core_block_references(): void
+    {
+        $this->bindPatternRepository([
+            123 => '<!-- wp:paragraph --><p>Synced pattern</p><!-- /wp:paragraph -->',
+        ]);
+
+        $html = '<!-- wp:block {"ref":123} /-->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/paragraph'],
+        ]);
+
+        $this->assertSame('<p>Synced pattern</p>', $rendered);
+    }
+
+    public function test_it_prevents_recursive_synced_pattern_rendering(): void
+    {
+        $this->bindPatternRepository([
+            123 => '<!-- wp:block {"ref":123} /-->',
+        ]);
+
+        $html = '<!-- wp:block {"ref":123} /-->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/paragraph'],
+        ]);
+
+        $this->assertSame('', $rendered);
     }
 
     public function test_it_renders_nested_fallbacks_inside_runtime_core_container_blocks(): void
@@ -241,5 +297,25 @@ class BlockRendererTest extends TestCase
         return [
             'allowed_blocks' => array_merge(CoreBlocks::names(), ['statamic/hero', 'statamic/cta']),
         ];
+    }
+
+    private function bindPatternRepository(array $patterns): void
+    {
+        $this->app->instance(PatternRepository::class, new class($patterns) extends PatternRepository
+        {
+            public function __construct(private array $patterns)
+            {
+                //
+            }
+
+            public function findRenderablePattern(int|string|null $id): ?array
+            {
+                return isset($this->patterns[(int) $id])
+                    ? ['id' => (int) $id, 'content' => $this->patterns[(int) $id]]
+                    : null;
+            }
+        });
+
+        $this->app->forgetInstance(BlockRenderer::class);
     }
 }

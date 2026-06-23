@@ -58,7 +58,7 @@ class CoreBlocksCoverageTest extends TestCase
     {
         $renderer = app(BlockRenderer::class);
 
-        foreach (array_diff(CoreBlocks::runtimeFallbackBlocks(), ['core/icon']) as $name) {
+        foreach (array_diff(CoreBlocks::runtimeFallbackBlocks(), ['core/block', 'core/icon']) as $name) {
             $rendered = trim((string) $renderer->render(sprintf('<!-- wp:%s /-->', $this->commentName($name)), $this->allCoreAllowedOptions()));
 
             $this->assertNotSame('', $rendered, "{$name} has no static save markup and no visible fallback output.");

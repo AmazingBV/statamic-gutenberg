@@ -12,6 +12,7 @@ const isOpen = ref(false);
 const editorLoading = ref(false);
 const editorError = ref('');
 const lastSyncedAt = ref(null);
+const editorMeta = ref(null);
 let overlayHost = null;
 let overlayRoot = null;
 let unmountEditor = null;
@@ -46,13 +47,51 @@ function findEntryTitle() {
 }
 
 function payload(nextValue = value.value) {
+    const meta = plain(editorMeta.value || props.meta);
+
     return {
         value: nextValue,
         config: plain(props.config),
-        meta: plain(props.meta),
+        meta,
         title: title.value,
         fieldLabel: props.display || props.handle || 'Content',
     };
+}
+
+function exposeEditorMeta(meta) {
+    if (meta?.iconsUrl) {
+        window.StatamicGutenbergIconsUrl = meta.iconsUrl;
+    }
+
+    if (meta?.patterns) {
+        window.StatamicGutenbergPatterns = meta.patterns;
+    }
+}
+
+async function refreshEditorMeta() {
+    const meta = plain(props.meta);
+
+    if (! meta.patternsUrl) {
+        return meta;
+    }
+
+    try {
+        const response = await fetch(meta.patternsUrl, {
+            headers: {
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+        const json = await response.json();
+
+        if (json?.data) {
+            meta.patterns = json.data;
+        }
+    } catch (error) {
+        console.warn('Unable to load Statamic Gutenberg patterns.', error);
+    }
+
+    return meta;
 }
 
 function updateLastSyncedAt() {
@@ -124,10 +163,13 @@ function renderEditor() {
         return;
     }
 
+    const nextPayload = payload();
+    exposeEditorMeta(nextPayload.meta);
+
     unmountEditor = mountGutenbergWindow(overlayRoot, {
         channel,
         embedded: true,
-        initialPayload: payload(),
+        initialPayload: nextPayload,
         title: title.value,
         onApply: applyValue,
         onClose: closeEditor,
@@ -147,6 +189,7 @@ async function openEditor() {
     try {
         ensureOverlayRoot();
         await loadEditorMount();
+        editorMeta.value = await refreshEditorMeta();
         renderEditor();
     } catch (error) {
         console.warn('Unable to open Gutenberg editor overlay.', error);
@@ -168,6 +211,7 @@ function closeEditor() {
     overlayHost = null;
     overlayRoot = null;
     isOpen.value = false;
+    editorMeta.value = null;
     window.removeEventListener('resize', positionOverlay);
     document.body.classList.remove('sgb-overlay-open');
 }

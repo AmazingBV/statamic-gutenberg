@@ -48,6 +48,14 @@ php artisan optimize:clear
 
 The addon should now be available in Statamic as the `gutenberg` fieldtype.
 
+Optional internal Gutenberg pattern management can be installed with:
+
+```bash
+php artisan vendor:publish --tag=statamic-gutenberg-patterns
+```
+
+This publishes a `gutenberg_patterns` collection, a `gutenberg_pattern_categories` taxonomy, and matching blueprints. Pattern entries use a Gutenberg field for their content. Published entries appear in the editor's standard Patterns tab; entries marked `synced` are inserted as Gutenberg `core/block` references, while `unsynced` entries are inserted as editable copied blocks.
+
 Optional icon block source in the Statamic project:
 
 ```php

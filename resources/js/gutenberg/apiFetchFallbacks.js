@@ -5,7 +5,7 @@ function methodFor(options = {}) {
 }
 
 function isReadOnly(options = {}) {
-    return ['GET', 'HEAD'].includes(methodFor(options));
+    return ['GET', 'HEAD', 'OPTIONS'].includes(methodFor(options));
 }
 
 function apiPath(options = {}) {
@@ -42,6 +42,96 @@ function sameOriginRequestUrl(value) {
 
 function statamicIconsUrl() {
     return typeof window !== 'undefined' ? window.StatamicGutenbergIconsUrl : null;
+}
+
+function statamicPatterns() {
+    const payload = typeof window !== 'undefined' ? window.StatamicGutenbergPatterns : null;
+
+    return payload && typeof payload === 'object' ? payload : {};
+}
+
+function patternReusableBlocks() {
+    const payload = statamicPatterns();
+
+    return Array.isArray(payload.reusableBlocks) ? payload.reusableBlocks : [];
+}
+
+function patternAllReusableBlocks() {
+    const payload = statamicPatterns();
+
+    return Array.isArray(payload.restReusableBlocks) ? payload.restReusableBlocks : patternReusableBlocks();
+}
+
+function patternCategories() {
+    const payload = statamicPatterns();
+    const categories = [
+        payload.restBlockPatternCategories,
+        payload.blockPatternCategories,
+        payload.userPatternCategories,
+    ].find((items) => Array.isArray(items) && items.length);
+
+    return Array.isArray(categories)
+        ? categories.map((category) => ({
+            name: category.name || category.slug,
+            label: category.label || category.name || category.slug,
+            description: category.description || '',
+        })).filter((category) => category.name)
+        : [];
+}
+
+function patternCategoryTerms() {
+    const payload = statamicPatterns();
+    const categories = Array.isArray(payload.userPatternCategories) ? payload.userPatternCategories : [];
+
+    return categories.map((category) => ({
+        id: category.id,
+        name: category.label || category.name || category.slug,
+        slug: category.slug || category.name,
+        description: category.description || '',
+    })).filter((category) => category.slug);
+}
+
+function patternBlockPatterns() {
+    const payload = statamicPatterns();
+    const patterns = Array.isArray(payload.restBlockPatterns)
+        ? payload.restBlockPatterns
+        : payload.blockPatterns;
+
+    return Array.isArray(patterns) ? patterns : [];
+}
+
+function findReusableBlock(id) {
+    const numericId = Number.parseInt(id, 10);
+
+    return patternAllReusableBlocks().find((block) => Number(block.id) === numericId) || null;
+}
+
+function wordpressPostTypes() {
+    return {
+        wp_block: {
+            slug: 'wp_block',
+            rest_base: 'blocks',
+            rest_namespace: 'wp/v2',
+            name: 'Patterns',
+            labels: {
+                name: 'Patterns',
+                singular_name: 'Pattern',
+            },
+            taxonomies: ['wp_pattern_category'],
+        },
+    };
+}
+
+function wordpressTaxonomies() {
+    return {
+        wp_pattern_category: {
+            slug: 'wp_pattern_category',
+            rest_base: 'wp_pattern_category',
+            rest_namespace: 'wp/v2',
+            name: 'Pattern Categories',
+            types: ['wp_block'],
+        },
+    };
 }
 
 async function fetchStatamicIcons() {
@@ -136,11 +226,33 @@ function fallbackForKnownWordPressEndpoint(path) {
     }
 
     if (/^\/wp\/v2\/types(?:\?|$)/.test(path)) {
-        return {};
+        return wordpressPostTypes();
     }
 
     if (/^\/wp\/v2\/taxonomies(?:\?|$)/.test(path)) {
-        return {};
+        return wordpressTaxonomies();
+    }
+
+    if (/^\/wp\/v2\/block-patterns\/categories(?:\?|$)/.test(path)) {
+        return patternCategories();
+    }
+
+    if (/^\/wp\/v2\/block-patterns\/patterns(?:\?|$)/.test(path)) {
+        return patternBlockPatterns();
+    }
+
+    if (/^\/wp\/v2\/wp_pattern_category(?:\/|\?|$)/.test(path)) {
+        return patternCategoryTerms();
+    }
+
+    if (/^\/wp\/v2\/blocks\/\d+(?:\?|$)/.test(path)) {
+        const id = path.match(/^\/wp\/v2\/blocks\/(\d+)/)?.[1];
+
+        return findReusableBlock(id) || {};
+    }
+
+    if (/^\/wp\/v2\/blocks(?:\?|$)/.test(path)) {
+        return patternReusableBlocks();
     }
 
     if (/^\/wp\/v2\/settings(?:\?|$)/.test(path)) {
@@ -206,6 +318,33 @@ export function resolveStatamicApiFetchFallback(options = {}) {
     return fallbackForKnownWordPressEndpoint(path) ?? genericReadOnlyFallback(path);
 }
 
+function fallbackResponse(data) {
+    return {
+        ok: true,
+        status: 200,
+        headers: {
+            get: (name) => {
+                const lower = String(name || '').toLowerCase();
+
+                if (lower === 'x-wp-total') {
+                    return Array.isArray(data) ? String(data.length) : '1';
+                }
+
+                if (lower === 'x-wp-totalpages') {
+                    return '1';
+                }
+
+                if (lower === 'allow') {
+                    return 'GET';
+                }
+
+                return null;
+            },
+        },
+        json: async () => data,
+    };
+}
+
 export function installStatamicApiFetchFallbacks(apiFetch) {
     if (! apiFetch || typeof apiFetch.use !== 'function' || apiFetch[INSTALLED_KEY]) {
         return;
@@ -215,7 +354,7 @@ export function installStatamicApiFetchFallbacks(apiFetch) {
         const fallback = resolveStatamicApiFetchFallback(options);
 
         if (fallback !== undefined) {
-            return Promise.resolve(fallback);
+            return Promise.resolve(options?.parse === false ? fallbackResponse(fallback) : fallback);
         }
 
         return next(options);

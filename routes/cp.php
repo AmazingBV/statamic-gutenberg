@@ -3,6 +3,7 @@
 use Amazingbv\StatamicGutenberg\Http\Controllers\CP\AssetsController;
 use Amazingbv\StatamicGutenberg\Http\Controllers\CP\EditorController;
 use Amazingbv\StatamicGutenberg\Http\Controllers\CP\IconsController;
+use Amazingbv\StatamicGutenberg\Http\Controllers\CP\PatternsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('amazingbv/statamic-gutenberg')
@@ -12,4 +13,5 @@ Route::prefix('amazingbv/statamic-gutenberg')
         Route::get('assets', [AssetsController::class, 'index'])->name('assets.index');
         Route::post('assets', [AssetsController::class, 'upload'])->name('assets.upload');
         Route::get('icons', [IconsController::class, 'index'])->name('icons.index');
+        Route::get('patterns', [PatternsController::class, 'index'])->name('patterns.index');
     });

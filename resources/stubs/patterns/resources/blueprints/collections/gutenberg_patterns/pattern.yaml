@@ -1,0 +1,94 @@
+title: Gutenberg Pattern
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              display: Title
+              validate:
+                - required
+          -
+            handle: sync_status
+            field:
+              type: select
+              display: Sync Status
+              default: synced
+              options:
+                synced: Synced
+                unsynced: Not synced
+              width: 50
+          -
+            handle: inserter
+            field:
+              type: toggle
+              display: Show in Inserter
+              default: true
+              width: 50
+          -
+            handle: content
+            field:
+              type: gutenberg
+              display: Pattern Content
+              render_mode: blade
+  metadata:
+    display: Metadata
+    sections:
+      -
+        fields:
+          -
+            handle: gutenberg_pattern_categories
+            field:
+              type: terms
+              display: Categories
+              taxonomies:
+                - gutenberg_pattern_categories
+              mode: select
+          -
+            handle: description
+            field:
+              type: textarea
+              display: Description
+          -
+            handle: keywords
+            field:
+              type: list
+              display: Keywords
+          -
+            handle: viewport_width
+            field:
+              type: integer
+              display: Viewport Width
+              width: 50
+          -
+            handle: block_types
+            field:
+              type: list
+              display: Block Types
+              instructions: Optional Gutenberg block names this pattern targets, such as core/post-content.
+          -
+            handle: post_types
+            field:
+              type: list
+              display: Post Types
+          -
+            handle: template_types
+            field:
+              type: list
+              display: Template Types
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: slug
+            field:
+              type: slug
+              localizable: true
+              validate:
+                - required

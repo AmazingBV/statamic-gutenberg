@@ -74,9 +74,11 @@ class Gutenberg extends Fieldtype
             'assetsUrl' => cp_route('amazingbv.statamic-gutenberg.assets.index', ['container' => $container]),
             'uploadUrl' => cp_route('amazingbv.statamic-gutenberg.assets.upload', ['container' => $container]),
             'iconsUrl' => cp_route('amazingbv.statamic-gutenberg.icons.index'),
+            'patternsUrl' => cp_route('amazingbv.statamic-gutenberg.patterns.index'),
             'editorUrl' => cp_route('amazingbv.statamic-gutenberg.editor'),
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
             'themeJson' => app(GutenbergManager::class)->editorTheme(),
+            'patterns' => app(GutenbergManager::class)->editorPatterns(),
         ];
     }
 

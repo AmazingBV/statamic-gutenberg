@@ -1,0 +1,7 @@
+title: Gutenberg Patterns
+revisions: false
+sort_dir: asc
+blueprints:
+  - pattern
+taxonomies:
+  - gutenberg_pattern_categories

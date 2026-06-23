@@ -3,6 +3,7 @@
 namespace Amazingbv\StatamicGutenberg\Blocks;
 
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
+use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use DOMDocument;
 use DOMElement;
 use Illuminate\Support\HtmlString;
@@ -15,6 +16,7 @@ class BlockRenderer
         private BlockParser $parser,
         private BlockRegistry $registry,
         private Sanitizer $sanitizer,
+        private PatternRepository $patterns,
     ) {
         //
     }
@@ -50,7 +52,7 @@ class BlockRenderer
 
         $allowed = $options['allowed_blocks'] ?? null;
 
-        if (! $this->registry->isAllowed($block->name(), is_array($allowed) ? $allowed : null)) {
+        if ($block->name() !== 'core/block' && ! $this->registry->isAllowed($block->name(), is_array($allowed) ? $allowed : null)) {
             if ($options['allow_unknown_blocks'] ?? false) {
                 return $this->sanitize($block->renderableHtml(), $options);
             }
@@ -79,6 +81,7 @@ class BlockRenderer
     private function renderCoreBlock(Block $block, string $inner, array $options): string
     {
         return match ($block->name()) {
+            'core/block' => $this->renderReusableBlock($block, $options),
             'core/group' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-group', ['div', 'section', 'main', 'article', 'aside', 'header', 'footer']),
             'core/columns' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-columns'),
             'core/column' => $this->renderWrapperBlock($block, $inner, $options, 'div', 'wp-block-column'),
@@ -294,6 +297,31 @@ class BlockRenderer
     private function renderLoginoutFallback(): string
     {
         return sprintf('<a class="wp-block-loginout" href="%s">Log in</a>', e($this->siteUrl('/login')));
+    }
+
+    private function renderReusableBlock(Block $block, array $options): string
+    {
+        $ref = (int) $block->attribute('ref', 0);
+
+        if ($ref <= 0) {
+            return trim($this->sanitize($block->renderableHtml(), $options));
+        }
+
+        $seen = array_map('intval', $options['_pattern_refs'] ?? []);
+
+        if (in_array($ref, $seen, true)) {
+            return '';
+        }
+
+        $pattern = $this->patterns->findRenderablePattern($ref);
+
+        if (! $pattern) {
+            return '';
+        }
+
+        $options['_pattern_refs'] = [...$seen, $ref];
+
+        return $this->renderBlocks($this->parser->parse($pattern['content'] ?? ''), $options);
     }
 
     private function renderCoreFallbackNotice(Block $block, string $inner = ''): string

@@ -19,6 +19,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('list-style-type: decimal', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-list li.block-editor-block-list__block', $css);
         $this->assertStringContainsString('list-style: inherit', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-text-align-justify)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-color)', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
         $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * + *', $css);
@@ -57,6 +59,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("contentSize: CONTENT_SIZE", $editor);
         $this->assertStringContainsString("wideSize: WIDE_SIZE", $editor);
         $this->assertStringContainsString("blockGap: true", $editor);
+        $this->assertStringContainsString('text: true', $editor);
+        $this->assertStringContainsString('link: true', $editor);
         $this->assertStringNotContainsString('image as imageIcon', $editor);
         $this->assertStringNotContainsString('label="Open Statamic assets"', $editor);
         $this->assertStringContainsString('.block-editor-tabbed-sidebar__tab:nth-child(3)', $css);

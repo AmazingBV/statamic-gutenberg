@@ -102,6 +102,14 @@
     min-width: 0;
 }
 
+.sgb-overlay-open .components-modal__screen-overlay {
+    z-index: 2147482001 !important;
+}
+
+.sgb-overlay-open .components-modal__frame {
+    z-index: 2147482002;
+}
+
 .sgb-overlay-host .sgb-window {
     position: absolute;
     inset: 0;
@@ -191,6 +199,20 @@
     border: 0;
     border-radius: 0;
     background: #eef1f5;
+    overflow: visible;
+}
+
+.sgb-overlay-host :where(
+    .components-modal__screen-overlay,
+    .components-popover,
+    .block-editor-inserter__popover,
+    .block-editor-block-patterns-explorer
+) {
+    z-index: 10000000 !important;
+}
+
+.sgb-overlay-host .components-modal__frame {
+    z-index: 10000001;
 }
 
 .sgb-toolbar {
@@ -310,7 +332,7 @@
 .sgb-assets-modal {
     position: absolute;
     inset: 52px 0 0;
-    z-index: 30;
+    z-index: 10000000;
     display: grid;
     place-items: center;
     padding: 24px;
@@ -429,6 +451,12 @@
 }
 
 .sgb-page-frame {
+    --wp--preset--color--black: #111827;
+    --wp--preset--color--white: #ffffff;
+    --wp--preset--color--slate: #475467;
+    --wp--preset--color--blue: #315bc7;
+    --wp--preset--color--green: #047857;
+    --wp--preset--color--red: #b42318;
     width: 100%;
 }
 
@@ -529,6 +557,46 @@
 .sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion) {
     margin-inline: 0;
     width: 100%;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-text-align-left) {
+    text-align: left;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-text-align-center) {
+    text-align: center;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-text-align-right) {
+    text-align: right;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-text-align-justify) {
+    text-align: justify;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-black-color) {
+    color: var(--wp--preset--color--black) !important;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-white-color) {
+    color: var(--wp--preset--color--white) !important;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-slate-color) {
+    color: var(--wp--preset--color--slate) !important;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-blue-color) {
+    color: var(--wp--preset--color--blue) !important;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-green-color) {
+    color: var(--wp--preset--color--green) !important;
+}
+
+.sgb-editor .sgb-page-frame :where(.has-red-color) {
+    color: var(--wp--preset--color--red) !important;
 }
 
 .sgb-editor--fullscreen .sgb-page-frame p,

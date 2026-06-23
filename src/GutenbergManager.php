@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg;
 use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
+use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Illuminate\Support\HtmlString;
 
 class GutenbergManager
@@ -14,6 +15,7 @@ class GutenbergManager
         private BlockParser $parser,
         private BlockRenderer $renderer,
         private ThemeJson $themeJson,
+        private PatternRepository $patterns,
     ) {
         //
     }
@@ -86,6 +88,11 @@ class GutenbergManager
     public function editorTheme(): ?array
     {
         return $this->themeJson->editorPayload();
+    }
+
+    public function editorPatterns(): array
+    {
+        return $this->patterns->editorPayload();
     }
 
     private function assetUrls(string $entry, string $type): array

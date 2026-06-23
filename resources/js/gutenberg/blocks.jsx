@@ -1,13 +1,44 @@
 import React from 'react';
 import { registerBlockType, getBlockType } from '@wordpress/blocks';
 import { registerCoreBlocks } from '@wordpress/block-library';
-import { useBlockProps, RichText } from '@wordpress/block-editor';
+import { AlignmentControl, BlockControls, useBlockProps, RichText } from '@wordpress/block-editor';
 import { TextControl } from '@wordpress/components';
 import { addFilter } from '@wordpress/hooks';
-import { withWideFullAlignSupport } from './blockSupport';
+import { __ } from '@wordpress/i18n';
+import { alignCenter, alignJustify, alignLeft, alignRight } from '@wordpress/icons';
+import {
+    addTextAlignSaveProps,
+    isTextFormattingBlock,
+    TEXT_ALIGNMENTS,
+    withStatamicBlockSupport,
+    textAlignClassName,
+} from './blockSupport';
 
 let registered = false;
 let filtersRegistered = false;
+
+export const TEXT_ALIGNMENT_CONTROLS = [
+    {
+        icon: alignLeft,
+        title: __('Align text left'),
+        align: 'left',
+    },
+    {
+        icon: alignCenter,
+        title: __('Align text center'),
+        align: 'center',
+    },
+    {
+        icon: alignRight,
+        title: __('Align text right'),
+        align: 'right',
+    },
+    {
+        icon: alignJustify,
+        title: __('Justify text'),
+        align: 'justify',
+    },
+];
 
 export function registerGutenbergBlocks() {
     if (registered) {
@@ -63,8 +94,22 @@ export function withStatamicLayoutWrapperStyles(BlockListBlock) {
             hasStyleChange = true;
         }
 
+        const textAlign = props.attributes?.style?.typography?.textAlign;
+
+        if (isTextFormattingBlock(props.name) && TEXT_ALIGNMENTS.includes(textAlign)) {
+            style.textAlign = textAlign;
+            hasStyleChange = true;
+        }
+
         if (! hasStyleChange) {
             return <BlockListBlock {...props} />;
+        }
+
+        const wrapperClassNames = new Set(String(wrapperProps.className || '').split(/\s+/).filter(Boolean));
+        const alignClassName = textAlignClassName(props.attributes);
+
+        if (alignClassName) {
+            wrapperClassNames.add(alignClassName);
         }
 
         return (
@@ -72,9 +117,71 @@ export function withStatamicLayoutWrapperStyles(BlockListBlock) {
                 {...props}
                 wrapperProps={{
                     ...wrapperProps,
+                    className: wrapperClassNames.size ? [...wrapperClassNames].join(' ') : wrapperProps.className,
                     style,
                 }}
             />
+        );
+    };
+}
+
+function cleanStyleObject(style) {
+    if (! style || typeof style !== 'object') {
+        return undefined;
+    }
+
+    const cleaned = Object.fromEntries(
+        Object.entries(style)
+            .map(([key, value]) => [
+                key,
+                value && typeof value === 'object' && ! Array.isArray(value)
+                    ? cleanStyleObject(value)
+                    : value,
+            ])
+            .filter(([, value]) => {
+                if (value === undefined || value === null || value === '') {
+                    return false;
+                }
+
+                return ! (typeof value === 'object' && ! Array.isArray(value) && Object.keys(value).length === 0);
+            }),
+    );
+
+    return Object.keys(cleaned).length ? cleaned : undefined;
+}
+
+export function withStatamicTextAlignmentControls(BlockEdit) {
+    return function StatamicTextAlignmentBlockEdit(props) {
+        if (! isTextFormattingBlock(props.name)) {
+            return <BlockEdit {...props} />;
+        }
+
+        const textAlign = props.attributes?.style?.typography?.textAlign;
+        const setTextAlign = (nextTextAlign) => {
+            const style = {
+                ...(props.attributes?.style || {}),
+                typography: {
+                    ...(props.attributes?.style?.typography || {}),
+                    textAlign: nextTextAlign,
+                },
+            };
+
+            props.setAttributes({
+                style: cleanStyleObject(style),
+            });
+        };
+
+        return (
+            <>
+                <BlockControls group="block">
+                    <AlignmentControl
+                        value={textAlign}
+                        onChange={setTextAlign}
+                        alignmentControls={TEXT_ALIGNMENT_CONTROLS}
+                    />
+                </BlockControls>
+                <BlockEdit {...props} />
+            </>
         );
     };
 }
@@ -86,8 +193,20 @@ function registerStatamicBlockFilters() {
 
     addFilter(
         'blocks.registerBlockType',
-        'statamic-gutenberg/wide-full-align-support',
-        withWideFullAlignSupport,
+        'statamic-gutenberg/block-support',
+        withStatamicBlockSupport,
+    );
+
+    addFilter(
+        'blocks.getSaveContent.extraProps',
+        'statamic-gutenberg/text-align-save-props',
+        addTextAlignSaveProps,
+    );
+
+    addFilter(
+        'editor.BlockEdit',
+        'statamic-gutenberg/text-alignment-controls',
+        withStatamicTextAlignmentControls,
     );
 
     addFilter(

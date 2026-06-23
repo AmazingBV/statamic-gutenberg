@@ -7,6 +7,7 @@ return [
         'core/accordion-item',
         'core/accordion-panel',
         'core/audio',
+        'core/block',
         'core/button',
         'core/buttons',
         'core/code',
@@ -45,6 +46,21 @@ return [
     'icons_path' => resource_path('statamic-gutenberg/icons.php'),
 
     'theme_json_path' => resource_path('vendor/statamic-gutenberg/theme.json'),
+
+    'patterns' => [
+        'collection' => 'gutenberg_patterns',
+        'taxonomy' => 'gutenberg_pattern_categories',
+        'content_field' => 'content',
+        'sync_status_field' => 'sync_status',
+        'categories_field' => 'gutenberg_pattern_categories',
+        'description_field' => 'description',
+        'keywords_field' => 'keywords',
+        'viewport_width_field' => 'viewport_width',
+        'block_types_field' => 'block_types',
+        'post_types_field' => 'post_types',
+        'template_types_field' => 'template_types',
+        'inserter_field' => 'inserter',
+    ],
 
     'icons' => [],
 

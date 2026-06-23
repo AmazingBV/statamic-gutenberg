@@ -8,6 +8,7 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\Sanitizer;
 use Amazingbv\StatamicGutenberg\Http\Controllers\ThemeAssetController;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
+use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Illuminate\Support\Facades\Route;
 use Statamic\Providers\AddonServiceProvider;
 
@@ -30,6 +31,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(Sanitizer::class);
         $this->app->singleton(BlockRenderer::class);
         $this->app->singleton(IconRepository::class);
+        $this->app->singleton(PatternRepository::class);
         $this->app->singleton(ThemeJson::class);
         $this->app->singleton(GutenbergManager::class);
         $this->app->alias(GutenbergManager::class, 'statamic-gutenberg');
@@ -37,6 +39,15 @@ class ServiceProvider extends AddonServiceProvider
 
     public function bootAddon()
     {
+        $patternStubs = dirname(__DIR__).'/resources/stubs/patterns';
+
+        $this->publishes([
+            "{$patternStubs}/content/collections/gutenberg_patterns.yaml" => base_path('content/collections/gutenberg_patterns.yaml'),
+            "{$patternStubs}/content/taxonomies/gutenberg_pattern_categories.yaml" => base_path('content/taxonomies/gutenberg_pattern_categories.yaml'),
+            "{$patternStubs}/resources/blueprints/collections/gutenberg_patterns/pattern.yaml" => resource_path('blueprints/collections/gutenberg_patterns/pattern.yaml'),
+            "{$patternStubs}/resources/blueprints/taxonomies/gutenberg_pattern_categories/category.yaml" => resource_path('blueprints/taxonomies/gutenberg_pattern_categories/category.yaml'),
+        ], 'statamic-gutenberg-patterns');
+
         Route::get('/vendor/statamic-gutenberg/theme/{path}', ThemeAssetController::class)
             ->where('path', '.*')
             ->name('statamic-gutenberg.theme-assets');

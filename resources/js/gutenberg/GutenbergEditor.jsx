@@ -18,6 +18,7 @@ import { addFilter } from '@wordpress/hooks';
 import { plus, update as refreshIcon, upload as uploadIcon } from '@wordpress/icons';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
+import { applyPatternSettings } from './patternSettings';
 import {
     attributesForAssetBlock,
     createAssetBlock,
@@ -116,6 +117,9 @@ const EDITOR_THEME_SETTINGS = {
         color: {
             custom: true,
             customGradient: true,
+            text: true,
+            background: true,
+            link: true,
             palette: {
                 theme: COLORS,
             },
@@ -447,6 +451,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
 
+    const patternSettings = isPlainObject(meta?.patterns)
+        ? meta.patterns
+        : (typeof window !== 'undefined' && isPlainObject(window.StatamicGutenbergPatterns)
+            ? window.StatamicGutenbergPatterns
+            : {});
+
+    if (typeof window !== 'undefined' && isPlainObject(patternSettings)) {
+        window.StatamicGutenbergPatterns = patternSettings;
+    }
+
     const lastSerialized = useRef(value || '');
     const [blocks, setBlocks] = useState(() => parseSerialized(value));
     const [assetQuery, setAssetQuery] = useState('');
@@ -652,7 +666,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
     const isFullscreen = variant === 'fullscreen';
 
-    const settings = useMemo(() => applyThemeJsonSettings({
+    const settings = useMemo(() => applyPatternSettings(applyThemeJsonSettings({
         ...EDITOR_THEME_SETTINGS,
         allowedBlockTypes,
         hasFixedToolbar: false,
@@ -672,7 +686,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                 onError?.(error.message);
             }
         },
-    }, meta.themeJson), [allowedBlockTypes, assetFolder, uploadFiles, meta.themeJson]);
+    }, meta.themeJson), patternSettings), [allowedBlockTypes, assetFolder, uploadFiles, meta.themeJson, patternSettings]);
 
     const rootBlockLayout = useMemo(() => ({
         ...ROOT_BLOCK_LAYOUT,
