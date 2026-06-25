@@ -57,6 +57,7 @@ class ThemeJson
     public function editorCss(): string
     {
         return $this->cssForRoots([
+            '.sgb-editor .sgb-page-frame',
             '.sgb-editor .sgb-canvas',
         ]);
     }

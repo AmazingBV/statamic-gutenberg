@@ -132,6 +132,7 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('.sgb-content p', $frontendCss);
         $this->assertStringContainsString('font-size: var(--wp--preset--font-size--huge)', $frontendCss);
         $this->assertStringContainsString('.sgb-content .custom-theme-class', $frontendCss);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame', $payload['css']);
         $this->assertStringContainsString('.sgb-editor .sgb-canvas', $payload['css']);
         $this->assertStringNotContainsString('.editor-styles-wrapper', $payload['css']);
         $this->assertStringNotContainsString('.sgb-editor--fullscreen .sgb-page-frame', $payload['css']);

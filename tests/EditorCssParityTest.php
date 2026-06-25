@@ -78,7 +78,20 @@ class EditorCssParityTest extends TestCase
             $css
         );
         $this->assertStringContainsString(
+            '.sgb-editor--fullscreen .sgb-editor__stage',
+            $css
+        );
+        $this->assertStringContainsString('padding: 0', $css);
+        $this->assertStringContainsString('box-sizing: border-box', $css);
+        $this->assertStringContainsString('max-width: none', $css);
+        $this->assertStringContainsString('border: 0', $css);
+        $this->assertStringContainsString('box-shadow: none', $css);
+        $this->assertStringContainsString(
             '.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns.alignwide, .wp-block-group.alignwide)',
+            $css
+        );
+        $this->assertStringContainsString(
+            '.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > .wp-block.alignfull',
             $css
         );
         $this->assertStringContainsString(

@@ -462,12 +462,12 @@
 .sgb-editor__stage {
     min-width: 0;
     min-height: 0;
-    background: #eef1f5;
+    background: #ffffff;
 }
 
 .sgb-editor--fullscreen .sgb-editor__stage {
     overflow: auto;
-    padding: 32px;
+    padding: 0;
 }
 
 .sgb-editor--fullscreen .sgb-editor__stage--code {
@@ -518,14 +518,16 @@
     --wp--preset--font-size--medium: 1.25rem;
     --wp--preset--font-size--large: 2.25rem;
     --wp--preset--font-size--x-large: 2.75rem;
-    width: min(var(--wp--style--global--wide-size), 100%);
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
     min-height: calc(100vh - 180px);
-    margin: 0 auto;
-    padding: 48px 56px 72px;
-    border: 1px solid #d8dee4;
-    border-radius: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
     background: #ffffff;
-    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    box-shadow: none;
 }
 
 .sgb-canvas {
