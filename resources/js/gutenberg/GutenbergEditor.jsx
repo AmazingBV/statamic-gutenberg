@@ -339,6 +339,161 @@ function layoutSizeFromSettings(settings, key, fallback) {
     return settings.__experimentalFeatures?.layout?.[key] || fallback;
 }
 
+function codeToken(className, value, key) {
+    return <span className={className} key={key}>{value}</span>;
+}
+
+function pushPlainToken(tokens, value, key) {
+    if (value) {
+        tokens.push(codeToken('sgb-token sgb-token--plain', value, key));
+    }
+}
+
+function highlightJson(value, keyPrefix) {
+    const tokens = [];
+    const pattern = /("(?:\\.|[^"\\])*")(\s*:)?|(-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|\b(true|false|null)\b|[{}\[\],:]/g;
+    let cursor = 0;
+    let index = 0;
+    let match;
+
+    while ((match = pattern.exec(value)) !== null) {
+        pushPlainToken(tokens, value.slice(cursor, match.index), `${keyPrefix}-json-text-${index}`);
+
+        if (match[1]) {
+            tokens.push(codeToken(
+                match[2] ? 'sgb-token sgb-token--json-key' : 'sgb-token sgb-token--string',
+                match[1],
+                `${keyPrefix}-json-string-${index}`,
+            ));
+
+            if (match[2]) {
+                tokens.push(codeToken('sgb-token sgb-token--punctuation', match[2], `${keyPrefix}-json-colon-${index}`));
+            }
+        } else if (match[3]) {
+            tokens.push(codeToken('sgb-token sgb-token--number', match[3], `${keyPrefix}-json-number-${index}`));
+        } else if (match[4]) {
+            tokens.push(codeToken('sgb-token sgb-token--literal', match[4], `${keyPrefix}-json-literal-${index}`));
+        } else {
+            tokens.push(codeToken('sgb-token sgb-token--punctuation', match[0], `${keyPrefix}-json-punctuation-${index}`));
+        }
+
+        cursor = pattern.lastIndex;
+        index += 1;
+    }
+
+    pushPlainToken(tokens, value.slice(cursor), `${keyPrefix}-json-tail`);
+
+    return tokens;
+}
+
+function highlightComment(value, keyPrefix) {
+    const tokens = [];
+    const start = '<!--';
+    const end = '-->';
+    const body = value.slice(start.length, value.endsWith(end) ? -end.length : undefined);
+    const jsonStart = body.indexOf('{');
+    const jsonEnd = body.lastIndexOf('}');
+    const beforeJson = jsonStart >= 0 ? body.slice(0, jsonStart) : body;
+    const json = jsonStart >= 0 && jsonEnd >= jsonStart ? body.slice(jsonStart, jsonEnd + 1) : '';
+    const afterJson = json ? body.slice(jsonEnd + 1) : '';
+
+    tokens.push(codeToken('sgb-token sgb-token--comment-delimiter', start, `${keyPrefix}-comment-start`));
+
+    beforeJson.split(/(\/?wp:[^\s{}]+)/g).forEach((part, index) => {
+        if (! part) {
+            return;
+        }
+
+        tokens.push(codeToken(
+            /^\/?wp:/.test(part) ? 'sgb-token sgb-token--block-name' : 'sgb-token sgb-token--comment',
+            part,
+            `${keyPrefix}-comment-body-${index}`,
+        ));
+    });
+
+    if (json) {
+        tokens.push(...highlightJson(json, `${keyPrefix}-comment-json`));
+    }
+
+    if (afterJson) {
+        tokens.push(codeToken('sgb-token sgb-token--comment', afterJson, `${keyPrefix}-comment-after-json`));
+    }
+
+    if (value.endsWith(end)) {
+        tokens.push(codeToken('sgb-token sgb-token--comment-delimiter', end, `${keyPrefix}-comment-end`));
+    }
+
+    return tokens;
+}
+
+function highlightAttributes(value, keyPrefix) {
+    const tokens = [];
+    const pattern = /([^\s=\/'">]+)(\s*=\s*)?("[^"]*"|'[^']*'|[^\s"'>=]+)?/g;
+    let cursor = 0;
+    let index = 0;
+    let match;
+
+    while ((match = pattern.exec(value)) !== null) {
+        pushPlainToken(tokens, value.slice(cursor, match.index), `${keyPrefix}-attr-gap-${index}`);
+        tokens.push(codeToken('sgb-token sgb-token--attribute', match[1], `${keyPrefix}-attr-name-${index}`));
+
+        if (match[2]) {
+            tokens.push(codeToken('sgb-token sgb-token--punctuation', match[2], `${keyPrefix}-attr-equals-${index}`));
+        }
+
+        if (match[3]) {
+            tokens.push(codeToken('sgb-token sgb-token--string', match[3], `${keyPrefix}-attr-value-${index}`));
+        }
+
+        cursor = pattern.lastIndex;
+        index += 1;
+    }
+
+    pushPlainToken(tokens, value.slice(cursor), `${keyPrefix}-attr-tail`);
+
+    return tokens;
+}
+
+function highlightTag(value, keyPrefix) {
+    const match = value.match(/^(<\/?)([A-Za-z][^\s/>]*)([\s\S]*?)(\/?>)$/);
+
+    if (! match) {
+        return [codeToken('sgb-token sgb-token--tag', value, `${keyPrefix}-tag`)];
+    }
+
+    return [
+        codeToken('sgb-token sgb-token--punctuation', match[1], `${keyPrefix}-tag-open`),
+        codeToken('sgb-token sgb-token--tag-name', match[2], `${keyPrefix}-tag-name`),
+        ...highlightAttributes(match[3], `${keyPrefix}-attrs`),
+        codeToken('sgb-token sgb-token--punctuation', match[4], `${keyPrefix}-tag-close`),
+    ];
+}
+
+function highlightCode(value) {
+    const tokens = [];
+    const pattern = /<!--[\s\S]*?-->|<\/?[A-Za-z][^>]*?>/g;
+    let cursor = 0;
+    let index = 0;
+    let match;
+
+    while ((match = pattern.exec(value)) !== null) {
+        pushPlainToken(tokens, value.slice(cursor, match.index), `plain-${index}`);
+        tokens.push(...(match[0].startsWith('<!--')
+            ? highlightComment(match[0], `comment-${index}`)
+            : highlightTag(match[0], `tag-${index}`)));
+        cursor = pattern.lastIndex;
+        index += 1;
+    }
+
+    pushPlainToken(tokens, value.slice(cursor), 'plain-tail');
+
+    if (value.endsWith('\n')) {
+        tokens.push(codeToken('sgb-token sgb-token--plain', ' ', 'trailing-space'));
+    }
+
+    return tokens;
+}
+
 function sameOriginUrl(value) {
     const url = new URL(value, window.location.origin);
 
@@ -493,6 +648,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
     const mediaPickerCallbackRef = useRef(null);
     const uploadInputRef = useRef(null);
     const editorContentRef = useRef(null);
+    const codeHighlightRef = useRef(null);
     const selectedBlock = useSelect(
         (select) => select(blockEditorStore).getSelectedBlock(),
         [],
@@ -591,6 +747,17 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         setCodeValue(serialized);
         onChange(serialized);
     }, [onChange, recordHistory]);
+
+    const highlightedCode = useMemo(() => highlightCode(codeValue), [codeValue]);
+
+    const syncCodeHighlightScroll = useCallback((event) => {
+        if (! codeHighlightRef.current) {
+            return;
+        }
+
+        codeHighlightRef.current.scrollTop = event.currentTarget.scrollTop;
+        codeHighlightRef.current.scrollLeft = event.currentTarget.scrollLeft;
+    }, []);
 
     const undoEdit = useCallback(() => {
         const previous = historyRef.current.undo.pop();
@@ -1074,13 +1241,20 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                         ) : null}
                         <main className={`sgb-editor__stage${editorMode === 'code' ? ' sgb-editor__stage--code' : ''}`}>
                             {editorMode === 'code' ? (
-                                <textarea
-                                    className="sgb-code-editor"
-                                    spellCheck={false}
-                                    value={codeValue}
-                                    aria-label="Gutenberg code editor"
-                                    onChange={handleCodeChange}
-                                />
+                                <div className="sgb-code-editor-shell">
+                                    <pre className="sgb-code-highlight" aria-hidden="true" ref={codeHighlightRef}>
+                                        <code>{highlightedCode}</code>
+                                    </pre>
+                                    <textarea
+                                        className="sgb-code-editor"
+                                        spellCheck={false}
+                                        wrap="off"
+                                        value={codeValue}
+                                        aria-label="Gutenberg code editor"
+                                        onChange={handleCodeChange}
+                                        onScroll={syncCodeHighlightScroll}
+                                    />
+                                </div>
                             ) : (
                                 <div className="sgb-page-frame">
                                     <BlockTools __unstableContentRef={editorContentRef}>

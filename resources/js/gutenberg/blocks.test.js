@@ -136,6 +136,7 @@ describe('registerGutenbergBlocks', () => {
     it('adds native-style editor controls for history, list view and code mode', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');
+        const css = fs.readFileSync('resources/css/addon.css', 'utf8');
 
         expect(source).toContain('HISTORY_LIMIT');
         expect(source).toContain('undoEdit');
@@ -149,6 +150,14 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('Code editor');
         expect(source).toContain('Visual editor');
         expect(source).toContain('sgb-code-editor');
+        expect(source).toContain('highlightCode');
+        expect(source).toContain('highlightJson');
+        expect(source).toContain('sgb-code-highlight');
+        expect(source).toContain('syncCodeHighlightScroll');
+        expect(source).toContain('wrap="off"');
+        expect(css).toContain('.sgb-token--tag-name');
+        expect(css).toContain('.sgb-token--json-key');
+        expect(css).toContain('.sgb-token--block-name');
         expect(windowSource).toContain('value !== lastAppliedValue');
         expect(windowSource).not.toContain('Close the block editor without applying changes?');
     });

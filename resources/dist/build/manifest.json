@@ -16,7 +16,7 @@
     "isDynamicEntry": true
   },
   "resources/css/addon.css": {
-    "file": "assets/addon-CdbBb2Vq.css",
+    "file": "assets/addon-DvAugjBk.css",
     "src": "resources/css/addon.css",
     "isEntry": true,
     "name": "addon",
@@ -34,7 +34,7 @@
     ]
   },
   "resources/js/addon.js": {
-    "file": "assets/addon-tU2aHG_J.js",
+    "file": "assets/addon-FxGkUGTe.js",
     "name": "addon",
     "src": "resources/js/addon.js",
     "isEntry": true,
@@ -46,7 +46,7 @@
     ]
   },
   "resources/js/editor-window.js": {
-    "file": "assets/editor-window-CxKwRnXT.js",
+    "file": "assets/editor-window-DhnwHZa7.js",
     "name": "editor-window",
     "src": "resources/js/editor-window.js",
     "isEntry": true,
@@ -62,7 +62,7 @@
     "isEntry": true
   },
   "resources/js/gutenberg/mount.jsx": {
-    "file": "assets/mount-DIc0UTG9.js",
+    "file": "assets/mount-B0AZSD6Z.js",
     "name": "mount",
     "src": "resources/js/gutenberg/mount.jsx",
     "isDynamicEntry": true,

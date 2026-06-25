@@ -475,25 +475,96 @@
     background: #ffffff;
 }
 
-.sgb-code-editor {
-    display: block;
-    width: 100%;
+.sgb-code-editor-shell {
+    position: relative;
     min-height: calc(100vh - 160px);
-    padding: 18px;
+    width: 100%;
+    overflow: hidden;
     border: 1px solid #d8dee4;
     border-radius: 6px;
     background: #0f172a;
-    color: #f8fafc;
+}
+
+.sgb-code-editor-shell:focus-within {
+    border-color: var(--sgb-accent);
+    outline: 2px solid rgba(49, 91, 199, 0.2);
+}
+
+.sgb-code-highlight,
+.sgb-code-editor {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 18px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     font-size: 13px;
     line-height: 1.6;
-    resize: none;
     tab-size: 2;
+    white-space: pre;
 }
 
-.sgb-code-editor:focus {
-    border-color: var(--sgb-accent);
-    outline: 2px solid rgba(49, 91, 199, 0.2);
+.sgb-code-highlight {
+    overflow: hidden;
+    color: #dbe4f0;
+    pointer-events: none;
+}
+
+.sgb-code-highlight code {
+    font: inherit;
+}
+
+.sgb-code-editor {
+    overflow: auto;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: #f8fafc;
+    outline: 0;
+    resize: none;
+}
+
+.sgb-code-editor::selection {
+    background: rgba(49, 91, 199, 0.45);
+    color: transparent;
+}
+
+.sgb-token--plain {
+    color: #dbe4f0;
+}
+
+.sgb-token--comment,
+.sgb-token--comment-delimiter {
+    color: #7dd3fc;
+}
+
+.sgb-token--block-name {
+    color: #c4b5fd;
+    font-weight: 700;
+}
+
+.sgb-token--tag-name {
+    color: #93c5fd;
+}
+
+.sgb-token--attribute,
+.sgb-token--json-key {
+    color: #fbbf24;
+}
+
+.sgb-token--string {
+    color: #86efac;
+}
+
+.sgb-token--number,
+.sgb-token--literal {
+    color: #fca5a5;
+}
+
+.sgb-token--punctuation {
+    color: #cbd5e1;
 }
 
 .sgb-page-frame {
