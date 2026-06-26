@@ -172,6 +172,8 @@ class BlockRenderer
         $html = trim($this->sanitize($block->renderableHtml(), $options));
 
         if ($html !== '') {
+            $html = $this->renderStaticInnerBlocks($block, $html, $inner);
+
             return $this->applyStaticLayoutAttributes($block, $html);
         }
 
@@ -190,6 +192,20 @@ class BlockRenderer
             'core/loginout' => $this->renderLoginoutFallback(),
             'core/navigation-overlay-close' => '<button class="wp-block-navigation__responsive-container-close" type="button">Close</button>',
             default => $this->renderCoreFallbackNotice($block, $inner),
+        };
+    }
+
+    private function renderStaticInnerBlocks(Block $block, string $html, string $inner): string
+    {
+        if ($inner === '' || trim($html) === '' || ! class_exists(DOMDocument::class)) {
+            return $html;
+        }
+
+        return match ($block->name()) {
+            'core/cover' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-cover__inner-container', $inner),
+            'core/media-text' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-media-text__content', $inner),
+            'core/gallery' => $this->replaceGalleryInnerHtml($html, $inner),
+            default => $html,
         };
     }
 
@@ -644,6 +660,80 @@ class BlockRenderer
         }
 
         return $html;
+    }
+
+    private function replaceFirstDescendantInnerHtml(string $html, string $tagName, string $className, string $inner): string
+    {
+        $document = $this->loadFragment($html);
+        $wrapper = $document->getElementById('__statamic_gutenberg_fragment__');
+
+        if (! $wrapper) {
+            return $html;
+        }
+
+        foreach ($wrapper->getElementsByTagName($tagName) as $element) {
+            if (! $element instanceof DOMElement || ! $this->elementHasClass($element, $className)) {
+                continue;
+            }
+
+            $this->replaceElementInnerHtml($document, $element, $inner);
+
+            return $this->fragmentHtml($document, $wrapper);
+        }
+
+        return $html;
+    }
+
+    private function replaceGalleryInnerHtml(string $html, string $inner): string
+    {
+        $document = $this->loadFragment($html);
+        $wrapper = $document->getElementById('__statamic_gutenberg_fragment__');
+
+        if (! $wrapper) {
+            return $html;
+        }
+
+        foreach ($wrapper->getElementsByTagName('figure') as $gallery) {
+            if (! $gallery instanceof DOMElement || ! $this->elementHasClass($gallery, 'wp-block-gallery')) {
+                continue;
+            }
+
+            $captions = [];
+
+            foreach (iterator_to_array($gallery->childNodes) as $child) {
+                if ($child instanceof DOMElement && strtolower($child->tagName) === 'figcaption') {
+                    $captions[] = $child->cloneNode(true);
+                }
+            }
+
+            $this->replaceElementInnerHtml($document, $gallery, $inner);
+
+            foreach ($captions as $caption) {
+                $gallery->appendChild($caption);
+            }
+
+            return $this->fragmentHtml($document, $wrapper);
+        }
+
+        return $html;
+    }
+
+    private function replaceElementInnerHtml(DOMDocument $document, DOMElement $element, string $inner): void
+    {
+        while ($element->firstChild) {
+            $element->removeChild($element->firstChild);
+        }
+
+        $innerDocument = $this->loadFragment($inner);
+        $innerWrapper = $innerDocument->getElementById('__statamic_gutenberg_fragment__');
+
+        if (! $innerWrapper) {
+            return;
+        }
+
+        foreach (iterator_to_array($innerWrapper->childNodes) as $child) {
+            $element->appendChild($document->importNode($child, true));
+        }
     }
 
     private function layoutVariableStyles(array $layout): array

@@ -110,6 +110,42 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Cover title</p>', $rendered);
     }
 
+    public function test_it_renders_dynamic_inner_blocks_inside_static_cover_and_media_text_markup(): void
+    {
+        app(GutenbergManager::class)->block('statamic/badge', function ($block) {
+            return '<strong>Rendered '.e($block->attribute('label')).'</strong>';
+        });
+
+        $html = implode('', [
+            '<!-- wp:cover --><div class="wp-block-cover"><div class="wp-block-cover__inner-container"><!-- wp:statamic/badge {"label":"cover"} --><em>Saved cover fallback</em><!-- /wp:statamic/badge --></div></div><!-- /wp:cover -->',
+            '<!-- wp:media-text --><div class="wp-block-media-text"><figure class="wp-block-media-text__media"><img src="/storage/media.jpg" alt=""></figure><div class="wp-block-media-text__content"><!-- wp:statamic/badge {"label":"media"} --><em>Saved media fallback</em><!-- /wp:statamic/badge --></div></div><!-- /wp:media-text -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/cover', 'core/media-text', 'statamic/badge'],
+        ]);
+
+        $this->assertStringContainsString('class="wp-block-cover"', $rendered);
+        $this->assertStringContainsString('class="wp-block-cover__inner-container"', $rendered);
+        $this->assertStringContainsString('class="wp-block-media-text__content"', $rendered);
+        $this->assertStringContainsString('<strong>Rendered cover</strong>', $rendered);
+        $this->assertStringContainsString('<strong>Rendered media</strong>', $rendered);
+        $this->assertStringNotContainsString('Saved cover fallback', $rendered);
+        $this->assertStringNotContainsString('Saved media fallback', $rendered);
+    }
+
+    public function test_it_renders_gallery_inner_images_through_the_image_renderer(): void
+    {
+        $html = '<!-- wp:gallery --><figure class="wp-block-gallery has-nested-images"><!-- wp:image {"lightbox":{"enabled":true}} --><figure class="wp-block-image"><img src="/storage/a.jpg" alt="A"></figure><!-- /wp:image --><figcaption class="blocks-gallery-caption">Gallery caption</figcaption></figure><!-- /wp:gallery -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-gallery has-nested-images"', $rendered);
+        $this->assertStringContainsString('wp-lightbox-container', $rendered);
+        $this->assertStringContainsString('data-sgb-lightbox="true"', $rendered);
+        $this->assertStringContainsString('<figcaption class="blocks-gallery-caption">Gallery caption</figcaption>', $rendered);
+    }
+
     public function test_it_preserves_safe_file_pdf_preview_objects(): void
     {
         $html = '<!-- wp:file {"href":"https://site.test/storage/test.pdf","displayPreview":true} --><div class="wp-block-file"><object class="wp-block-file__embed" data="https://site.test/storage/test.pdf" type="application/pdf" style="width:100%;height:420px" aria-label="test.pdf"></object><a href="https://site.test/storage/test.pdf">test.pdf</a></div><!-- /wp:file -->';
