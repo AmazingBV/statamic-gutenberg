@@ -204,7 +204,7 @@ class BlockRenderer
         return match ($block->name()) {
             'core/cover' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-cover__inner-container', $inner),
             'core/media-text' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-media-text__content', $inner),
-            'core/gallery' => $this->replaceGalleryInnerHtml($html, $inner),
+            'core/gallery' => $this->replaceGalleryInnerHtml($block, $html, $inner),
             default => $html,
         };
     }
@@ -776,7 +776,7 @@ class BlockRenderer
         return $html;
     }
 
-    private function replaceGalleryInnerHtml(string $html, string $inner): string
+    private function replaceGalleryInnerHtml(Block $block, string $html, string $inner): string
     {
         $document = $this->loadFragment($html);
         $wrapper = $document->getElementById('__statamic_gutenberg_fragment__');
@@ -799,6 +799,7 @@ class BlockRenderer
             }
 
             $this->replaceElementInnerHtml($document, $gallery, $inner);
+            $this->addGalleryGapStyles($block, $gallery);
 
             foreach ($captions as $caption) {
                 $gallery->appendChild($caption);
@@ -808,6 +809,21 @@ class BlockRenderer
         }
 
         return $html;
+    }
+
+    private function addGalleryGapStyles(Block $block, DOMElement $gallery): void
+    {
+        $style = $block->attribute('style', []);
+        $blockGap = is_array($style) ? $this->safeStyleValue($style['spacing']['blockGap'] ?? null) : null;
+
+        if (! $blockGap) {
+            return;
+        }
+
+        $gallery->setAttribute('style', $this->mergeStyles(
+            $gallery->getAttribute('style'),
+            '--wp--style--unstable-gallery-gap: '.$blockGap.'; gap: '.$blockGap
+        ));
     }
 
     private function replaceElementInnerHtml(DOMDocument $document, DOMElement $element, string $inner): void
@@ -869,6 +885,29 @@ class BlockRenderer
         }
 
         return preg_match('/^[a-z0-9_.,%()+\-*\/\s]+$/i', $value) ? $value : null;
+    }
+
+    private function safeStyleValue(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '' || preg_match('/[;{}<>]/', $value)) {
+            return null;
+        }
+
+        if (preg_match('/(?:expression|javascript:|vbscript:|data:|url\s*\()/i', $value)) {
+            return null;
+        }
+
+        if (preg_match('/^var:preset\|([a-z0-9_-]+)\|([a-z0-9_-]+)$/i', $value, $matches)) {
+            return sprintf('var(--wp--preset--%s--%s)', $matches[1], $matches[2]);
+        }
+
+        return $value;
     }
 
     private function cssJustification(string $value): string

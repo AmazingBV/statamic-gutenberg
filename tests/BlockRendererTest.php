@@ -142,11 +142,13 @@ class BlockRendererTest extends TestCase
 
     public function test_it_renders_gallery_inner_images_through_the_image_renderer(): void
     {
-        $html = '<!-- wp:gallery --><figure class="wp-block-gallery has-nested-images"><!-- wp:image {"lightbox":{"enabled":true}} --><figure class="wp-block-image"><img src="/storage/a.jpg" alt="A"></figure><!-- /wp:image --><figcaption class="blocks-gallery-caption">Gallery caption</figcaption></figure><!-- /wp:gallery -->';
+        $html = '<!-- wp:gallery {"style":{"spacing":{"blockGap":"var:preset|spacing|50"}}} --><figure class="wp-block-gallery has-nested-images"><!-- wp:image {"lightbox":{"enabled":true}} --><figure class="wp-block-image"><img src="/storage/a.jpg" alt="A"></figure><!-- /wp:image --><figcaption class="blocks-gallery-caption">Gallery caption</figcaption></figure><!-- /wp:gallery -->';
 
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('class="wp-block-gallery has-nested-images"', $rendered);
+        $this->assertStringContainsString('--wp--style--unstable-gallery-gap: var(--wp--preset--spacing--50)', $rendered);
+        $this->assertStringContainsString('gap: var(--wp--preset--spacing--50)', $rendered);
         $this->assertStringContainsString('wp-lightbox-container', $rendered);
         $this->assertStringContainsString('data-sgb-lightbox="true"', $rendered);
         $this->assertStringContainsString('<figcaption class="blocks-gallery-caption">Gallery caption</figcaption>', $rendered);
@@ -221,13 +223,18 @@ class BlockRendererTest extends TestCase
 
     public function test_it_preserves_safe_gutenberg_inline_styles(): void
     {
-        $html = '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->';
+        $html = implode('', [
+            '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->',
+            '<!-- wp:button --><div class="wp-block-button" style="--wp--block-button--width:50%;width:var(--wp--block-button--width)"><a class="wp-block-button__link wp-element-button">Button</a></div><!-- /wp:button -->',
+        ]);
 
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('margin-top: var(--wp--preset--spacing--40)', $rendered);
         $this->assertStringContainsString('padding: 12px', $rendered);
         $this->assertStringContainsString('color: #111', $rendered);
+        $this->assertStringContainsString('--wp--block-button--width: 50%', $rendered);
+        $this->assertStringContainsString('width: var(--wp--block-button--width)', $rendered);
         $this->assertStringNotContainsString('position', $rendered);
         $this->assertStringNotContainsString('url(', $rendered);
     }

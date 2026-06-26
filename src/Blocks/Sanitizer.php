@@ -97,6 +97,7 @@ class Sanitizer
         'text-transform',
         'width',
         'writing-mode',
+        '--wp--block-button--width',
     ];
 
     private const REMOVED_TAGS = [
