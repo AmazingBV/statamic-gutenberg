@@ -173,10 +173,10 @@ class BlockRenderer
 
     private function renderStaticOrFallbackCoreBlock(Block $block, string $inner, array $options): string
     {
-        $html = trim($this->sanitize($block->renderableHtml(), $options));
+        $html = trim($this->sanitize($this->renderStaticBlockMarkup($block, $options), $options));
 
         if ($html !== '') {
-            $html = $this->renderStaticInnerBlocks($block, $html, $inner);
+            $html = $this->postProcessStaticInnerBlocks($block, $html, $inner);
             $html = $this->applyStaticLayoutAttributes($block, $html);
 
             return $this->applyDuotone($block, $html);
@@ -200,15 +200,41 @@ class BlockRenderer
         };
     }
 
-    private function renderStaticInnerBlocks(Block $block, string $html, string $inner): string
+    private function renderStaticBlockMarkup(Block $block, array $options): string
+    {
+        $innerBlocks = $block->innerBlocks();
+
+        if ($innerBlocks === []) {
+            return $block->renderableHtml();
+        }
+
+        $html = '';
+        $blockIndex = 0;
+
+        foreach ($block->innerContent() as $content) {
+            if (is_string($content)) {
+                $html .= $content;
+
+                continue;
+            }
+
+            if (isset($innerBlocks[$blockIndex])) {
+                $html .= $this->renderBlock($innerBlocks[$blockIndex], $options);
+            }
+
+            $blockIndex++;
+        }
+
+        return $html;
+    }
+
+    private function postProcessStaticInnerBlocks(Block $block, string $html, string $inner): string
     {
         if ($inner === '' || trim($html) === '' || ! class_exists(DOMDocument::class)) {
             return $html;
         }
 
         return match ($block->name()) {
-            'core/cover' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-cover__inner-container', $inner),
-            'core/media-text' => $this->replaceFirstDescendantInnerHtml($html, 'div', 'wp-block-media-text__content', $inner),
             'core/gallery' => $this->replaceGalleryInnerHtml($block, $html, $inner),
             default => $html,
         };

@@ -166,6 +166,35 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('Saved media fallback', $rendered);
     }
 
+    public function test_it_renders_dynamic_inner_blocks_inside_static_core_container_markup(): void
+    {
+        app(GutenbergManager::class)->block('statamic/badge', function ($block) {
+            return '<strong>Rendered '.e($block->attribute('label')).'</strong>';
+        });
+
+        $html = implode('', [
+            '<!-- wp:details --><details class="wp-block-details"><summary>More</summary><!-- wp:statamic/badge {"label":"details"} --><em>Saved details fallback</em><!-- /wp:statamic/badge --></details><!-- /wp:details -->',
+            '<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:statamic/badge {"label":"quote"} --><em>Saved quote fallback</em><!-- /wp:statamic/badge --><cite>Source</cite></blockquote><!-- /wp:quote -->',
+            '<!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li><!-- wp:statamic/badge {"label":"list"} --><em>Saved list fallback</em><!-- /wp:statamic/badge --></li><!-- /wp:list-item --></ul><!-- /wp:list -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/details', 'core/quote', 'core/list', 'core/list-item', 'statamic/badge'],
+        ]);
+
+        $this->assertStringContainsString('class="wp-block-details"', $rendered);
+        $this->assertStringContainsString('<summary>More</summary>', $rendered);
+        $this->assertStringContainsString('class="wp-block-quote"', $rendered);
+        $this->assertStringContainsString('<cite>Source</cite>', $rendered);
+        $this->assertStringContainsString('class="wp-block-list"', $rendered);
+        $this->assertStringContainsString('<strong>Rendered details</strong>', $rendered);
+        $this->assertStringContainsString('<strong>Rendered quote</strong>', $rendered);
+        $this->assertStringContainsString('<strong>Rendered list</strong>', $rendered);
+        $this->assertStringNotContainsString('Saved details fallback', $rendered);
+        $this->assertStringNotContainsString('Saved quote fallback', $rendered);
+        $this->assertStringNotContainsString('Saved list fallback', $rendered);
+    }
+
     public function test_it_renders_gallery_inner_images_through_the_image_renderer(): void
     {
         $html = '<!-- wp:gallery {"style":{"spacing":{"blockGap":"var:preset|spacing|50"}}} --><figure class="wp-block-gallery has-nested-images"><!-- wp:image {"lightbox":{"enabled":true}} --><figure class="wp-block-image"><img src="/storage/a.jpg" alt="A"></figure><!-- /wp:image --><figcaption class="blocks-gallery-caption">Gallery caption</figcaption></figure><!-- /wp:gallery -->';
