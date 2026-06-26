@@ -140,9 +140,16 @@ class EditorCssParityTest extends TestCase
 
         $this->assertStringContainsString("values.includes('*')", $editor);
         $this->assertStringContainsString("type.startsWith('application/')", $editor);
+        $this->assertStringContainsString('assetFilterFromAllowedTypes(allowedTypes)', $editor);
+        $this->assertStringContainsString("url.searchParams.append('mime_types[]', mimeType)", $editor);
+        $this->assertStringContainsString("url.searchParams.append('extensions[]', extension)", $editor);
+        $this->assertStringContainsString("formData.append('mime_types[]', mimeType)", $editor);
+        $this->assertStringContainsString("formData.append('extensions[]', extension)", $editor);
+        $this->assertStringContainsString('accept={acceptForAssetPicker(assetPicker)}', $editor);
         $this->assertStringContainsString("requestedViaMediaUpload ? 'file' : 'image'", $editor);
         $this->assertStringContainsString("typeFromAllowedTypes(allowedTypes) || 'file'", $editor);
         $this->assertStringContainsString("callback.onSelect(uploaded.map((asset) => createMediaPayload(asset)))", $editor);
+        $this->assertStringContainsString('function StatamicMediaUpload({ render, value, ...options })', $editor);
     }
 
     public function test_asset_picker_supports_selecting_multiple_existing_assets(): void

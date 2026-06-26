@@ -558,12 +558,29 @@ function assetKey(asset) {
     return String(asset?.id || asset?.path || asset?.url || asset?.filename || '');
 }
 
-function typeFromAllowedTypes(allowedTypes = []) {
-    const values = Array.isArray(allowedTypes)
+function normalizeAllowedTypeValues(allowedTypes = []) {
+    return Array.isArray(allowedTypes)
         ? allowedTypes.map((type) => String(type).replace(/^mime:/, '').toLowerCase())
         : allowedTypes
             ? [String(allowedTypes).replace(/^mime:/, '').toLowerCase()]
-        : [];
+            : [];
+}
+
+function assetFilterFromAllowedTypes(allowedTypes = []) {
+    const values = normalizeAllowedTypeValues(allowedTypes);
+    const mimeTypes = values.filter((type) => /^[a-z0-9.+-]+\/[a-z0-9.+*-]+$/i.test(type));
+    const extensions = values
+        .map((type) => type.startsWith('.') ? type.slice(1) : '')
+        .filter((extension) => /^[a-z0-9]+$/i.test(extension));
+    const accept = values
+        .filter((type) => type === '*' || type.endsWith('/*') || type.startsWith('.') || /^[a-z0-9.+-]+\/[a-z0-9.+*-]+$/i.test(type))
+        .join(',');
+
+    return { values, mimeTypes, extensions, accept };
+}
+
+function typeFromAllowedTypes(allowedTypes = []) {
+    const { values, mimeTypes } = assetFilterFromAllowedTypes(allowedTypes);
 
     if (values.includes('audio')) {
         return 'audio';
@@ -585,7 +602,27 @@ function typeFromAllowedTypes(allowedTypes = []) {
         return 'file';
     }
 
+    if (mimeTypes.some((type) => type.startsWith('audio/'))) {
+        return 'audio';
+    }
+
+    if (mimeTypes.some((type) => type.startsWith('video/'))) {
+        return mimeTypes.some((type) => type.startsWith('image/')) ? 'visual' : 'video';
+    }
+
+    if (mimeTypes.some((type) => type.startsWith('image/'))) {
+        return 'image';
+    }
+
+    if (mimeTypes.length) {
+        return 'file';
+    }
+
     return null;
+}
+
+function acceptForAssetPicker(picker) {
+    return picker?.accept || ASSET_TYPE_ACCEPTS[picker?.type] || '';
 }
 
 function supportedTypeForBlock(blockName) {
@@ -603,12 +640,11 @@ function parentFolder(path) {
     return parts.length ? parts.join('/') : '/';
 }
 
-function StatamicMediaUpload({ allowedTypes, multiple, onSelect, render, value }) {
+function StatamicMediaUpload({ render, value, ...options }) {
     const open = () => {
         window.StatamicGutenbergOpenMediaPicker?.({
-            allowedTypes,
-            multiple,
-            onSelect,
+            ...options,
+            value,
         });
     };
 
@@ -871,6 +907,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
             url.searchParams.set('q', assetQuery);
             url.searchParams.set('type', assetPicker.type);
             url.searchParams.set('folder', assetFolder);
+            (assetPicker.mimeTypes || []).forEach((mimeType) => {
+                url.searchParams.append('mime_types[]', mimeType);
+            });
+            (assetPicker.extensions || []).forEach((extension) => {
+                url.searchParams.append('extensions[]', extension);
+            });
 
             const response = await fetch(url.toString(), {
                 headers: {
@@ -908,6 +950,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         const type = typeFromAllowedTypes(options.allowedTypes)
             || supportedTypeForBlock(selectedBlock?.name)
             || (requestedViaMediaUpload ? 'file' : 'image');
+        const filter = assetFilterFromAllowedTypes(options.allowedTypes);
 
         mediaPickerCallbackRef.current = typeof options.onSelect === 'function'
             ? {
@@ -921,6 +964,9 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         setSelectedAssets([]);
         setAssetPicker({
             type,
+            accept: filter.accept,
+            extensions: filter.extensions,
+            mimeTypes: filter.mimeTypes,
             title: ASSET_TYPE_LABELS[type] || 'Assets',
         });
     }, [selectedBlock?.name]);
@@ -993,7 +1039,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         closeAssetPicker();
     }, [closeAssetPicker, insertBlocks, selectedBlock, toggleSelectedAsset, updateBlockAttributes]);
 
-    const uploadFiles = useCallback(async (filesList, type = 'image', folder = '/') => {
+    const uploadFiles = useCallback(async (filesList, type = 'image', folder = '/', filter = {}) => {
         if (! meta.uploadUrl) {
             throw new Error('No Statamic upload endpoint configured.');
         }
@@ -1007,6 +1053,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
             formData.append('container', meta.assetsContainer || 'assets');
             formData.append('type', type);
             formData.append('folder', folder);
+            (filter.mimeTypes || []).forEach((mimeType) => {
+                formData.append('mime_types[]', mimeType);
+            });
+            (filter.extensions || []).forEach((extension) => {
+                formData.append('extensions[]', extension);
+            });
             const url = sameOriginUrl(meta.uploadUrl);
 
             const response = await fetch(url.toString(), {
@@ -1041,7 +1093,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         setAssetsUploading(true);
 
         try {
-            const uploaded = await uploadFiles(filesList, assetPicker?.type || 'image', assetFolder);
+            const uploaded = await uploadFiles(filesList, assetPicker?.type || 'image', assetFolder, assetPicker || {});
 
             if (uploaded.length) {
                 setAssets((current) => [...uploaded, ...current]);
@@ -1074,10 +1126,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         __experimentalCanUserUseUnfilteredHTML: false,
         mediaUpload: async ({ allowedTypes, filesList, onFileChange, onError }) => {
             try {
+                const filter = assetFilterFromAllowedTypes(allowedTypes);
                 const uploaded = await uploadFiles(
                     filesList,
                     typeFromAllowedTypes(allowedTypes) || 'file',
                     assetFolder,
+                    filter,
                 );
                 onFileChange?.(uploaded.map((asset) => createMediaPayload(asset)));
                 setAssets((current) => [...uploaded, ...current]);
@@ -1211,7 +1265,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                         <input
                             ref={uploadInputRef}
                             type="file"
-                            accept={ASSET_TYPE_ACCEPTS[assetPicker.type] || ''}
+                            accept={acceptForAssetPicker(assetPicker)}
                             multiple
                             className="sgb-assets__file-input"
                             onChange={(event) => {

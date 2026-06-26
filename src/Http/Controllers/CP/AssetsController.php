@@ -27,11 +27,12 @@ class AssetsController extends CpController
         }
 
         $type = $this->normalType((string) $request->query('type', 'image'));
+        $filters = $this->assetFilters($request);
         $folder = $this->normalFolder((string) $request->query('folder', '/'));
         $search = strtolower(trim((string) $request->query('q', '')));
 
         $assets = $container->assets($folder, false)
-            ->filter(fn ($asset) => $this->assetMatchesType($asset, $type))
+            ->filter(fn ($asset) => $this->assetMatchesType($asset, $type, $filters))
             ->filter(function ($asset) use ($search) {
                 if ($search === '') {
                     return true;
@@ -68,6 +69,7 @@ class AssetsController extends CpController
         $this->authorize('store', [AssetContract::class, $container]);
 
         $type = $this->normalType((string) $request->input('type', $request->query('type', 'image')));
+        $filters = $this->assetFilters($request);
         $folder = $this->normalFolder((string) $request->input('folder', $request->query('folder', '/')));
 
         $validationRules = collect($container->validationRules())
@@ -89,7 +91,7 @@ class AssetsController extends CpController
 
         $asset = $container->makeAsset($path)->upload($file);
 
-        if (! $this->assetMatchesType($asset, $type)) {
+        if (! $this->assetMatchesType($asset, $type, $filters)) {
             $asset->delete();
 
             throw ValidationException::withMessages([
@@ -133,7 +135,62 @@ class AssetsController extends CpController
         };
     }
 
-    private function assetMatchesType($asset, string $type): bool
+    private function assetFilters(Request $request): array
+    {
+        return [
+            'mime_types' => $this->normalMimeTypes($request->input('mime_types', $request->query('mime_types', []))),
+            'extensions' => $this->normalExtensions($request->input('extensions', $request->query('extensions', []))),
+        ];
+    }
+
+    private function normalMimeTypes(mixed $value): array
+    {
+        return collect(is_array($value) ? $value : [$value])
+            ->map(fn ($mimeType) => strtolower(trim((string) $mimeType)))
+            ->filter(fn ($mimeType) => (bool) preg_match('/^[a-z0-9.+-]+\/[a-z0-9.+*-]+$/i', $mimeType))
+            ->values()
+            ->all();
+    }
+
+    private function normalExtensions(mixed $value): array
+    {
+        return collect(is_array($value) ? $value : [$value])
+            ->map(fn ($extension) => strtolower(ltrim(trim((string) $extension), '.')))
+            ->filter(fn ($extension) => (bool) preg_match('/^[a-z0-9]+$/i', $extension))
+            ->values()
+            ->all();
+    }
+
+    private function assetMatchesType($asset, string $type, array $filters = []): bool
+    {
+        if (! $this->assetMatchesBroadType($asset, $type)) {
+            return false;
+        }
+
+        $mimeTypes = $filters['mime_types'] ?? [];
+        $extensions = $filters['extensions'] ?? [];
+
+        if ($mimeTypes === [] && $extensions === []) {
+            return true;
+        }
+
+        $mimeType = strtolower((string) $asset->mimeType());
+        $extension = strtolower((string) $asset->extension());
+
+        $mimeMatches = collect($mimeTypes)->contains(function ($allowedMimeType) use ($mimeType) {
+            if (str_ends_with($allowedMimeType, '/*')) {
+                return str_starts_with($mimeType, substr($allowedMimeType, 0, -1));
+            }
+
+            return $mimeType === $allowedMimeType;
+        });
+
+        $extensionMatches = in_array($extension, $extensions, true);
+
+        return $mimeMatches || $extensionMatches;
+    }
+
+    private function assetMatchesBroadType($asset, string $type): bool
     {
         return match ($type) {
             'audio' => $asset->isAudio(),
