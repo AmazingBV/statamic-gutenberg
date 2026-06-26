@@ -799,7 +799,7 @@
     box-sizing: border-box;
     display: flex;
     flex-wrap: wrap;
-    gap: 2em;
+    gap: var(--wp--style--block-gap);
 }
 
 .sgb-editor .sgb-page-frame .wp-block-columns.is-layout-flex {
