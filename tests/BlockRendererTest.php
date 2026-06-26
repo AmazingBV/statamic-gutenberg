@@ -6,6 +6,7 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\CoreBlocks;
 use Amazingbv\StatamicGutenberg\GutenbergManager;
+use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 
 class BlockRendererTest extends TestCase
@@ -413,6 +414,26 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('wp-lightbox-container', $rendered);
         $this->assertStringContainsString('data-sgb-lightbox="true"', $rendered);
         $this->assertStringContainsString('data-sgb-lightbox-trigger="true"', $rendered);
+    }
+
+    public function test_it_renders_icon_blocks_with_wrapper_supports_and_accessible_label(): void
+    {
+        config([
+            'statamic-gutenberg.icons' => [
+                'star' => '<svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>',
+            ],
+        ]);
+        $this->app->forgetInstance(IconRepository::class);
+
+        $html = '<!-- wp:icon {"icon":"star","ariaLabel":"Favorite","align":"center","className":"icon-extra","anchor":"icon-one","textColor":"primary","style":{"spacing":{"margin":{"top":"1rem"}}}} /-->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-icon aligncenter icon-extra has-primary-color has-text-color"', $rendered);
+        $this->assertStringContainsString('id="icon-one"', $rendered);
+        $this->assertStringContainsString('style="margin-top: 1rem"', $rendered);
+        $this->assertStringContainsString('role="img"', $rendered);
+        $this->assertStringContainsString('aria-label="Favorite"', $rendered);
+        $this->assertStringNotContainsString('aria-hidden="true"', $rendered);
     }
 
     public function test_it_blocks_unknown_blocks_by_default(): void

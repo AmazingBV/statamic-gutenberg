@@ -1001,7 +1001,7 @@ class BlockRenderer
 
         return sprintf(
             '<div%s>%s</div>',
-            $this->renderAttributes(['class' => 'wp-block-icon']),
+            BlockWrapperContext::withBlock($block, fn (): string => BlockWrapperContext::wrapperAttributes(['class' => 'wp-block-icon'])),
             $svg
         );
     }
