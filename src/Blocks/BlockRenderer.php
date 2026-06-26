@@ -993,11 +993,94 @@ class BlockRenderer
             $classes[] = 'wp-has-aspect-ratio';
         }
 
-        return sprintf(
-            '<figure%s><div class="wp-block-embed__wrapper"><iframe src="%s" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></figure>',
-            BlockWrapperContext::withBlock($block, fn (): string => BlockWrapperContext::wrapperAttributes(['class' => implode(' ', $classes)])),
+        $iframe = sprintf(
+            '<iframe src="%s" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>',
             e($embedUrl)
         );
+        $wrapperAttributes = BlockWrapperContext::withBlock($block, fn (): string => BlockWrapperContext::wrapperAttributes(['class' => implode(' ', $classes)]));
+        $saved = trim($this->sanitize($block->renderableHtml(), $options));
+
+        if ($saved !== '') {
+            $preserved = $this->replaceEmbedWrapperWithIframe($saved, $wrapperAttributes, $iframe);
+
+            if ($preserved !== null) {
+                return $preserved;
+            }
+        }
+
+        return sprintf(
+            '<figure%s><div class="wp-block-embed__wrapper">%s</div></figure>',
+            $wrapperAttributes,
+            $iframe
+        );
+    }
+
+    private function replaceEmbedWrapperWithIframe(string $html, string $wrapperAttributes, string $iframe): ?string
+    {
+        if (trim($html) === '' || ! class_exists(DOMDocument::class)) {
+            return null;
+        }
+
+        $document = $this->loadFragment($html);
+        $wrapper = $document->getElementById('__statamic_gutenberg_fragment__');
+
+        if (! $wrapper) {
+            return null;
+        }
+
+        foreach ($wrapper->childNodes as $child) {
+            if (! $child instanceof DOMElement || strtolower($child->tagName) !== 'figure') {
+                continue;
+            }
+
+            $this->mergeWrapperAttributes($child, $wrapperAttributes);
+            $embedWrapper = $this->firstDescendantWithClass($child, 'div', 'wp-block-embed__wrapper');
+
+            if (! $embedWrapper) {
+                $embedWrapper = $document->createElement('div');
+                $embedWrapper->setAttribute('class', 'wp-block-embed__wrapper');
+                $child->insertBefore($embedWrapper, $child->firstChild);
+            }
+
+            $this->replaceElementInnerHtml($document, $embedWrapper, $iframe);
+
+            return $this->fragmentHtml($document, $wrapper);
+        }
+
+        return null;
+    }
+
+    private function mergeWrapperAttributes(DOMElement $element, string $wrapperAttributes): void
+    {
+        $fragment = $this->firstElementFragment('<figure'.$wrapperAttributes.'></figure>');
+        $attributes = is_array($fragment) ? ($fragment['attributes'] ?? []) : [];
+
+        foreach ($attributes as $name => $value) {
+            if ($name === 'class') {
+                $this->addClasses($element, preg_split('/\s+/', $value) ?: []);
+                continue;
+            }
+
+            if ($name === 'style') {
+                $element->setAttribute('style', $this->mergeStyles($element->getAttribute('style'), $value));
+                continue;
+            }
+
+            if (! $element->hasAttribute($name) || $element->getAttribute($name) === '') {
+                $element->setAttribute($name, $value);
+            }
+        }
+    }
+
+    private function firstDescendantWithClass(DOMElement $element, string $tagName, string $className): ?DOMElement
+    {
+        foreach ($element->getElementsByTagName($tagName) as $descendant) {
+            if ($descendant instanceof DOMElement && $this->elementHasClass($descendant, $className)) {
+                return $descendant;
+            }
+        }
+
+        return null;
     }
 
     private function extractFirstUrl(string $html): string
