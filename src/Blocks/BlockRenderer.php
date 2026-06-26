@@ -215,24 +215,116 @@ class BlockRenderer
         $placeholder = (string) $block->attribute('placeholder', '');
         $button = trim((string) $block->attribute('buttonText', 'Search')) ?: 'Search';
         $showLabel = $this->truthy($block->attribute('showLabel', true));
-        $buttonPosition = (string) $block->attribute('buttonPosition', 'button-outside');
+        $buttonPosition = $this->searchButtonPosition((string) $block->attribute('buttonPosition', 'button-outside'));
+        $hasButton = $buttonPosition !== 'no-button';
+        $buttonUseIcon = $this->truthy($block->attribute('buttonUseIcon', false));
+        $inputId = wp_unique_id('sgb-search-input-');
         $classes = ['wp-block-search', 'sgb-core-fallback-search'];
 
-        if ($buttonPosition !== '') {
-            $classes[] = 'wp-block-search__button-'.$buttonPosition;
+        $classes[] = $buttonPosition === 'no-button'
+            ? 'wp-block-search__no-button'
+            : 'wp-block-search__'.$buttonPosition;
+
+        if ($buttonPosition === 'button-only') {
+            $classes[] = 'wp-block-search__searchfield-hidden';
+        }
+
+        if ($hasButton) {
+            $classes[] = $buttonUseIcon ? 'wp-block-search__icon-button' : 'wp-block-search__text-button';
         }
 
         return sprintf(
-            '<form role="search" method="get"%s><label class="wp-block-search__label%s" for="sgb-search-input">%s</label><div class="wp-block-search__inside-wrapper"><input class="wp-block-search__input" id="sgb-search-input" type="search" name="q" value="" placeholder="%s"><button class="wp-block-search__button" type="submit">%s</button></div></form>',
+            '<form role="search" method="get"%s><label class="wp-block-search__label%s" for="%s">%s</label><div%s><input class="wp-block-search__input" id="%s" type="search" name="q" value="" placeholder="%s">%s%s</div></form>',
             $this->renderAttributes([
                 'class' => implode(' ', $classes),
                 'action' => $this->siteUrl('/search'),
             ]),
             $showLabel ? '' : ' sgb-screen-reader-text',
+            e($inputId),
             e($label),
+            $this->renderAttributes([
+                'class' => 'wp-block-search__inside-wrapper',
+                'style' => $this->searchInsideWrapperStyle($block),
+            ]),
+            e($inputId),
             e($placeholder),
-            e($button),
+            $this->searchHiddenInputs($block),
+            $hasButton ? $this->searchButton($button, $buttonUseIcon) : '',
         );
+    }
+
+    private function searchButtonPosition(string $buttonPosition): string
+    {
+        return in_array($buttonPosition, ['button-inside', 'button-outside', 'button-only', 'no-button'], true)
+            ? $buttonPosition
+            : 'button-outside';
+    }
+
+    private function searchInsideWrapperStyle(Block $block): string
+    {
+        $width = $block->attribute('width');
+
+        if (! is_string($width) && ! is_numeric($width)) {
+            return '';
+        }
+
+        $width = trim((string) $width);
+
+        if ($width === '' || ! preg_match('/^\d+(?:\.\d+)?$/', $width)) {
+            return '';
+        }
+
+        $unit = (string) $block->attribute('widthUnit', '%');
+        $unit = in_array($unit, ['%', 'px', 'em', 'rem', 'vw', 'vh'], true) ? $unit : '%';
+
+        return 'width: '.$width.$unit;
+    }
+
+    private function searchHiddenInputs(Block $block): string
+    {
+        $query = $block->attribute('query', []);
+
+        if (! is_array($query)) {
+            return '';
+        }
+
+        $inputs = [];
+
+        foreach ($query as $name => $value) {
+            if (! is_string($name) || ! preg_match('/^[A-Za-z0-9_.-]+$/', $name)) {
+                continue;
+            }
+
+            if (! is_string($value) && ! is_numeric($value) && ! is_bool($value)) {
+                continue;
+            }
+
+            $inputs[] = sprintf(
+                '<input type="hidden" name="%s" value="%s">',
+                e($name),
+                e(is_bool($value) ? ($value ? '1' : '0') : (string) $value),
+            );
+        }
+
+        return implode('', $inputs);
+    }
+
+    private function searchButton(string $button, bool $useIcon): string
+    {
+        $content = $useIcon
+            ? $this->searchIcon().'<span class="sgb-screen-reader-text">'.e($button).'</span>'
+            : e($button);
+
+        return sprintf(
+            '<button class="wp-block-search__button wp-element-button" type="submit"%s>%s</button>',
+            $useIcon ? $this->renderAttributes(['aria-label' => $button]) : '',
+            $content,
+        );
+    }
+
+    private function searchIcon(): string
+    {
+        return '<svg class="search-icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M13 5c-3.3 0-6 2.7-6 6 0 1.4.5 2.7 1.3 3.7l-3.5 3.5 1.1 1.1 3.5-3.5c1 .8 2.3 1.3 3.7 1.3 3.3 0 6-2.7 6-6S16.3 5 13 5Zm0 1.5c2.5 0 4.5 2 4.5 4.5s-2 4.5-4.5 4.5-4.5-2-4.5-4.5 2-4.5 4.5-4.5Z"></path></svg>';
     }
 
     private function renderSiteTitleFallback(Block $block): string

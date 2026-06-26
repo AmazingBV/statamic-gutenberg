@@ -302,6 +302,30 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('data-sgb-core-fallback="core/post-title"', $rendered);
     }
 
+    public function test_it_renders_wordpress_compatible_search_fallback_variants(): void
+    {
+        $html = implode('', [
+            '<!-- wp:search {"label":"Find","buttonText":"Go","buttonPosition":"button-only","buttonUseIcon":true,"showLabel":false,"width":80,"widthUnit":"%","query":{"post_type":"page","paged":2,"featured":true}} /-->',
+            '<!-- wp:search {"buttonText":"Hidden","buttonPosition":"no-button"} /-->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('wp-block-search__button-only', $rendered);
+        $this->assertStringContainsString('wp-block-search__searchfield-hidden', $rendered);
+        $this->assertStringContainsString('wp-block-search__icon-button', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__label sgb-screen-reader-text"', $rendered);
+        $this->assertStringContainsString('style="width: 80%"', $rendered);
+        $this->assertStringContainsString('name="post_type" value="page"', $rendered);
+        $this->assertStringContainsString('name="paged" value="2"', $rendered);
+        $this->assertStringContainsString('name="featured" value="1"', $rendered);
+        $this->assertStringContainsString('aria-label="Go"', $rendered);
+        $this->assertStringContainsString('<svg class="search-icon"', $rendered);
+        $this->assertStringContainsString('wp-block-search__no-button', $rendered);
+        $this->assertStringNotContainsString('wp-block-search__button-button-only', $rendered);
+        $this->assertStringNotContainsString('>Hidden</button>', $rendered);
+    }
+
     public function test_it_renders_synced_patterns_from_core_block_references(): void
     {
         $this->bindPatternRepository([
