@@ -137,6 +137,10 @@ const EDITOR_THEME_SETTINGS = {
             gradients: {
                 theme: GRADIENTS,
             },
+            duotone: {
+                theme: [],
+                default: [],
+            },
         },
         spacing: {
             blockGap: true,
@@ -258,6 +262,7 @@ function applyThemeJsonSettings(baseSettings, themeJson) {
     const color = isPlainObject(themeSettings.color) ? themeSettings.color : {};
     const palette = presetList(color.palette);
     const gradients = presetList(color.gradients);
+    const duotones = presetList(color.duotone);
 
     if (palette.length) {
         next.colors = palette;
@@ -267,6 +272,10 @@ function applyThemeJsonSettings(baseSettings, themeJson) {
     if (gradients.length) {
         next.gradients = gradients;
         assignThemePreset(next, ['color', 'gradients'], gradients);
+    }
+
+    if (duotones.length) {
+        assignThemePreset(next, ['color', 'duotone'], duotones);
     }
 
     if (Object.prototype.hasOwnProperty.call(color, 'custom')) {
@@ -1268,6 +1277,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         </div>
     ) : null;
     const themeJsonCss = typeof meta.themeJson?.css === 'string' ? meta.themeJson.css : '';
+    const themeJsonSvgs = typeof meta.themeJson?.svgs === 'string' ? meta.themeJson.svgs : '';
 
     if (! customBlocksReady) {
         return (
@@ -1285,6 +1295,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                 className={`sgb-editor sgb-editor--${variant} sgb-editor--mode-${editorMode}`}
                 onKeyDownCapture={handleEditorKeyDown}
             >
+                {themeJsonSvgs ? (
+                    <div
+                        className="sgb-duotone-filters"
+                        dangerouslySetInnerHTML={{ __html: themeJsonSvgs }}
+                    />
+                ) : null}
                 {themeJsonCss ? (
                     <style data-statamic-gutenberg-theme-json>{themeJsonCss}</style>
                 ) : null}

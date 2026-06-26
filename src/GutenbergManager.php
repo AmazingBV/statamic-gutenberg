@@ -50,6 +50,10 @@ class GutenbergManager
             ->map(fn (string $url) => sprintf('<link rel="stylesheet" href="%s">', e($url)))
             ->all();
 
+        if ($themeSvg = $this->themeJson->svgDefinitions()) {
+            $styles[] = $themeSvg;
+        }
+
         if ($themeCss = $this->themeJson->frontendCss()) {
             $styles[] = sprintf('<style data-statamic-gutenberg-theme-json>%s</style>', $themeCss);
         }

@@ -203,6 +203,58 @@ class ThemeJsonTest extends TestCase
         $this->assertStringNotContainsString('.sgb-editor--fullscreen .sgb-page-frame :is(.wp-element-button, .wp-block-button__link, button)', $css);
     }
 
+    public function test_theme_json_duotone_settings_filters_and_block_styles_are_exposed(): void
+    {
+        $coverDuotone = ['#123456', '#abcdef'];
+        $coverFilterId = 'wp-duotone-theme-'.md5('core/cover'.serialize($coverDuotone));
+
+        $this->writeThemeJson([
+            'version' => 3,
+            'settings' => [
+                'color' => [
+                    'duotone' => [
+                        [
+                            'name' => 'Brand Duo',
+                            'slug' => 'brand-duo',
+                            'colors' => ['#000000', '#ffffff'],
+                        ],
+                    ],
+                ],
+            ],
+            'styles' => [
+                'blocks' => [
+                    'core/image' => [
+                        'filter' => [
+                            'duotone' => 'var:preset|duotone|brand-duo',
+                        ],
+                    ],
+                    'core/cover' => [
+                        'filter' => [
+                            'duotone' => $coverDuotone,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $theme = app(ThemeJson::class);
+        $payload = $theme->editorPayload();
+        $frontendCss = $theme->frontendCss();
+        $frontendStyles = (string) app(GutenbergManager::class)->frontendStyles();
+
+        $this->assertSame('brand-duo', $payload['settings']['color']['duotone'][0]['slug']);
+        $this->assertStringContainsString('--wp--preset--duotone--brand-duo: url(#wp-duotone-brand-duo)', $frontendCss);
+        $this->assertStringContainsString('<filter id="wp-duotone-brand-duo"', $payload['svgs']);
+        $this->assertStringContainsString('<filter id="'.$coverFilterId.'"', $payload['svgs']);
+        $this->assertSame(1, substr_count($payload['svgs'], 'id="wp-duotone-brand-duo"'));
+        $this->assertStringContainsString('.sgb-content .wp-block-image img, .sgb-content .wp-block-image .components-placeholder', $frontendCss);
+        $this->assertStringContainsString('filter: url(#wp-duotone-brand-duo)', $frontendCss);
+        $this->assertStringContainsString('.sgb-content .wp-block-cover > .wp-block-cover__image-background, .sgb-content .wp-block-cover > .wp-block-cover__video-background', $frontendCss);
+        $this->assertStringContainsString('filter: url(#'.$coverFilterId.')', $frontendCss);
+        $this->assertStringContainsString('<filter id="wp-duotone-brand-duo"', $frontendStyles);
+        $this->assertStringContainsString('data-statamic-gutenberg-theme-json', $frontendStyles);
+    }
+
     public function test_theme_json_custom_css_without_ampersand_is_scoped_to_content_roots(): void
     {
         $this->writeThemeJson([

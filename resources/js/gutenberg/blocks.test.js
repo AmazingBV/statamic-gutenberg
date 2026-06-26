@@ -134,6 +134,17 @@ describe('registerGutenbergBlocks', () => {
         expect(patternSettingsSource).toContain('reusableBlocksForInserter');
     });
 
+    it('feeds theme.json duotone presets and filters into the editor', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+
+        expect(source).toContain('const duotones = presetList(color.duotone);');
+        expect(source).toContain("assignThemePreset(next, ['color', 'duotone'], duotones);");
+        expect(source).toContain('duotone: {');
+        expect(source).toContain('const themeJsonSvgs = typeof meta.themeJson?.svgs === \'string\' ? meta.themeJson.svgs : \'\';');
+        expect(source).toContain('className="sgb-duotone-filters"');
+        expect(source).toContain('dangerouslySetInnerHTML={{ __html: themeJsonSvgs }}');
+    });
+
     it('adds native-style editor controls for history, list view and code mode', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');

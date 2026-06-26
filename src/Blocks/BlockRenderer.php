@@ -4,9 +4,11 @@ namespace Amazingbv\StatamicGutenberg\Blocks;
 
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
+use Amazingbv\StatamicGutenberg\Support\Duotone;
 use Amazingbv\StatamicGutenberg\Support\BlockWrapperContext;
 use Amazingbv\StatamicGutenberg\Support\StatamicAssetImages;
 use Amazingbv\StatamicGutenberg\Support\WpBlock;
+use Amazingbv\StatamicGutenberg\ThemeJson;
 use DOMDocument;
 use DOMElement;
 use Illuminate\Support\HtmlString;
@@ -21,6 +23,7 @@ class BlockRenderer
         private BlockRegistry $registry,
         private Sanitizer $sanitizer,
         private PatternRepository $patterns,
+        private ThemeJson $themeJson,
     ) {
         //
     }
@@ -174,8 +177,9 @@ class BlockRenderer
 
         if ($html !== '') {
             $html = $this->renderStaticInnerBlocks($block, $html, $inner);
+            $html = $this->applyStaticLayoutAttributes($block, $html);
 
-            return $this->applyStaticLayoutAttributes($block, $html);
+            return $this->applyDuotone($block, $html);
         }
 
         if (! CoreBlocks::hasRuntimeFallback($block->name())) {
@@ -965,10 +969,10 @@ class BlockRenderer
         $lightbox = $block->attribute('lightbox', []);
 
         if (is_array($lightbox) && $this->truthy($lightbox['enabled'] ?? false)) {
-            return $this->enableImageLightbox($html);
+            $html = $this->enableImageLightbox($html);
         }
 
-        return $html;
+        return $this->applyDuotone($block, $html);
     }
 
     private function renderIcon(Block $block, array $options): string
@@ -1191,6 +1195,31 @@ class BlockRenderer
                 : $image;
             $insertAfter->parentNode?->insertBefore($button, $insertAfter->nextSibling);
         });
+    }
+
+    private function applyDuotone(Block $block, string $html): string
+    {
+        $selector = Duotone::blockSelector($block->name());
+        $style = $block->attribute('style', []);
+        $value = is_array($style) ? ($style['color']['duotone'] ?? null) : null;
+
+        if (! $selector || $value === null || trim($html) === '') {
+            return $html;
+        }
+
+        $idSuffix = Duotone::presetSlug($value) ?: 'block-'.substr(md5($block->name().serialize($value)), 0, 12);
+        $className = 'wp-duotone-'.$idSuffix;
+        $duotone = Duotone::styleForValue($value, $this->themeJson->settings(), Duotone::scopedSelector($className, $selector), $idSuffix);
+
+        if (! $duotone) {
+            return $html;
+        }
+
+        $html = $this->addClassesToFirstElement($html, [$className], ['div', 'figure']);
+
+        return ($duotone['svg'] ?? '')
+            .'<style data-statamic-gutenberg-duotone>'.($duotone['css'] ?? '').'</style>'
+            .$html;
     }
 
     private function renderConstructedImage(Block $block): string

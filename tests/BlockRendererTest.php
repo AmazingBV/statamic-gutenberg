@@ -90,6 +90,29 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-video"', $rendered);
     }
 
+    public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
+    {
+        $imageDuotone = ['#000000', '#ffffff'];
+        $coverDuotone = ['#123456', '#abcdef'];
+        $imageFilterId = 'wp-duotone-block-'.substr(md5('core/image'.serialize($imageDuotone)), 0, 12);
+        $coverFilterId = 'wp-duotone-block-'.substr(md5('core/cover'.serialize($coverDuotone)), 0, 12);
+
+        $html = implode('', [
+            '<!-- wp:image {"style":{"color":{"duotone":["#000000","#ffffff"]}}} --><figure class="wp-block-image"><img src="/storage/a.jpg" alt=""></figure><!-- /wp:image -->',
+            '<!-- wp:cover {"style":{"color":{"duotone":["#123456","#abcdef"]}}} --><div class="wp-block-cover"><img class="wp-block-cover__image-background" src="/storage/b.jpg" alt=""><div class="wp-block-cover__inner-container"><p>Cover title</p></div></div><!-- /wp:cover -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<filter id="'.$imageFilterId.'"', $rendered);
+        $this->assertStringContainsString('<filter id="'.$coverFilterId.'"', $rendered);
+        $this->assertStringContainsString('filter: url(#'.$imageFilterId.')', $rendered);
+        $this->assertStringContainsString('filter: url(#'.$coverFilterId.')', $rendered);
+        $this->assertStringContainsString('class="wp-block-image wp-duotone-block-', $rendered);
+        $this->assertStringContainsString('class="wp-block-cover wp-duotone-block-', $rendered);
+        $this->assertStringContainsString('data-statamic-gutenberg-duotone', $rendered);
+    }
+
     public function test_it_preserves_wrapper_attributes_on_constructed_youtube_embeds(): void
     {
         $html = '<!-- wp:embed {"url":"https://www.youtube.com/watch?v=tCDvOQI3pco","type":"video","providerNameSlug":"youtube","responsive":true,"align":"wide","className":"audit-embed","anchor":"youtube-one"} --><figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube saved-class" data-saved="yes"><div class="wp-block-embed__wrapper">https://www.youtube.com/watch?v=tCDvOQI3pco</div><figcaption>Saved caption</figcaption></figure><!-- /wp:embed -->';

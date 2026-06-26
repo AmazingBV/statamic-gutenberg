@@ -2,6 +2,8 @@
 
 namespace Amazingbv\StatamicGutenberg;
 
+use Amazingbv\StatamicGutenberg\Support\Duotone;
+
 class ThemeJson
 {
     private ?array $data = null;
@@ -39,6 +41,7 @@ class ThemeJson
         return [
             'settings' => $this->settings(),
             'css' => $this->editorCss(),
+            'svgs' => $this->svgDefinitions(),
         ];
     }
 
@@ -52,6 +55,23 @@ class ThemeJson
     public function frontendCss(): string
     {
         return $this->cssForRoots(['.sgb-content']);
+    }
+
+    public function svgDefinitions(): string
+    {
+        $data = $this->data();
+
+        if (! $data) {
+            return '';
+        }
+
+        $settings = is_array($data['settings'] ?? null) ? $data['settings'] : [];
+        $styles = is_array($data['styles'] ?? null) ? $data['styles'] : [];
+
+        return trim(implode("\n", array_filter([
+            Duotone::presetFilters($settings),
+            $this->blockStyleDuotoneFilters($styles['blocks'] ?? [], $settings),
+        ])));
     }
 
     public function editorCss(): string
@@ -83,7 +103,7 @@ class ThemeJson
         $rules[] = $this->rule($roots, $rootDeclarations);
         $rules = array_merge($rules, $this->presetUtilityRules($roots, $settings));
         $rules = array_merge($rules, $this->elementRules($roots, $styles['elements'] ?? []));
-        $rules = array_merge($rules, $this->blockRules($roots, $styles['blocks'] ?? []));
+        $rules = array_merge($rules, $this->blockRules($roots, $styles['blocks'] ?? [], $settings));
 
         if (is_string($styles['css'] ?? null) && trim($styles['css']) !== '') {
             $rules[] = $this->scopeCustomCss($roots, $styles['css']);
@@ -107,6 +127,8 @@ class ThemeJson
                 $variables[] = $declaration;
             }
         }
+
+        $variables = array_merge($variables, Duotone::presetVariables($settings));
 
         foreach ($this->presetList($settings['typography']['fontSizes'] ?? null) as $preset) {
             if ($declaration = $this->fontSizePresetVariable($preset)) {
@@ -316,7 +338,7 @@ class ThemeJson
         return $rules;
     }
 
-    private function blockRules(array $roots, mixed $blocks): array
+    private function blockRules(array $roots, mixed $blocks, array $settings): array
     {
         if (! is_array($blocks)) {
             return [];
@@ -331,13 +353,13 @@ class ThemeJson
                 continue;
             }
 
-            $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($roots, $selector), $styles, (string) $name));
+            $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($roots, $selector), $styles, $settings, (string) $name));
         }
 
         return $rules;
     }
 
-    private function styleRules(array $selectors, array $styles, ?string $blockName = null, bool $important = false): array
+    private function styleRules(array $selectors, array $styles, array $settings = [], ?string $blockName = null, bool $important = false): array
     {
         $rules = [];
         $declarations = $this->styleDeclarations($styles);
@@ -352,8 +374,12 @@ class ThemeJson
 
         foreach ($styles as $key => $value) {
             if (is_string($key) && str_starts_with($key, ':') && is_array($value)) {
-                $rules = array_merge($rules, $this->styleRules(array_map(fn (string $selector) => $selector.$key, $selectors), $value, $blockName, $important));
+                $rules = array_merge($rules, $this->styleRules(array_map(fn (string $selector) => $selector.$key, $selectors), $value, $settings, $blockName, $important));
             }
+        }
+
+        if ($blockName && is_array($styles['filter'] ?? null) && array_key_exists('duotone', $styles['filter'])) {
+            $rules = array_merge($rules, $this->blockStyleDuotoneRules($selectors, $blockName, $styles['filter']['duotone'], $settings));
         }
 
         if (is_array($styles['variations'] ?? null)) {
@@ -361,7 +387,7 @@ class ThemeJson
                 $slug = $this->slug((string) $name);
 
                 if ($slug && is_array($variationStyles)) {
-                    $rules = array_merge($rules, $this->styleRules($this->variationSelectors($selectors, $slug, $blockName), $variationStyles, $blockName, true));
+                    $rules = array_merge($rules, $this->styleRules($this->variationSelectors($selectors, $slug, $blockName), $variationStyles, $settings, $blockName, true));
                 }
             }
         }
@@ -371,12 +397,71 @@ class ThemeJson
                 $selector = $this->elementSelector((string) $name);
 
                 if ($selector && is_array($elementStyles)) {
-                    $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($selectors, $selector), $elementStyles, $blockName, $important));
+                    $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($selectors, $selector), $elementStyles, $settings, $blockName, $important));
                 }
             }
         }
 
         return $rules;
+    }
+
+    private function blockStyleDuotoneRules(array $selectors, string $blockName, mixed $value, array $settings): array
+    {
+        $relativeSelectors = $this->blockDuotoneRelativeSelectors($blockName);
+
+        if (! $relativeSelectors) {
+            return [];
+        }
+
+        $targetSelectors = collect($selectors)
+            ->flatMap(fn (string $rootSelector) => collect($relativeSelectors)
+                ->map(fn (string $part) => $rootSelector.' '.$part))
+            ->implode(', ');
+        $style = Duotone::styleForValue($value, $settings, $targetSelectors, 'theme-'.md5($blockName.serialize($value)));
+
+        return $style ? [$style['css']] : [];
+    }
+
+    private function blockDuotoneRelativeSelectors(string $blockName): array
+    {
+        return match ($blockName) {
+            'core/image' => ['img', '.components-placeholder'],
+            'core/cover' => ['> .wp-block-cover__image-background', '> .wp-block-cover__video-background'],
+            default => [],
+        };
+    }
+
+    private function blockStyleDuotoneFilters(mixed $blocks, array $settings): string
+    {
+        if (! is_array($blocks)) {
+            return '';
+        }
+
+        $filters = [];
+
+        foreach ($blocks as $name => $styles) {
+            if (! is_array($styles) || ! is_array($styles['filter'] ?? null) || ! array_key_exists('duotone', $styles['filter'])) {
+                continue;
+            }
+
+            $selector = Duotone::blockSelector((string) $name);
+
+            if (! $selector) {
+                continue;
+            }
+
+            if (Duotone::presetSlug($styles['filter']['duotone'])) {
+                continue;
+            }
+
+            $style = Duotone::styleForValue($styles['filter']['duotone'], $settings, $selector, 'theme-'.md5((string) $name.serialize($styles['filter']['duotone'])));
+
+            if ($style && $style['svg']) {
+                $filters[] = $style['svg'];
+            }
+        }
+
+        return implode("\n", array_unique($filters));
     }
 
     private function styleDeclarations(array $styles): array
