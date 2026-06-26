@@ -96,6 +96,41 @@ PHP,
         $this->assertStringContainsString('<p>Inner</p>', $rendered);
     }
 
+    public function test_custom_dynamic_block_wrapper_attributes_include_common_style_supports(): void
+    {
+        $this->writeCustomBlock('custom-card', [
+            'apiVersion' => 3,
+            'name' => 'amazing/card',
+            'title' => 'Card',
+            'render' => 'file:./block.php',
+        ], [
+            'block.php' => <<<'PHP'
+<?php
+
+return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$content.'</section>';
+PHP,
+        ]);
+
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","fontSize":"large","style":{"typography":{"textAlign":"center","fontSize":"clamp(1rem, 2vw, 2rem)"},"spacing":{"padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff"},"border":{"radius":"8px","color":"javascript:alert(1)"}}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/paragraph'],
+        ]);
+
+        $this->assertStringContainsString('has-primary-color', $rendered);
+        $this->assertStringContainsString('has-text-color', $rendered);
+        $this->assertStringContainsString('has-light-background-color', $rendered);
+        $this->assertStringContainsString('has-background', $rendered);
+        $this->assertStringContainsString('has-large-font-size', $rendered);
+        $this->assertStringContainsString('has-text-align-center', $rendered);
+        $this->assertStringContainsString('color: var(--wp--preset--color--secondary)', $rendered);
+        $this->assertStringContainsString('background-color: #fff', $rendered);
+        $this->assertStringContainsString('margin-bottom: 2rem', $rendered);
+        $this->assertStringContainsString('padding-top: var(--wp--preset--spacing--40)', $rendered);
+        $this->assertStringContainsString('font-size: clamp(1rem, 2vw, 2rem)', $rendered);
+        $this->assertStringContainsString('border-radius: 8px', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
+    }
+
     public function test_custom_dynamic_block_supports_wordpress_render_file_block_object_and_helpers(): void
     {
         $this->writeCustomBlock('vertical-tabs', [
