@@ -21,6 +21,10 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('list-style: inherit', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-text-align-justify)', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-color)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-background-color)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-border-color)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-to-green-gradient-background)', $css);
+        $this->assertStringContainsString('--wp--preset--gradient--blue-to-green', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
         $this->assertStringContainsString('grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr))', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-flex, .is-layout-grid) > * + *', $css);
@@ -39,6 +43,18 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-column.is-vertically-aligned-bottom', $css);
         $this->assertStringContainsString('display: grid', $css);
         $this->assertStringContainsString('display: flex', $css);
+    }
+
+    public function test_frontend_css_includes_default_background_border_and_gradient_utilities(): void
+    {
+        $css = file_get_contents(__DIR__.'/../resources/css/frontend.css');
+
+        $this->assertStringContainsString('.sgb-content :where(.has-blue-background-color)', $css);
+        $this->assertStringContainsString('background-color: var(--wp--preset--color--blue) !important', $css);
+        $this->assertStringContainsString('.sgb-content :where(.has-blue-border-color)', $css);
+        $this->assertStringContainsString('border-color: var(--wp--preset--color--blue) !important', $css);
+        $this->assertStringContainsString('.sgb-content :where(.has-blue-to-green-gradient-background)', $css);
+        $this->assertStringContainsString('background: var(--wp--preset--gradient--blue-to-green) !important', $css);
     }
 
     public function test_fullscreen_editor_does_not_render_the_entry_title_in_the_canvas(): void

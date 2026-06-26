@@ -296,6 +296,34 @@ class ThemeJsonTest extends TestCase
         $this->assertStringNotContainsString("\n.custom-theme-class", $editorCss);
     }
 
+    public function test_theme_json_custom_css_with_ampersand_is_expanded_per_content_root(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'styles' => [
+                'css' => '& .custom-theme-class, & button.custom-action { color: var:preset|color|brand; }',
+            ],
+            'settings' => [
+                'color' => [
+                    'palette' => [
+                        ['name' => 'Brand', 'slug' => 'brand', 'color' => '#123456'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $editorCss = app(ThemeJson::class)->editorCss();
+        $frontendCss = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .custom-theme-class', $editorCss);
+        $this->assertStringContainsString('.sgb-editor .sgb-canvas .custom-theme-class', $editorCss);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame button.custom-action', $editorCss);
+        $this->assertStringContainsString('.sgb-editor .sgb-canvas button.custom-action', $editorCss);
+        $this->assertStringNotContainsString('.sgb-editor .sgb-page-frame, .sgb-editor .sgb-canvas .custom-theme-class', $editorCss);
+        $this->assertStringContainsString('.sgb-content .custom-theme-class', $frontendCss);
+        $this->assertStringContainsString('color: var(--wp--preset--color--brand)', $frontendCss);
+    }
+
     public function test_theme_json_relative_assets_are_served_from_theme_directory(): void
     {
         $this->writeThemeJson([
