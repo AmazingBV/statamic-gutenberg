@@ -111,6 +111,28 @@ class ThemeJsonTest extends TestCase
                         'typography' => [
                             'fontSize' => 'var:preset|font-size|huge',
                         ],
+                        'variations' => [
+                            'lead' => [
+                                'typography' => [
+                                    'fontWeight' => '700',
+                                ],
+                            ],
+                        ],
+                    ],
+                    'core/button' => [
+                        'variations' => [
+                            'outline' => [
+                                'border' => [
+                                    'color' => 'var:preset|color|brand',
+                                    'style' => 'solid',
+                                    'width' => '1px',
+                                ],
+                                'color' => [
+                                    'background' => 'transparent',
+                                    'text' => 'var:preset|color|brand',
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 'css' => '& .custom-theme-class { color: var:preset|color|brand; }',
@@ -140,6 +162,11 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('.sgb-content a', $frontendCss);
         $this->assertStringContainsString('.sgb-content p', $frontendCss);
         $this->assertStringContainsString('font-size: var(--wp--preset--font-size--huge)', $frontendCss);
+        $this->assertStringContainsString('.sgb-content p.is-style-lead', $frontendCss);
+        $this->assertStringContainsString('font-weight: 700 !important', $frontendCss);
+        $this->assertStringContainsString('.sgb-content .wp-block-button.is-style-outline :is(.wp-element-button, .wp-block-button__link)', $frontendCss);
+        $this->assertStringContainsString('border-color: var(--wp--preset--color--brand) !important', $frontendCss);
+        $this->assertStringContainsString('background-color: transparent !important', $frontendCss);
         $this->assertStringContainsString('.sgb-content .custom-theme-class', $frontendCss);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame', $payload['css']);
         $this->assertStringContainsString('.sgb-editor .sgb-canvas', $payload['css']);

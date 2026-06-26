@@ -331,24 +331,38 @@ class ThemeJson
                 continue;
             }
 
-            $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($roots, $selector), $styles));
+            $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($roots, $selector), $styles, (string) $name));
         }
 
         return $rules;
     }
 
-    private function styleRules(array $selectors, array $styles): array
+    private function styleRules(array $selectors, array $styles, ?string $blockName = null, bool $important = false): array
     {
         $rules = [];
         $declarations = $this->styleDeclarations($styles);
 
         if ($declarations) {
+            if ($important) {
+                $declarations = $this->importantDeclarations($declarations);
+            }
+
             $rules[] = $this->rule($selectors, $declarations);
         }
 
         foreach ($styles as $key => $value) {
             if (is_string($key) && str_starts_with($key, ':') && is_array($value)) {
-                $rules = array_merge($rules, $this->styleRules(array_map(fn (string $selector) => $selector.$key, $selectors), $value));
+                $rules = array_merge($rules, $this->styleRules(array_map(fn (string $selector) => $selector.$key, $selectors), $value, $blockName, $important));
+            }
+        }
+
+        if (is_array($styles['variations'] ?? null)) {
+            foreach ($styles['variations'] as $name => $variationStyles) {
+                $slug = $this->slug((string) $name);
+
+                if ($slug && is_array($variationStyles)) {
+                    $rules = array_merge($rules, $this->styleRules($this->variationSelectors($selectors, $slug, $blockName), $variationStyles, $blockName, true));
+                }
             }
         }
 
@@ -357,7 +371,7 @@ class ThemeJson
                 $selector = $this->elementSelector((string) $name);
 
                 if ($selector && is_array($elementStyles)) {
-                    $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($selectors, $selector), $elementStyles));
+                    $rules = array_merge($rules, $this->styleRules($this->descendantSelectors($selectors, $selector), $elementStyles, $blockName, $important));
                 }
             }
         }
@@ -418,6 +432,14 @@ class ThemeJson
         }
 
         return $declarations;
+    }
+
+    private function importantDeclarations(array $declarations): array
+    {
+        return array_map(
+            fn (string $declaration) => str_contains($declaration, '!important') ? $declaration : $declaration.' !important',
+            $declarations
+        );
     }
 
     private function colorDeclarations(array $color): array
@@ -555,6 +577,17 @@ class ThemeJson
         }
 
         return '.wp-block-'.$this->slug(str_replace('/', '-', preg_replace('/^core\//', '', $name)));
+    }
+
+    private function variationSelectors(array $selectors, string $slug, ?string $blockName): array
+    {
+        $selectors = array_map(fn (string $selector) => "{$selector}.is-style-{$slug}", $selectors);
+
+        if ($blockName === 'core/button') {
+            return $this->descendantSelectors($selectors, ':is(.wp-element-button, .wp-block-button__link)');
+        }
+
+        return $selectors;
     }
 
     private function rule(array $selectors, array $declarations): string
