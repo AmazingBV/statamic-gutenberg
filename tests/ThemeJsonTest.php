@@ -80,6 +80,11 @@ class ThemeJsonTest extends TestCase
                         ['name' => 'Section', 'slug' => 'section', 'size' => '6rem'],
                     ],
                 ],
+                'dimensions' => [
+                    'aspectRatios' => [
+                        ['name' => 'Landscape', 'slug' => 'landscape', 'ratio' => '16/9'],
+                    ],
+                ],
                 'shadow' => [
                     'presets' => [
                         ['name' => 'Natural', 'slug' => 'natural', 'shadow' => '6px 6px 9px rgba(0, 0, 0, 0.2)'],
@@ -112,6 +117,11 @@ class ThemeJsonTest extends TestCase
                         'typography' => [
                             'fontSize' => 'var:preset|font-size|huge',
                         ],
+                        'dimensions' => [
+                            'minHeight' => '12rem',
+                            'minWidth' => '20rem',
+                            'width' => '50%',
+                        ],
                         'variations' => [
                             'lead' => [
                                 'typography' => [
@@ -135,6 +145,12 @@ class ThemeJsonTest extends TestCase
                             ],
                         ],
                     ],
+                    'core/cover' => [
+                        'dimensions' => [
+                            'aspectRatio' => '16/9',
+                            'height' => 'auto',
+                        ],
+                    ],
                 ],
                 'css' => '& .custom-theme-class { color: var:preset|color|brand; }',
             ],
@@ -146,6 +162,7 @@ class ThemeJsonTest extends TestCase
 
         $this->assertSame('680px', $payload['settings']['layout']['contentSize']);
         $this->assertSame('#123456', $payload['settings']['color']['palette'][0]['color']);
+        $this->assertSame('16/9', $payload['settings']['dimensions']['aspectRatios'][0]['ratio']);
         $this->assertStringContainsString('--wp--style--global--content-size: 680px', $frontendCss);
         $this->assertStringContainsString('--wp--preset--color--brand: #123456', $frontendCss);
         $this->assertStringContainsString('--wp--preset--gradient--brand-gradient: linear-gradient(90deg,#123456,#abcdef)', $frontendCss);
@@ -164,6 +181,12 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('.sgb-content a', $frontendCss);
         $this->assertStringContainsString('.sgb-content p', $frontendCss);
         $this->assertStringContainsString('font-size: var(--wp--preset--font-size--huge)', $frontendCss);
+        $this->assertStringContainsString('min-height: 12rem', $frontendCss);
+        $this->assertStringContainsString('min-width: 20rem', $frontendCss);
+        $this->assertStringContainsString('width: 50%', $frontendCss);
+        $this->assertStringContainsString('.sgb-content .wp-block-cover', $frontendCss);
+        $this->assertStringContainsString('aspect-ratio: 16/9', $frontendCss);
+        $this->assertStringContainsString('height: auto', $frontendCss);
         $this->assertStringContainsString('.sgb-content p.is-style-lead', $frontendCss);
         $this->assertStringContainsString('font-weight: 700 !important', $frontendCss);
         $this->assertStringContainsString('.sgb-content .wp-block-button.is-style-outline :is(.wp-element-button, .wp-block-button__link)', $frontendCss);

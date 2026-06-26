@@ -174,7 +174,15 @@ const EDITOR_THEME_SETTINGS = {
             width: true,
         },
         dimensions: {
+            aspectRatio: true,
+            aspectRatios: {
+                theme: [],
+                default: [],
+            },
+            height: true,
             minHeight: true,
+            minWidth: true,
+            width: true,
         },
     },
 };
@@ -320,6 +328,13 @@ function applyThemeJsonSettings(baseSettings, themeJson) {
     if (Array.isArray(spacing.units)) {
         next.enableCustomUnits = spacing.units;
         ensurePath(next.__experimentalFeatures, ['spacing']).units = spacing.units;
+    }
+
+    const dimensions = isPlainObject(themeSettings.dimensions) ? themeSettings.dimensions : {};
+    const aspectRatios = presetList(dimensions.aspectRatios);
+
+    if (aspectRatios.length) {
+        assignThemePreset(next, ['dimensions', 'aspectRatios'], aspectRatios);
     }
 
     const layout = isPlainObject(themeSettings.layout) ? themeSettings.layout : {};

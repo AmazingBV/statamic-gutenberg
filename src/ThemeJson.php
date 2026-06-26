@@ -501,7 +501,11 @@ class ThemeJson
 
         if (is_array($styles['dimensions'] ?? null)) {
             $declarations = array_merge($declarations, $this->propertyDeclarations($styles['dimensions'], [
+                'aspectRatio' => 'aspect-ratio',
+                'height' => 'height',
                 'minHeight' => 'min-height',
+                'minWidth' => 'min-width',
+                'width' => 'width',
             ]));
         }
 

@@ -145,6 +145,16 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('dangerouslySetInnerHTML={{ __html: themeJsonSvgs }}');
     });
 
+    it('feeds theme.json dimension presets into the editor', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+
+        expect(source).toContain('aspectRatio: true');
+        expect(source).toContain('const aspectRatios = presetList(dimensions.aspectRatios);');
+        expect(source).toContain("assignThemePreset(next, ['dimensions', 'aspectRatios'], aspectRatios);");
+        expect(source).toContain('minWidth: true');
+        expect(source).toContain('width: true');
+    });
+
     it('adds native-style editor controls for history, list view and code mode', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');
