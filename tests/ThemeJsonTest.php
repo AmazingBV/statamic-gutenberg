@@ -72,6 +72,7 @@ class ThemeJsonTest extends TestCase
                     ],
                     'fontSizes' => [
                         ['name' => 'Huge', 'slug' => 'huge', 'size' => '4rem'],
+                        ['name' => 'Fluid', 'slug' => 'fluid', 'size' => '30px', 'fluid' => ['min' => '18px', 'max' => '30px']],
                     ],
                 ],
                 'spacing' => [
@@ -149,6 +150,7 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('--wp--preset--color--brand: #123456', $frontendCss);
         $this->assertStringContainsString('--wp--preset--gradient--brand-gradient: linear-gradient(90deg,#123456,#abcdef)', $frontendCss);
         $this->assertStringContainsString('--wp--preset--font-family--inter: Inter, sans-serif', $frontendCss);
+        $this->assertStringContainsString('--wp--preset--font-size--fluid: clamp(18px, calc(18px + 12px * ((100vw - 320px) / 1280)), 30px)', $frontendCss);
         $this->assertStringContainsString('--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2)', $frontendCss);
         $this->assertStringContainsString('@font-face', $frontendCss);
         $this->assertStringContainsString('font-family: Inter', $frontendCss);

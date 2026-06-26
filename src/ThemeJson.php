@@ -109,7 +109,7 @@ class ThemeJson
         }
 
         foreach ($this->presetList($settings['typography']['fontSizes'] ?? null) as $preset) {
-            if ($declaration = $this->presetVariable('font-size', $preset, 'size')) {
+            if ($declaration = $this->fontSizePresetVariable($preset)) {
                 $variables[] = $declaration;
             }
         }
@@ -520,6 +520,60 @@ class ThemeJson
         $value = $this->safeCssValue($preset[$valueKey] ?? null);
 
         return $slug && $value ? "--wp--preset--{$type}--{$slug}: ".$this->resolvePresetValue($value) : null;
+    }
+
+    private function fontSizePresetVariable(array $preset): ?string
+    {
+        $slug = $this->slug($preset['slug'] ?? null);
+        $value = $this->fontSizePresetValue($preset);
+
+        return $slug && $value ? "--wp--preset--font-size--{$slug}: ".$value : null;
+    }
+
+    private function fontSizePresetValue(array $preset): ?string
+    {
+        $size = $this->safeCssValue($preset['size'] ?? null);
+        $fluid = is_array($preset['fluid'] ?? null) ? $preset['fluid'] : null;
+        $min = $this->safeCssValue($fluid['min'] ?? null);
+        $max = $this->safeCssValue($fluid['max'] ?? null);
+
+        if (! $min || ! $max) {
+            return $size ? $this->resolvePresetValue($size) : null;
+        }
+
+        $minParsed = $this->numericCssSize($min);
+        $maxParsed = $this->numericCssSize($max);
+
+        if ($minParsed && $maxParsed && $minParsed['unit'] === $maxParsed['unit']) {
+            $delta = round($maxParsed['value'] - $minParsed['value'], 6);
+
+            return sprintf(
+                'clamp(%s, calc(%s + %s%s * ((100vw - 320px) / 1280)), %s)',
+                $this->resolvePresetValue($min),
+                $this->resolvePresetValue($min),
+                $delta,
+                $minParsed['unit'],
+                $this->resolvePresetValue($max)
+            );
+        }
+
+        if ($size) {
+            return sprintf('clamp(%s, %s, %s)', $this->resolvePresetValue($min), $this->resolvePresetValue($size), $this->resolvePresetValue($max));
+        }
+
+        return $this->resolvePresetValue($max);
+    }
+
+    private function numericCssSize(string $value): ?array
+    {
+        if (! preg_match('/^(-?\d+(?:\.\d+)?)([a-z%]+)$/i', trim($value), $matches)) {
+            return null;
+        }
+
+        return [
+            'value' => (float) $matches[1],
+            'unit' => $matches[2],
+        ];
     }
 
     private function customVariables(mixed $value, string $prefix): array
