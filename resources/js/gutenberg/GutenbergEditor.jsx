@@ -28,7 +28,7 @@ import {
 import { loadCustomBlockAssets, prepareCustomBlockRegistry } from './customBlocks';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
-import { applyPatternSettings } from './patternSettings';
+import { applyPatternSettings, filterPatternPayload } from './patternSettings';
 import {
     attributesForAssetBlock,
     createAssetBlock,
@@ -622,11 +622,19 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
 
-    const patternSettings = isPlainObject(meta?.patterns)
+    const allowedBlockTypes = useMemo(
+        () => normalizeAllowedBlocks(config, meta),
+        [config, meta],
+    );
+    const rawPatternSettings = isPlainObject(meta?.patterns)
         ? meta.patterns
         : (typeof window !== 'undefined' && isPlainObject(window.StatamicGutenbergPatterns)
             ? window.StatamicGutenbergPatterns
             : {});
+    const patternSettings = useMemo(
+        () => filterPatternPayload(rawPatternSettings, allowedBlockTypes),
+        [rawPatternSettings, allowedBlockTypes],
+    );
     const customBlocks = useMemo(() => prepareCustomBlockRegistry(meta?.customBlocks), [meta]);
 
     if (typeof window !== 'undefined' && isPlainObject(patternSettings)) {
@@ -660,11 +668,6 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         [],
     );
     const { insertBlocks, updateBlockAttributes } = useDispatch(blockEditorStore);
-
-    const allowedBlockTypes = useMemo(
-        () => normalizeAllowedBlocks(config, meta),
-        [config, meta],
-    );
 
     useEffect(() => {
         let cancelled = false;

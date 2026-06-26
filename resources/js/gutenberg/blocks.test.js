@@ -123,7 +123,8 @@ describe('registerGutenbergBlocks', () => {
 
         expect(source).toContain('window.StatamicGutenbergPatterns = patternSettings');
         expect(source).toContain('window.StatamicGutenbergPatterns');
-        expect(source).toContain("import { applyPatternSettings } from './patternSettings'");
+        expect(source).toContain("import { applyPatternSettings, filterPatternPayload } from './patternSettings'");
+        expect(source).toContain('filterPatternPayload(rawPatternSettings, allowedBlockTypes)');
         expect(fieldtypeSource).toContain('meta.patternsUrl');
         expect(fieldtypeSource).toContain('window.StatamicGutenbergPatterns = meta.patterns');
         expect(patternSettingsSource).toContain('__experimentalReusableBlocks');

@@ -129,9 +129,9 @@ class GutenbergManager
         return $this->themeJson->editorPayload();
     }
 
-    public function editorPatterns(): array
+    public function editorPatterns(?array $allowedBlocks = null): array
     {
-        return $this->patterns->editorPayload();
+        return $this->patterns->editorPayload($allowedBlocks);
     }
 
     private function assetUrls(string $entry, string $type): array

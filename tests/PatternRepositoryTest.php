@@ -134,6 +134,42 @@ class PatternRepositoryTest extends TestCase
         $this->assertSame(['statamic/visible'], array_column($repository->blockPatterns(), 'name'));
     }
 
+    public function test_editor_payload_filters_patterns_against_field_allowed_blocks(): void
+    {
+        Collection::make('gutenberg_patterns')->save();
+
+        Entry::make()
+            ->collection('gutenberg_patterns')
+            ->id('paragraph-pattern')
+            ->slug('paragraph-pattern')
+            ->published(true)
+            ->data([
+                'title' => 'Paragraph Pattern',
+                'content' => '<!-- wp:paragraph --><p>Allowed</p><!-- /wp:paragraph -->',
+                'sync_status' => 'unsynced',
+            ])
+            ->save();
+
+        Entry::make()
+            ->collection('gutenberg_patterns')
+            ->id('cover-pattern')
+            ->slug('cover-pattern')
+            ->published(true)
+            ->data([
+                'title' => 'Cover Pattern',
+                'content' => '<!-- wp:cover --><div class="wp-block-cover"><!-- wp:paragraph --><p>Disallowed wrapper</p><!-- /wp:paragraph --></div><!-- /wp:cover -->',
+                'sync_status' => 'unsynced',
+            ])
+            ->save();
+
+        $payload = app(PatternRepository::class)->editorPayload(['core/paragraph']);
+
+        $this->assertSame(['paragraph-pattern'], array_column($payload['reusableBlocks'], 'slug'));
+        $this->assertSame(['paragraph-pattern'], array_column($payload['restReusableBlocks'], 'slug'));
+        $this->assertSame(['statamic/paragraph-pattern'], array_column($payload['blockPatterns'], 'name'));
+        $this->assertSame(['statamic/paragraph-pattern'], array_column($payload['restBlockPatterns'], 'name'));
+    }
+
     public function test_editor_payload_exposes_pattern_categories_to_category_tabs(): void
     {
         Collection::make('gutenberg_patterns')->save();

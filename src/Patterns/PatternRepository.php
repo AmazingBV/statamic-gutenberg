@@ -2,6 +2,8 @@
 
 namespace Amazingbv\StatamicGutenberg\Patterns;
 
+use Amazingbv\StatamicGutenberg\Blocks\Block;
+use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Illuminate\Support\Collection as SupportCollection;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
@@ -11,9 +13,11 @@ use Throwable;
 
 class PatternRepository
 {
-    public function editorPayload(): array
+    public function editorPayload(?array $allowedBlocks = null): array
     {
-        $entries = $this->publishedEntries();
+        $entries = $this->publishedEntries()
+            ->filter(fn ($entry) => $this->allowedByBlockList($entry, $allowedBlocks))
+            ->values();
         $inserterEntries = $entries
             ->filter(fn ($entry) => $this->inserterEnabled($entry))
             ->values();
@@ -33,7 +37,7 @@ class PatternRepository
                 ->values()
                 ->all(),
             'blockPatternCategories' => $this->blockPatternCategories($inserterEntries),
-            'restBlockPatterns' => $this->blockPatterns(),
+            'restBlockPatterns' => $this->blockPatterns($entries),
             'restBlockPatternCategories' => $this->blockPatternCategories($inserterEntries),
         ];
     }
@@ -52,9 +56,9 @@ class PatternRepository
             ->first(fn (array $block) => (int) $block['id'] === $id);
     }
 
-    public function blockPatterns(): array
+    public function blockPatterns(?SupportCollection $entries = null): array
     {
-        return $this->publishedEntries()
+        return ($entries ?? $this->publishedEntries())
             ->filter(fn ($entry) => $this->inserterEnabled($entry))
             ->filter(fn ($entry) => $this->syncStatus($entry) === 'unsynced')
             ->map(fn ($entry) => $this->blockPatternPayload($entry))
@@ -179,6 +183,57 @@ class PatternRepository
         } catch (Throwable) {
             return collect();
         }
+    }
+
+    private function allowedByBlockList(mixed $entry, ?array $allowedBlocks): bool
+    {
+        $allowedBlocks = collect($allowedBlocks ?? [])
+            ->filter(fn ($name) => is_string($name) && $name !== '')
+            ->values();
+
+        if ($allowedBlocks->isEmpty()) {
+            return true;
+        }
+
+        $allowed = $allowedBlocks->flip();
+        $blockNames = $this->blockNames($this->content($entry));
+
+        foreach ($blockNames as $name) {
+            if (! $allowed->has($name)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function blockNames(string $content): array
+    {
+        try {
+            return $this->collectBlockNames(app(BlockParser::class)->parse($content));
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    /**
+     * @param  array<int, Block>  $blocks
+     * @return array<int, string>
+     */
+    private function collectBlockNames(array $blocks): array
+    {
+        $names = [];
+
+        foreach ($blocks as $block) {
+            if (! $block instanceof Block || $block->isFreeform()) {
+                continue;
+            }
+
+            $names[] = $block->name();
+            $names = array_merge($names, $this->collectBlockNames($block->innerBlocks()));
+        }
+
+        return array_values(array_unique($names));
     }
 
     private function categoryPayloads(SupportCollection $entries): array

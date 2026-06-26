@@ -67,9 +67,10 @@ class Gutenberg extends Fieldtype
     public function preload()
     {
         $container = $this->config('assets_container', config('statamic-gutenberg.assets_container', 'assets'));
+        $allowedBlocks = app(GutenbergManager::class)->allowedBlocks($this->config('allowed_blocks'));
 
         return [
-            'allowedBlocks' => app(GutenbergManager::class)->allowedBlocks($this->config('allowed_blocks')),
+            'allowedBlocks' => $allowedBlocks,
             'assetsContainer' => $container,
             'assetsUrl' => cp_route('amazingbv.statamic-gutenberg.assets.index', ['container' => $container]),
             'uploadUrl' => cp_route('amazingbv.statamic-gutenberg.assets.upload', ['container' => $container]),
@@ -78,7 +79,7 @@ class Gutenberg extends Fieldtype
             'editorUrl' => cp_route('amazingbv.statamic-gutenberg.editor'),
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
             'themeJson' => app(GutenbergManager::class)->editorTheme(),
-            'patterns' => app(GutenbergManager::class)->editorPatterns(),
+            'patterns' => app(GutenbergManager::class)->editorPatterns($allowedBlocks),
             'customBlocks' => app(GutenbergManager::class)->editorCustomBlocks(),
         ];
     }
