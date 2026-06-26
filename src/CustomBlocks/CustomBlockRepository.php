@@ -21,6 +21,14 @@ class CustomBlockRepository
         return array_keys($this->blocksByName());
     }
 
+    public function dependencyNames(): array
+    {
+        return array_values(array_unique(collect($this->all())
+            ->flatMap(fn (array $block) => $block['dependencies'] ?? [])
+            ->filter(fn ($name) => is_string($name) && $this->validBlockName($name))
+            ->all()));
+    }
+
     public function find(string $name): ?array
     {
         return $this->blocksByName()[$name] ?? null;
@@ -108,6 +116,7 @@ class CustomBlockRepository
             'slug' => basename($directory),
             'path' => $directory,
             'metadata' => $this->editorMetadata($metadata),
+            'dependencies' => $this->dependencyNamesFromMetadata($metadata),
             'render' => $this->renderFile($directory, $metadata),
             'editorScripts' => $this->editorScripts($base, $directory, $metadata),
             'editorStyles' => $this->editorStyles($base, $directory, $metadata),
@@ -143,6 +152,69 @@ class CustomBlockRepository
         $metadata['apiVersion'] = (int) ($metadata['apiVersion'] ?? 3);
 
         return $metadata;
+    }
+
+    private function dependencyNamesFromMetadata(array $metadata): array
+    {
+        $statamic = is_array($metadata['statamic'] ?? null) ? $metadata['statamic'] : [];
+
+        return array_values(array_unique(array_filter([
+            ...$this->blockNamesFromList($statamic['requiredBlocks'] ?? null),
+            ...$this->blockNamesFromList($statamic['required_blocks'] ?? null),
+            ...$this->blockNamesFromList($metadata['allowedBlocks'] ?? null),
+            ...$this->blockNamesFromTemplate($metadata['template'] ?? null),
+        ], fn ($name) => is_string($name) && $this->validBlockName($name))));
+    }
+
+    private function blockNamesFromList(mixed $value): array
+    {
+        if (is_string($value)) {
+            return [$value];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return collect($value)
+            ->flatMap(fn ($item) => $this->blockNamesFromList($item))
+            ->values()
+            ->all();
+    }
+
+    private function blockNamesFromTemplate(mixed $template): array
+    {
+        if (! is_array($template)) {
+            return [];
+        }
+
+        return collect($template)
+            ->flatMap(function ($item) {
+                if (is_string($item)) {
+                    return [$item];
+                }
+
+                if (! is_array($item)) {
+                    return [];
+                }
+
+                $names = [];
+
+                if (isset($item[0]) && is_string($item[0])) {
+                    $names[] = $item[0];
+                }
+
+                if (isset($item[2])) {
+                    $names = [
+                        ...$names,
+                        ...$this->blockNamesFromTemplate($item[2]),
+                    ];
+                }
+
+                return $names;
+            })
+            ->values()
+            ->all();
     }
 
     private function renderFile(string $directory, array $metadata): ?string

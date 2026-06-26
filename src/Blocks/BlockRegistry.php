@@ -37,6 +37,7 @@ class BlockRegistry
         return array_values(array_unique(array_filter([
             ...$allowed,
             ...$this->customBlocks->names(),
+            ...$this->customBlocks->dependencyNames(),
         ])));
     }
 

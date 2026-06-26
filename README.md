@@ -588,6 +588,21 @@ viewStyle
 render
 ```
 
+When a custom block renders or templates inner blocks, those block names also
+need to be allowed by Gutenberg. The addon reads dependencies from official
+`allowedBlocks` and `template` metadata, plus an optional Statamic-specific
+`statamic.requiredBlocks` list:
+
+```json
+{
+    "name": "amazing/vertical-tabs",
+    "allowedBlocks": ["amazing/vertical-tab"],
+    "statamic": {
+        "requiredBlocks": ["core/group", "core/image", "core/paragraph"]
+    }
+}
+```
+
 Asset values may be strings, lists, or objects with `src`, `path`, or `file`.
 Local assets should use `file:./...` paths. External `https://...` and absolute
 `/...` URLs are also accepted.

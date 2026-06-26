@@ -70,6 +70,40 @@ class CustomBlockRepositoryTest extends TestCase
         $this->assertSame('/vendor/statamic-gutenberg/blocks/custom-card/index.js?ver=abc123', $payload[0]['editorScripts'][0]['src']);
     }
 
+    public function test_custom_block_dependencies_are_added_to_allowed_blocks(): void
+    {
+        $this->writeCustomBlock('custom-container', [
+            'apiVersion' => 3,
+            'name' => 'amazing/container',
+            'title' => 'Container',
+            'allowedBlocks' => [
+                'core/heading',
+            ],
+            'statamic' => [
+                'requiredBlocks' => [
+                    'core/group',
+                    'core/image',
+                ],
+            ],
+            'template' => [
+                ['core/paragraph', ['placeholder' => 'Intro']],
+                ['core/buttons', [], [
+                    ['core/button', ['text' => 'Read more']],
+                ]],
+            ],
+        ]);
+
+        $allowed = app(BlockRegistry::class)->allowedBlocks(['amazing/container']);
+
+        $this->assertContains('amazing/container', $allowed);
+        $this->assertContains('core/heading', $allowed);
+        $this->assertContains('core/group', $allowed);
+        $this->assertContains('core/image', $allowed);
+        $this->assertContains('core/paragraph', $allowed);
+        $this->assertContains('core/buttons', $allowed);
+        $this->assertContains('core/button', $allowed);
+    }
+
     public function test_custom_dynamic_block_php_renders_with_wordpress_like_variables_and_wrapper_attributes(): void
     {
         $this->writeCustomBlock('custom-card', [

@@ -117,6 +117,10 @@ return [
     | `viewStyle`, and `render`. Local `file:./...` assets are served through
     | `/vendor/statamic-gutenberg/blocks/...`.
     |
+    | If a custom block needs extra inner blocks while a field uses a narrow
+    | `allowed_blocks` list, add them to the block's project-local `block.json`
+    | with `allowedBlocks`, a `template`, or `statamic.requiredBlocks`.
+    |
     */
     'custom_blocks_path' => resource_path('vendor/statamic-gutenberg/blocks'),
 
