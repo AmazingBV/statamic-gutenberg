@@ -49,6 +49,23 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('script', $rendered);
     }
 
+    public function test_it_renders_builtin_statamic_blocks_with_gutenberg_wrapper_attributes(): void
+    {
+        $html = implode('', [
+            '<!-- wp:statamic/hero {"heading":"Audit hero","text":"Intro","buttonText":"Read","buttonUrl":"/read","align":"wide","className":"extra","anchor":"hero-one"} --><section></section><!-- /wp:statamic/hero -->',
+            '<!-- wp:statamic/cta {"heading":"Audit CTA","text":"Act now","buttonText":"Contact","buttonUrl":"/contact","align":"full","className":"cta-extra","anchor":"cta-one"} --><section></section><!-- /wp:statamic/cta -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-statamic-hero alignwide extra sgb-custom-block sgb-custom-block--hero"', $rendered);
+        $this->assertStringContainsString('id="hero-one"', $rendered);
+        $this->assertStringContainsString('<a class="wp-block-button__link" href="/read">Read</a>', $rendered);
+        $this->assertStringContainsString('class="wp-block-statamic-cta alignfull cta-extra sgb-custom-block sgb-custom-block--cta"', $rendered);
+        $this->assertStringContainsString('id="cta-one"', $rendered);
+        $this->assertStringContainsString('<a class="wp-block-button__link" href="/contact">Contact</a>', $rendered);
+    }
+
     public function test_it_renders_static_markup_for_common_standard_core_blocks(): void
     {
         $html = implode('', [

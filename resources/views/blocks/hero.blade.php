@@ -5,14 +5,14 @@
     $buttonUrl = $attrs['buttonUrl'] ?? null;
 @endphp
 
-<section class="sgb-hero">
-    <div class="sgb-hero__inner">
+<section{!! get_block_wrapper_attributes(['class' => 'sgb-custom-block sgb-custom-block--hero']) !!}>
+    <div class="sgb-custom-block__content">
         <h1>{{ $heading }}</h1>
         @if ($text)
             <p>{{ $text }}</p>
         @endif
         @if ($buttonText && $buttonUrl)
-            <a class="sgb-button" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
+            <a class="wp-block-button__link" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
         @endif
     </div>
 </section>

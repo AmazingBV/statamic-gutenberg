@@ -71,11 +71,11 @@ class BlockRenderer
         }
 
         if (is_array($definition) && isset($definition['view'])) {
-            return view($definition['view'], [
+            return (string) BlockWrapperContext::withBlock($block, fn (): string => view($definition['view'], [
                 'block' => $block,
                 'attrs' => $block->attributes(),
                 'inner' => new HtmlString($inner),
-            ])->render();
+            ])->render());
         }
 
         if (is_array($definition) && isset($definition['custom_block'])) {
