@@ -118,6 +118,10 @@ class BlockWrapperContext
             $classes[] = "has-text-align-{$textAlign}";
         }
 
+        if (self::declaration('--wp--style--color--link', self::linkColor($style))) {
+            $classes[] = 'has-link-color';
+        }
+
         $shadow = is_array($style) ? self::presetSlug($style['shadow'] ?? null, 'shadow') : null;
 
         if ($shadow) {
@@ -133,6 +137,7 @@ class BlockWrapperContext
 
         return array_values(array_filter([
             ...self::colorDeclarations($style['color'] ?? []),
+            ...self::elementDeclarations($style['elements'] ?? []),
             ...self::blockGapDeclarations($style['spacing']['blockGap'] ?? null),
             ...self::spacingDeclarations('margin', $style['spacing']['margin'] ?? []),
             ...self::spacingDeclarations('padding', $style['spacing']['padding'] ?? []),
@@ -140,6 +145,13 @@ class BlockWrapperContext
             ...self::borderDeclarations($style['border'] ?? []),
             self::declaration('min-height', $style['dimensions']['minHeight'] ?? null),
             self::declaration('box-shadow', $style['shadow'] ?? null),
+        ]));
+    }
+
+    private static function elementDeclarations(mixed $elements): array
+    {
+        return array_values(array_filter([
+            self::declaration('--wp--style--color--link', self::linkColor(['elements' => $elements])),
         ]));
     }
 
@@ -154,6 +166,13 @@ class BlockWrapperContext
             self::declaration('background-color', $color['background'] ?? null),
             self::declaration('background', $color['gradient'] ?? null),
         ]));
+    }
+
+    private static function linkColor(mixed $style): mixed
+    {
+        return is_array($style)
+            ? ($style['elements']['link']['color']['text'] ?? null)
+            : null;
     }
 
     private static function blockGapDeclarations(mixed $value): array

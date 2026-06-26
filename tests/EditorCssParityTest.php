@@ -23,6 +23,7 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-color)', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-background-color)', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-border-color)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-link-color) a', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :where(.has-blue-to-green-gradient-background)', $css);
         $this->assertStringContainsString('--wp--preset--gradient--blue-to-green', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame :is(.is-layout-grid)', $css);
@@ -53,6 +54,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('background-color: var(--wp--preset--color--blue) !important', $css);
         $this->assertStringContainsString('.sgb-content :where(.has-blue-border-color)', $css);
         $this->assertStringContainsString('border-color: var(--wp--preset--color--blue) !important', $css);
+        $this->assertStringContainsString('.sgb-content :where(.has-link-color) a', $css);
+        $this->assertStringContainsString('color: var(--wp--style--color--link)', $css);
         $this->assertStringContainsString('.sgb-content :where(.has-blue-to-green-gradient-background)', $css);
         $this->assertStringContainsString('background: var(--wp--preset--gradient--blue-to-green) !important', $css);
     }

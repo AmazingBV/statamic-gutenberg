@@ -145,7 +145,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -158,10 +158,12 @@ PHP,
         $this->assertStringContainsString('has-large-font-size', $rendered);
         $this->assertStringContainsString('has-system-sans-font-family', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
+        $this->assertStringContainsString('has-link-color', $rendered);
         $this->assertStringContainsString('has-natural-box-shadow', $rendered);
         $this->assertStringContainsString('color: var(--wp--preset--color--secondary)', $rendered);
         $this->assertStringContainsString('background-color: #fff', $rendered);
         $this->assertStringContainsString('background: var(--wp--preset--gradient--brand-gradient)', $rendered);
+        $this->assertStringContainsString('--wp--style--color--link: var(--wp--preset--color--primary)', $rendered);
         $this->assertStringContainsString('--wp--style--block-gap: var(--wp--preset--spacing--50)', $rendered);
         $this->assertStringContainsString('gap: var(--wp--preset--spacing--50)', $rendered);
         $this->assertStringContainsString('margin-bottom: 2rem', $rendered);

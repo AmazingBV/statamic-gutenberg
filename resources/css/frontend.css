@@ -279,6 +279,10 @@
     border-color: var(--wp--preset--color--red) !important;
 }
 
+.sgb-content :where(.has-link-color) a {
+    color: var(--wp--style--color--link);
+}
+
 .sgb-content :where(.has-blue-to-green-gradient-background) {
     background: var(--wp--preset--gradient--blue-to-green) !important;
 }
