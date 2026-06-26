@@ -588,7 +588,7 @@ class BlockRenderer
                 if ($columnCount > 0) {
                     $styles[] = 'grid-template-columns: repeat('.min(12, $columnCount).', minmax(0, 1fr))';
                 } elseif ($minimumColumnWidth !== '') {
-                    $styles[] = 'grid-template-columns: repeat(auto-fit, minmax('.$minimumColumnWidth.', 1fr))';
+                    $styles[] = 'grid-template-columns: repeat(auto-fill, minmax(min('.$minimumColumnWidth.', 100%), 1fr))';
                 }
             }
         }
