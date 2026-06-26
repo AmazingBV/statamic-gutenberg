@@ -104,6 +104,18 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('blob:', $rendered);
     }
 
+    public function test_it_preserves_safe_cover_parallax_background_images(): void
+    {
+        $html = '<!-- wp:cover {"url":"https://site.test/storage/cover.jpg","hasParallax":true} --><div class="wp-block-cover has-parallax"><div class="wp-block-cover__image-background has-parallax" style="background-position:50% 50%;background-image:url(https://site.test/storage/cover.jpg)"></div><span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span><div class="wp-block-cover__inner-container"><!-- wp:paragraph --><p>Cover</p><!-- /wp:paragraph --></div></div><!-- /wp:cover -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-cover has-parallax"', $rendered);
+        $this->assertStringContainsString('class="wp-block-cover__image-background has-parallax"', $rendered);
+        $this->assertStringContainsString('background-image: url(https://site.test/storage/cover.jpg)', $rendered);
+        $this->assertStringContainsString('<p>Cover</p>', $rendered);
+    }
+
     public function test_it_preserves_safe_gutenberg_inline_styles(): void
     {
         $html = '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->';

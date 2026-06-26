@@ -216,7 +216,7 @@ class Sanitizer
                 continue;
             }
 
-            if (! $this->isSafeStyleValue($value)) {
+            if (! $this->isSafeStyleValue($property, $value)) {
                 continue;
             }
 
@@ -226,12 +226,46 @@ class Sanitizer
         return implode('; ', $declarations);
     }
 
-    private function isSafeStyleValue(string $value): bool
+    private function isSafeStyleValue(string $property, string $value): bool
     {
         $normalized = strtolower(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         $normalized = preg_replace('/\/\*.*?\*\//s', '', $normalized);
 
-        return ! preg_match('/(?:url\s*\(|expression\s*\(|javascript\s*:|vbscript\s*:|data\s*:|@import|-moz-binding|behavior\s*:|[<>\\\\])/', $normalized);
+        if (preg_match('/url\s*\(/', $normalized)) {
+            if (! in_array($property, ['background', 'background-image'], true) || ! $this->cssUrlsAreSafe($value)) {
+                return false;
+            }
+
+            $normalized = $this->stripCssUrls($normalized);
+        }
+
+        return ! preg_match('/(?:expression\s*\(|javascript\s*:|vbscript\s*:|data\s*:|@import|-moz-binding|behavior\s*:|[<>\\\\])/', $normalized);
+    }
+
+    private function cssUrlsAreSafe(string $value): bool
+    {
+        if (! preg_match_all('/url\(\s*(?:(["\'])(.*?)\1|([^\'")]*?))\s*\)/i', $value, $matches, PREG_SET_ORDER)) {
+            return false;
+        }
+
+        foreach ($matches as $match) {
+            $url = trim(html_entity_decode($match[2] !== '' ? $match[2] : $match[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $compact = strtolower(preg_replace('/[\x00-\x20]+/', '', $url));
+
+            if ($compact === ''
+                || preg_match('/[<>\\\\]/', $url)
+                || preg_match('/^(?:javascript|vbscript|data|blob):/', $compact)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function stripCssUrls(string $value): string
+    {
+        return preg_replace('/url\(\s*(?:(["\'])(.*?)\1|([^\'")]*?))\s*\)/i', 'url()', $value) ?? $value;
     }
 
     private function isDangerousUrl(string $value): bool
