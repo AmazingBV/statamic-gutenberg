@@ -104,6 +104,12 @@ class BlockWrapperContext
         if ($textAlign && in_array($textAlign, ['left', 'center', 'right', 'justify'], true)) {
             $classes[] = "has-text-align-{$textAlign}";
         }
+
+        $shadow = is_array($style) ? self::presetSlug($style['shadow'] ?? null, 'shadow') : null;
+
+        if ($shadow) {
+            $classes[] = "has-{$shadow}-box-shadow";
+        }
     }
 
     private static function styleDeclarations(mixed $style): array
@@ -119,6 +125,7 @@ class BlockWrapperContext
             ...self::typographyDeclarations($style['typography'] ?? []),
             ...self::borderDeclarations($style['border'] ?? []),
             self::declaration('min-height', $style['dimensions']['minHeight'] ?? null),
+            self::declaration('box-shadow', $style['shadow'] ?? null),
         ]));
     }
 
@@ -213,6 +220,19 @@ class BlockWrapperContext
         }
 
         return $value;
+    }
+
+    private static function presetSlug(mixed $value, string $type): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        if (! preg_match('/^var:preset\|'.preg_quote($type, '/').'\|([a-z0-9_-]+)$/i', trim((string) $value), $matches)) {
+            return null;
+        }
+
+        return self::safeSlug($matches[1]);
     }
 
     private static function safeSlug(mixed $value): ?string

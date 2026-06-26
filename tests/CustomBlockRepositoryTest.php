@@ -111,7 +111,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","fontSize":"large","style":{"typography":{"textAlign":"center","fontSize":"clamp(1rem, 2vw, 2rem)"},"spacing":{"padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff"},"border":{"radius":"8px","color":"javascript:alert(1)"}}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","fontSize":"large","style":{"typography":{"textAlign":"center","fontSize":"clamp(1rem, 2vw, 2rem)"},"spacing":{"padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff"},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -122,12 +122,14 @@ PHP,
         $this->assertStringContainsString('has-background', $rendered);
         $this->assertStringContainsString('has-large-font-size', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
+        $this->assertStringContainsString('has-natural-box-shadow', $rendered);
         $this->assertStringContainsString('color: var(--wp--preset--color--secondary)', $rendered);
         $this->assertStringContainsString('background-color: #fff', $rendered);
         $this->assertStringContainsString('margin-bottom: 2rem', $rendered);
         $this->assertStringContainsString('padding-top: var(--wp--preset--spacing--40)', $rendered);
         $this->assertStringContainsString('font-size: clamp(1rem, 2vw, 2rem)', $rendered);
         $this->assertStringContainsString('border-radius: 8px', $rendered);
+        $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $rendered);
         $this->assertStringNotContainsString('javascript:', $rendered);
     }
 

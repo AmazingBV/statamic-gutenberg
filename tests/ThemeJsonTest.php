@@ -79,6 +79,11 @@ class ThemeJsonTest extends TestCase
                         ['name' => 'Section', 'slug' => 'section', 'size' => '6rem'],
                     ],
                 ],
+                'shadow' => [
+                    'presets' => [
+                        ['name' => 'Natural', 'slug' => 'natural', 'shadow' => '6px 6px 9px rgba(0, 0, 0, 0.2)'],
+                    ],
+                ],
                 'custom' => [
                     'radius' => [
                         'card' => '12px',
@@ -93,6 +98,7 @@ class ThemeJsonTest extends TestCase
                 'spacing' => [
                     'blockGap' => 'var:preset|spacing|section',
                 ],
+                'shadow' => 'var:preset|shadow|natural',
                 'elements' => [
                     'link' => [
                         'color' => [
@@ -121,12 +127,15 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('--wp--preset--color--brand: #123456', $frontendCss);
         $this->assertStringContainsString('--wp--preset--gradient--brand-gradient: linear-gradient(90deg,#123456,#abcdef)', $frontendCss);
         $this->assertStringContainsString('--wp--preset--font-family--inter: Inter, sans-serif', $frontendCss);
+        $this->assertStringContainsString('--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2)', $frontendCss);
         $this->assertStringContainsString('@font-face', $frontendCss);
         $this->assertStringContainsString('font-family: Inter', $frontendCss);
         $this->assertStringContainsString('src: url("/vendor/statamic-gutenberg/theme/assets/fonts/inter-700.woff2")', $frontendCss);
         $this->assertStringContainsString('--wp--custom--radius--card: 12px', $frontendCss);
         $this->assertStringContainsString('.sgb-content .has-brand-color', $frontendCss);
+        $this->assertStringContainsString('.sgb-content .has-natural-box-shadow', $frontendCss);
         $this->assertStringContainsString('background-color: var(--wp--preset--color--brand)', $frontendCss);
+        $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $frontendCss);
         $this->assertStringContainsString('gap: var(--wp--preset--spacing--section)', $frontendCss);
         $this->assertStringContainsString('.sgb-content a', $frontendCss);
         $this->assertStringContainsString('.sgb-content p', $frontendCss);

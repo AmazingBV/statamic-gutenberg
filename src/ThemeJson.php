@@ -126,6 +126,12 @@ class ThemeJson
             }
         }
 
+        foreach ($this->presetList($settings['shadow']['presets'] ?? null) as $preset) {
+            if ($declaration = $this->presetVariable('shadow', $preset, 'shadow')) {
+                $variables[] = $declaration;
+            }
+        }
+
         if ($contentSize = $this->safeCssValue($settings['layout']['contentSize'] ?? null)) {
             $variables[] = '--wp--style--global--content-size: '.$contentSize;
         }
@@ -274,6 +280,18 @@ class ThemeJson
             ]);
         }
 
+        foreach ($this->presetList($settings['shadow']['presets'] ?? null) as $preset) {
+            $slug = $this->slug($preset['slug'] ?? null);
+
+            if (! $slug) {
+                continue;
+            }
+
+            $rules[] = $this->rule($this->descendantSelectors($roots, ".has-{$slug}-box-shadow"), [
+                "box-shadow: var(--wp--preset--shadow--{$slug}) !important",
+            ]);
+        }
+
         return $rules;
     }
 
@@ -388,8 +406,13 @@ class ThemeJson
             ]));
         }
 
-        if (is_array($styles['shadow'] ?? null)) {
+        if (is_string($styles['shadow'] ?? null) || is_numeric($styles['shadow'] ?? null)) {
+            if ($shadow = $this->safeCssValue($styles['shadow'])) {
+                $declarations[] = 'box-shadow: '.$this->resolvePresetValue($shadow);
+            }
+        } elseif (is_array($styles['shadow'] ?? null)) {
             $declarations = array_merge($declarations, $this->propertyDeclarations($styles['shadow'], [
+                'shadow' => 'box-shadow',
                 'natural' => 'box-shadow',
             ]));
         }
