@@ -31,6 +31,9 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .sgb-core-fallback', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-columns:is(.wp-block-columns)', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-columns.are-vertically-aligned-center', $css);
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-column.is-vertically-aligned-bottom', $css);
         $this->assertStringContainsString('display: grid', $css);
         $this->assertStringContainsString('display: flex', $css);
     }

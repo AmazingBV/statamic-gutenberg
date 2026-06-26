@@ -20,6 +20,9 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('.sgb-content :where(ul.wp-block-list)', $css);
         $this->assertStringContainsString('.sgb-content :where(.has-text-align-justify)', $css);
         $this->assertStringContainsString('.sgb-content :where(.has-blue-color)', $css);
+        $this->assertStringContainsString('.sgb-content .wp-block-columns:is(.wp-block-columns)', $css);
+        $this->assertStringContainsString('.sgb-content .wp-block-columns.are-vertically-aligned-center', $css);
+        $this->assertStringContainsString('.sgb-content .wp-block-column.is-vertically-aligned-bottom', $css);
         $this->assertStringContainsString('.site-content.sgb-content > .alignfull', $css);
         $this->assertStringContainsString('.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull)', $css);
         $this->assertStringContainsString('grid-column: 1 / -1', $css);
