@@ -218,6 +218,51 @@ function registerStatamicBlockFilters() {
     filtersRegistered = true;
 }
 
+const STATAMIC_BUTTON_CLASS = 'wp-block-button__link wp-element-button';
+const LEGACY_STATAMIC_BUTTON_CLASS = 'wp-block-button__link';
+
+const STATAMIC_HERO_ATTRIBUTES = {
+    heading: { type: 'string', default: 'Hero heading' },
+    text: { type: 'string', default: '' },
+    buttonText: { type: 'string', default: '' },
+    buttonUrl: { type: 'string', default: '' },
+};
+
+const STATAMIC_CTA_ATTRIBUTES = {
+    heading: { type: 'string', default: 'Call to action' },
+    text: { type: 'string', default: '' },
+    buttonText: { type: 'string', default: 'Learn more' },
+    buttonUrl: { type: 'string', default: '#' },
+};
+
+function saveStatamicHero({ attributes }, buttonClassName = STATAMIC_BUTTON_CLASS) {
+    const blockProps = useBlockProps.save({ className: 'sgb-custom-block sgb-custom-block--hero' });
+
+    return (
+        <section {...blockProps}>
+            <RichText.Content tagName="h1" value={attributes.heading} />
+            {attributes.text ? <p>{attributes.text}</p> : null}
+            {attributes.buttonText && attributes.buttonUrl ? (
+                <a className={buttonClassName} href={attributes.buttonUrl}>{attributes.buttonText}</a>
+            ) : null}
+        </section>
+    );
+}
+
+function saveStatamicCta({ attributes }, buttonClassName = STATAMIC_BUTTON_CLASS) {
+    const blockProps = useBlockProps.save({ className: 'sgb-custom-block sgb-custom-block--cta' });
+
+    return (
+        <section {...blockProps}>
+            <RichText.Content tagName="h2" value={attributes.heading} />
+            {attributes.text ? <p>{attributes.text}</p> : null}
+            {attributes.buttonText && attributes.buttonUrl ? (
+                <a className={buttonClassName} href={attributes.buttonUrl}>{attributes.buttonText}</a>
+            ) : null}
+        </section>
+    );
+}
+
 function registerStatamicBlocks() {
     if (! getBlockType('statamic/hero')) {
         registerBlockType('statamic/hero', {
@@ -225,12 +270,7 @@ function registerStatamicBlocks() {
             title: 'Hero',
             icon: 'cover-image',
             category: 'theme',
-            attributes: {
-                heading: { type: 'string', default: 'Hero heading' },
-                text: { type: 'string', default: '' },
-                buttonText: { type: 'string', default: '' },
-                buttonUrl: { type: 'string', default: '' },
-            },
+            attributes: STATAMIC_HERO_ATTRIBUTES,
             edit: ({ attributes, setAttributes }) => {
                 const blockProps = useBlockProps({ className: 'sgb-custom-block sgb-custom-block--hero' });
 
@@ -271,19 +311,13 @@ function registerStatamicBlocks() {
                     </section>
                 );
             },
-            save: ({ attributes }) => {
-                const blockProps = useBlockProps.save({ className: 'sgb-custom-block sgb-custom-block--hero' });
-
-                return (
-                    <section {...blockProps}>
-                        <RichText.Content tagName="h1" value={attributes.heading} />
-                        {attributes.text ? <p>{attributes.text}</p> : null}
-                        {attributes.buttonText && attributes.buttonUrl ? (
-                            <a className="wp-block-button__link wp-element-button" href={attributes.buttonUrl}>{attributes.buttonText}</a>
-                        ) : null}
-                    </section>
-                );
-            },
+            save: saveStatamicHero,
+            deprecated: [
+                {
+                    attributes: STATAMIC_HERO_ATTRIBUTES,
+                    save: (props) => saveStatamicHero(props, LEGACY_STATAMIC_BUTTON_CLASS),
+                },
+            ],
         });
     }
 
@@ -293,12 +327,7 @@ function registerStatamicBlocks() {
             title: 'CTA',
             icon: 'megaphone',
             category: 'theme',
-            attributes: {
-                heading: { type: 'string', default: 'Call to action' },
-                text: { type: 'string', default: '' },
-                buttonText: { type: 'string', default: 'Learn more' },
-                buttonUrl: { type: 'string', default: '#' },
-            },
+            attributes: STATAMIC_CTA_ATTRIBUTES,
             edit: ({ attributes, setAttributes }) => {
                 const blockProps = useBlockProps({ className: 'sgb-custom-block sgb-custom-block--cta' });
 
@@ -339,19 +368,13 @@ function registerStatamicBlocks() {
                     </section>
                 );
             },
-            save: ({ attributes }) => {
-                const blockProps = useBlockProps.save({ className: 'sgb-custom-block sgb-custom-block--cta' });
-
-                return (
-                    <section {...blockProps}>
-                        <RichText.Content tagName="h2" value={attributes.heading} />
-                        {attributes.text ? <p>{attributes.text}</p> : null}
-                        {attributes.buttonText && attributes.buttonUrl ? (
-                            <a className="wp-block-button__link wp-element-button" href={attributes.buttonUrl}>{attributes.buttonText}</a>
-                        ) : null}
-                    </section>
-                );
-            },
+            save: saveStatamicCta,
+            deprecated: [
+                {
+                    attributes: STATAMIC_CTA_ATTRIBUTES,
+                    save: (props) => saveStatamicCta(props, LEGACY_STATAMIC_BUTTON_CLASS),
+                },
+            ],
         });
     }
 }
