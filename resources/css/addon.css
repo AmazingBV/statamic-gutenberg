@@ -304,6 +304,12 @@
     outline: none;
 }
 
+.sgb-asset.is-selected {
+    border-color: var(--sgb-accent);
+    background: #eef6ff;
+    box-shadow: 0 0 0 2px rgba(0, 115, 170, 0.2);
+}
+
 .sgb-asset img {
     width: 100%;
     aspect-ratio: 4 / 3;

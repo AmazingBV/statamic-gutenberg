@@ -125,4 +125,21 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("typeFromAllowedTypes(allowedTypes) || 'file'", $editor);
         $this->assertStringContainsString("callback.onSelect(uploaded.map((asset) => createMediaPayload(asset)))", $editor);
     }
+
+    public function test_asset_picker_supports_selecting_multiple_existing_assets(): void
+    {
+        $css = file_get_contents(__DIR__.'/../resources/css/addon.css');
+        $editor = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergEditor.jsx');
+
+        $this->assertStringContainsString("'core/gallery': 'image'", $editor);
+        $this->assertStringContainsString('const [selectedAssets, setSelectedAssets] = useState([])', $editor);
+        $this->assertStringContainsString('const toggleSelectedAsset = useCallback((asset) => {', $editor);
+        $this->assertStringContainsString('const insertSelectedAssets = useCallback(() => {', $editor);
+        $this->assertStringContainsString('callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)))', $editor);
+        $this->assertStringContainsString('callback.multiple', $editor);
+        $this->assertStringContainsString('Insert selected ({selectedAssets.length})', $editor);
+        $this->assertStringContainsString('aria-pressed={isMultipleAssetPicker ? isSelected : undefined}', $editor);
+        $this->assertStringContainsString("className={`sgb-asset\${isSelected ? ' is-selected' : ''}`}", $editor);
+        $this->assertStringContainsString('.sgb-asset.is-selected', $css);
+    }
 }

@@ -524,10 +524,15 @@ const BLOCK_ASSET_TYPES = {
     'core/audio': 'audio',
     'core/cover': 'visual',
     'core/file': 'file',
+    'core/gallery': 'image',
     'core/image': 'image',
     'core/media-text': 'visual',
     'core/video': 'video',
 };
+
+function assetKey(asset) {
+    return String(asset?.id || asset?.path || asset?.url || asset?.filename || '');
+}
 
 function typeFromAllowedTypes(allowedTypes = []) {
     const values = Array.isArray(allowedTypes)
@@ -642,6 +647,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
     const [assetFolders, setAssetFolders] = useState([]);
     const [assetFolder, setAssetFolder] = useState('/');
     const [assetPicker, setAssetPicker] = useState(null);
+    const [selectedAssets, setSelectedAssets] = useState([]);
     const [assetsLoading, setAssetsLoading] = useState(false);
     const [assetsUploading, setAssetsUploading] = useState(false);
     const [customBlocksReady, setCustomBlocksReady] = useState(() => customBlocks.length === 0);
@@ -865,6 +871,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
     const closeAssetPicker = useCallback(() => {
         mediaPickerCallbackRef.current = null;
+        setSelectedAssets([]);
         setAssetPicker(null);
     }, []);
 
@@ -884,6 +891,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
         setAssets([]);
         setAssetFolders([]);
+        setSelectedAssets([]);
         setAssetPicker({
             type,
             title: ASSET_TYPE_LABELS[type] || 'Assets',
@@ -904,12 +912,43 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         };
     }, [openAssetPicker]);
 
+    const toggleSelectedAsset = useCallback((asset) => {
+        const key = assetKey(asset);
+
+        if (! key) {
+            return;
+        }
+
+        setSelectedAssets((current) => (
+            current.some((selected) => assetKey(selected) === key)
+                ? current.filter((selected) => assetKey(selected) !== key)
+                : [...current, asset]
+        ));
+    }, []);
+
+    const insertSelectedAssets = useCallback(() => {
+        const callback = mediaPickerCallbackRef.current;
+
+        if (! callback?.multiple || ! selectedAssets.length) {
+            return;
+        }
+
+        callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)));
+        closeAssetPicker();
+    }, [closeAssetPicker, selectedAssets]);
+
     const selectAsset = useCallback((asset) => {
         const callback = mediaPickerCallbackRef.current;
 
         if (callback) {
+            if (callback.multiple) {
+                toggleSelectedAsset(asset);
+
+                return;
+            }
+
             const media = createMediaPayload(asset);
-            callback.onSelect(callback.multiple ? [media] : media);
+            callback.onSelect(media);
             closeAssetPicker();
 
             return;
@@ -925,7 +964,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         }
 
         closeAssetPicker();
-    }, [closeAssetPicker, insertBlocks, selectedBlock, updateBlockAttributes]);
+    }, [closeAssetPicker, insertBlocks, selectedBlock, toggleSelectedAsset, updateBlockAttributes]);
 
     const uploadFiles = useCallback(async (filesList, type = 'image', folder = '/') => {
         if (! meta.uploadUrl) {
@@ -1105,6 +1144,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         </div>
     );
 
+    const selectedAssetKeys = useMemo(
+        () => new Set(selectedAssets.map((asset) => assetKey(asset))),
+        [selectedAssets],
+    );
+    const isMultipleAssetPicker = Boolean(mediaPickerCallbackRef.current?.multiple);
+
     const assetBrowser = assetPicker ? (
         <div className="sgb-assets-modal" role="dialog" aria-modal="true" aria-label="Statamic assets">
             <div className="sgb-assets-modal__panel">
@@ -1127,6 +1172,15 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                         onChange={setAssetQuery}
                     />
                     <div className="sgb-assets__actions">
+                        {isMultipleAssetPicker ? (
+                            <Button
+                                disabled={! selectedAssets.length}
+                                onClick={insertSelectedAssets}
+                                variant="primary"
+                            >
+                                Insert selected ({selectedAssets.length})
+                            </Button>
+                        ) : null}
                         <input
                             ref={uploadInputRef}
                             type="file"
@@ -1180,21 +1234,27 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                             <div className="sgb-assets__empty"><Spinner /></div>
                         ) : assets.length ? (
                             <div className="sgb-assets__grid">
-                                {assets.map((asset) => (
-                                    <button
-                                        type="button"
-                                        className="sgb-asset"
-                                        key={asset.id}
-                                        onClick={() => selectAsset(asset)}
-                                    >
-                                        {asset.media_type === 'image' ? (
-                                            <img src={asset.thumbnail || asset.url} alt={asset.alt || asset.filename} />
-                                        ) : (
-                                            <span className="sgb-asset__file">{asset.extension || asset.media_type}</span>
-                                        )}
-                                        <span>{asset.filename}</span>
-                                    </button>
-                                ))}
+                                {assets.map((asset, index) => {
+                                    const key = assetKey(asset);
+                                    const isSelected = key ? selectedAssetKeys.has(key) : false;
+
+                                    return (
+                                        <button
+                                            type="button"
+                                            aria-pressed={isMultipleAssetPicker ? isSelected : undefined}
+                                            className={`sgb-asset${isSelected ? ' is-selected' : ''}`}
+                                            key={key || `asset-${index}`}
+                                            onClick={() => selectAsset(asset)}
+                                        >
+                                            {asset.media_type === 'image' ? (
+                                                <img src={asset.thumbnail || asset.url} alt={asset.alt || asset.filename} />
+                                            ) : (
+                                                <span className="sgb-asset__file">{asset.extension || asset.media_type}</span>
+                                            )}
+                                            <span>{asset.filename}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="sgb-assets__empty">No matching assets found.</div>
