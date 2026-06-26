@@ -979,6 +979,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
 
             if (uploaded.length) {
                 setAssets((current) => [...uploaded, ...current]);
+
+                const callback = mediaPickerCallbackRef.current;
+
+                if (callback?.multiple) {
+                    callback.onSelect(uploaded.map((asset) => createMediaPayload(asset)));
+                    closeAssetPicker();
+
+                    return;
+                }
+
                 selectAsset(uploaded[0]);
             }
         } catch (error) {
@@ -986,7 +996,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         } finally {
             setAssetsUploading(false);
         }
-    }, [assetFolder, assetPicker?.type, selectAsset, uploadFiles]);
+    }, [assetFolder, assetPicker?.type, closeAssetPicker, selectAsset, uploadFiles]);
 
     const isFullscreen = variant === 'fullscreen';
 

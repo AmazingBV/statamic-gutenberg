@@ -123,5 +123,6 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("type.startsWith('application/')", $editor);
         $this->assertStringContainsString("requestedViaMediaUpload ? 'file' : 'image'", $editor);
         $this->assertStringContainsString("typeFromAllowedTypes(allowedTypes) || 'file'", $editor);
+        $this->assertStringContainsString("callback.onSelect(uploaded.map((asset) => createMediaPayload(asset)))", $editor);
     }
 }
