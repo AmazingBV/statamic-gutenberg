@@ -194,8 +194,8 @@ class BlockRenderer
             'core/page-list', 'core/navigation' => $this->renderEntryListFallback($block),
             'core/calendar' => $this->renderCalendarFallback($block),
             'core/read-more' => $this->renderReadMoreFallback($block),
-            'core/loginout' => $this->renderLoginoutFallback(),
-            'core/navigation-overlay-close' => '<button class="wp-block-navigation__responsive-container-close" type="button">Close</button>',
+            'core/loginout' => $this->renderLoginoutFallback($block),
+            'core/navigation-overlay-close' => $this->renderNavigationOverlayCloseFallback($block),
             default => $this->renderCoreFallbackNotice($block, $inner),
         };
     }
@@ -266,7 +266,7 @@ class BlockRenderer
 
         return sprintf(
             '<form role="search" method="get"%s><label class="wp-block-search__label%s" for="%s">%s</label><div%s><input class="wp-block-search__input" id="%s" type="search" name="q" value="" placeholder="%s">%s%s</div></form>',
-            $this->renderAttributes([
+            $this->fallbackRootAttributes($block, [
                 'class' => implode(' ', $classes),
                 'action' => $this->siteUrl('/search'),
             ]),
@@ -374,7 +374,9 @@ class BlockRenderer
             );
         }
 
-        return sprintf('<%s class="wp-block-site-title">%s</%s>', $tag, $content, $tag);
+        return sprintf('<%s%s>%s</%s>', $tag, $this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-site-title',
+        ]), $content, $tag);
     }
 
     private function renderSiteTaglineFallback(Block $block): string
@@ -384,7 +386,9 @@ class BlockRenderer
         $tagline = trim((string) config('statamic.system.tagline', '')) ?: trim((string) config('app.description', ''));
         $tagline = $tagline !== '' ? $tagline : 'Site tagline';
 
-        return sprintf('<%s class="wp-block-site-tagline">%s</%s>', $tag, e($tagline), $tag);
+        return sprintf('<%s%s>%s</%s>', $tag, $this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-site-tagline',
+        ]), e($tagline), $tag);
     }
 
     private function renderLatestPostsFallback(Block $block): string
@@ -404,7 +408,9 @@ class BlockRenderer
             ))
             ->implode('');
 
-        return '<ul class="wp-block-latest-posts__list wp-block-latest-posts">'.$items.'</ul>';
+        return sprintf('<ul%s>%s</ul>', $this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-latest-posts__list wp-block-latest-posts',
+        ]), $items);
     }
 
     private function renderEntryListFallback(Block $block): string
@@ -427,7 +433,9 @@ class BlockRenderer
             ))
             ->implode('');
 
-        return sprintf('<ul class="%s">%s</ul>', $class, $items);
+        return sprintf('<ul%s>%s</ul>', $this->fallbackRootAttributes($block, [
+            'class' => $class,
+        ]), $items);
     }
 
     private function renderCalendarFallback(Block $block): string
@@ -459,7 +467,10 @@ class BlockRenderer
             ->implode('');
 
         return sprintf(
-            '<table class="wp-block-calendar wp-calendar-table"><caption>%s</caption><thead><tr>%s</tr></thead><tbody>%s</tbody></table>',
+            '<table%s><caption>%s</caption><thead><tr>%s</tr></thead><tbody>%s</tbody></table>',
+            $this->fallbackRootAttributes($block, [
+                'class' => 'wp-block-calendar wp-calendar-table',
+            ]),
             e($caption),
             $head,
             $rows
@@ -471,16 +482,28 @@ class BlockRenderer
         $content = trim((string) $block->attribute('content', 'Read more')) ?: 'Read more';
 
         return sprintf(
-            '<a class="wp-block-read-more" href="%s"%s>%s</a>',
+            '<a%s href="%s"%s>%s</a>',
+            $this->fallbackRootAttributes($block, [
+                'class' => 'wp-block-read-more',
+            ]),
             e($this->currentUrl()),
             $this->renderAttributes(['target' => (string) $block->attribute('linkTarget', '_self')]),
             e($content)
         );
     }
 
-    private function renderLoginoutFallback(): string
+    private function renderLoginoutFallback(Block $block): string
     {
-        return sprintf('<a class="wp-block-loginout" href="%s">Log in</a>', e($this->siteUrl('/login')));
+        return sprintf('<a%s href="%s">Log in</a>', $this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-loginout',
+        ]), e($this->siteUrl('/login')));
+    }
+
+    private function renderNavigationOverlayCloseFallback(Block $block): string
+    {
+        return sprintf('<button%s type="button">Close</button>', $this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-navigation__responsive-container-close',
+        ]));
     }
 
     private function renderReusableBlock(Block $block, array $options): string
@@ -515,7 +538,7 @@ class BlockRenderer
         if ($inner !== '') {
             return sprintf(
                 '<div%s>%s</div>',
-                $this->renderAttributes([
+                $this->fallbackRootAttributes($block, [
                     'class' => $class,
                     'data-sgb-core-fallback' => $block->name(),
                 ]),
@@ -525,7 +548,7 @@ class BlockRenderer
 
         return sprintf(
             '<div%s><strong>%s</strong><span>%s</span></div>',
-            $this->renderAttributes([
+            $this->fallbackRootAttributes($block, [
                 'class' => $class,
                 'data-sgb-core-fallback' => $block->name(),
             ]),
@@ -618,6 +641,14 @@ class BlockRenderer
         $slug = str_starts_with($name, 'core/') ? substr($name, 5) : $name;
 
         return ucwords(str_replace(['-', '_', '/'], ' ', $slug));
+    }
+
+    private function fallbackRootAttributes(Block $block, array $attributes): string
+    {
+        return BlockWrapperContext::withBlock(
+            $block,
+            fn (): string => BlockWrapperContext::wrapperAttributes($attributes)
+        );
     }
 
     private function siteUrl(string $path = '/'): string

@@ -438,6 +438,27 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('data-sgb-core-fallback="core/playlist-track"', $rendered);
     }
 
+    public function test_runtime_core_fallbacks_preserve_wrapper_attributes(): void
+    {
+        $html = implode('', [
+            '<!-- wp:search {"align":"wide","anchor":"search-one","className":"search-extra","backgroundColor":"blue","style":{"spacing":{"margin":{"top":"2rem"}}}} /-->',
+            '<!-- wp:site-title {"align":"center","anchor":"title-one","className":"title-extra","textColor":"red"} /-->',
+            '<!-- wp:read-more {"align":"right","anchor":"read-more-one","className":"read-extra","content":"Continue","linkTarget":"_blank"} /-->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('id="search-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-search alignwide search-extra has-blue-background-color has-background sgb-core-fallback-search', $rendered);
+        $this->assertStringContainsString('style="margin-top: 2rem"', $rendered);
+        $this->assertStringContainsString('id="title-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-site-title aligncenter title-extra has-red-color has-text-color"', $rendered);
+        $this->assertStringContainsString('id="read-more-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-read-more alignright read-extra"', $rendered);
+        $this->assertStringContainsString('target="_blank"', $rendered);
+        $this->assertStringContainsString('>Continue</a>', $rendered);
+    }
+
     public function test_it_preserves_wrapper_block_attributes(): void
     {
         $html = '<!-- wp:group --><div class="wp-block-group alignwide has-background" style="padding-top:var(--wp--preset--spacing--50)"><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
