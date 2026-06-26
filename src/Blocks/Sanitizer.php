@@ -103,7 +103,6 @@ class Sanitizer
         'script',
         'style',
         'iframe',
-        'object',
         'embed',
         'link',
         'meta',
@@ -161,6 +160,12 @@ class Sanitizer
                     continue;
                 }
 
+                if ($tag === 'object' && ! $this->isSafeFilePreviewObject($child)) {
+                    $child->parentNode?->removeChild($child);
+
+                    continue;
+                }
+
                 $this->cleanAttributes($child);
             }
 
@@ -194,10 +199,22 @@ class Sanitizer
                 continue;
             }
 
-            if (in_array($name, ['action', 'formaction', 'href', 'poster', 'src', 'xlink:href', 'srcset'], true) && $this->isDangerousUrl($value)) {
+            if (in_array($name, ['action', 'data', 'formaction', 'href', 'poster', 'src', 'xlink:href', 'srcset'], true) && $this->isDangerousUrl($value)) {
                 $element->removeAttributeNode($attribute);
             }
         }
+    }
+
+    private function isSafeFilePreviewObject(DOMElement $element): bool
+    {
+        $classes = preg_split('/\s+/', $element->getAttribute('class')) ?: [];
+        $type = strtolower(trim($element->getAttribute('type')));
+        $data = trim($element->getAttribute('data'));
+
+        return in_array('wp-block-file__embed', $classes, true)
+            && $type === 'application/pdf'
+            && $data !== ''
+            && ! $this->isDangerousUrl($data);
     }
 
     private function sanitizeStyle(string $style): string

@@ -82,6 +82,28 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Cover title</p>', $rendered);
     }
 
+    public function test_it_preserves_safe_file_pdf_preview_objects(): void
+    {
+        $html = '<!-- wp:file {"href":"https://site.test/storage/test.pdf","displayPreview":true} --><div class="wp-block-file"><object class="wp-block-file__embed" data="https://site.test/storage/test.pdf" type="application/pdf" style="width:100%;height:420px" aria-label="test.pdf"></object><a href="https://site.test/storage/test.pdf">test.pdf</a></div><!-- /wp:file -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<object class="wp-block-file__embed" data="https://site.test/storage/test.pdf" type="application/pdf"', $rendered);
+        $this->assertStringContainsString('style="width: 100%; height: 420px"', $rendered);
+        $this->assertStringContainsString('<a href="https://site.test/storage/test.pdf">test.pdf</a>', $rendered);
+    }
+
+    public function test_it_removes_unsafe_file_preview_objects(): void
+    {
+        $html = '<!-- wp:file {"href":"https://site.test/storage/test.pdf","displayPreview":true} --><div class="wp-block-file"><object class="wp-block-file__embed" data="javascript:alert(1)" type="application/pdf"></object><object class="wp-block-file__embed" data="https://site.test/storage/test.html" type="text/html"></object><a href="https://site.test/storage/test.pdf">test.pdf</a></div><!-- /wp:file -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringNotContainsString('<object', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
+        $this->assertStringContainsString('<a href="https://site.test/storage/test.pdf">test.pdf</a>', $rendered);
+    }
+
     public function test_it_applies_constrained_layout_attributes_to_group_blocks(): void
     {
         $html = '<!-- wp:group {"layout":{"type":"constrained","contentSize":"640px","wideSize":"980px"}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
