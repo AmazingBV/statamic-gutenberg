@@ -254,7 +254,7 @@ function registerStatamicBlocks() {
                             <div className="sgb-custom-block__button-edit">
                                 <RichText
                                     tagName="span"
-                                    className="sgb-button"
+                                    className="wp-block-button__link wp-element-button"
                                     value={attributes.buttonText}
                                     allowedFormats={[]}
                                     placeholder="Button text"
@@ -279,7 +279,7 @@ function registerStatamicBlocks() {
                         <RichText.Content tagName="h1" value={attributes.heading} />
                         {attributes.text ? <p>{attributes.text}</p> : null}
                         {attributes.buttonText && attributes.buttonUrl ? (
-                            <a className="wp-block-button__link" href={attributes.buttonUrl}>{attributes.buttonText}</a>
+                            <a className="wp-block-button__link wp-element-button" href={attributes.buttonUrl}>{attributes.buttonText}</a>
                         ) : null}
                     </section>
                 );
@@ -323,7 +323,7 @@ function registerStatamicBlocks() {
                         <div className="sgb-custom-block__button-edit">
                             <RichText
                                 tagName="span"
-                                className="sgb-button"
+                                className="wp-block-button__link wp-element-button"
                                 value={attributes.buttonText}
                                 allowedFormats={[]}
                                 placeholder="Button text"
@@ -347,7 +347,7 @@ function registerStatamicBlocks() {
                         <RichText.Content tagName="h2" value={attributes.heading} />
                         {attributes.text ? <p>{attributes.text}</p> : null}
                         {attributes.buttonText && attributes.buttonUrl ? (
-                            <a className="wp-block-button__link" href={attributes.buttonUrl}>{attributes.buttonText}</a>
+                            <a className="wp-block-button__link wp-element-button" href={attributes.buttonUrl}>{attributes.buttonText}</a>
                         ) : null}
                     </section>
                 );

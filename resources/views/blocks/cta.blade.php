@@ -12,5 +12,5 @@
             <p>{{ $text }}</p>
         @endif
     </div>
-    <a class="wp-block-button__link" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
+    <a class="wp-block-button__link wp-element-button" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
 </section>

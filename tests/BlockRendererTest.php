@@ -60,10 +60,10 @@ class BlockRendererTest extends TestCase
 
         $this->assertStringContainsString('class="wp-block-statamic-hero alignwide extra sgb-custom-block sgb-custom-block--hero"', $rendered);
         $this->assertStringContainsString('id="hero-one"', $rendered);
-        $this->assertStringContainsString('<a class="wp-block-button__link" href="/read">Read</a>', $rendered);
+        $this->assertStringContainsString('<a class="wp-block-button__link wp-element-button" href="/read">Read</a>', $rendered);
         $this->assertStringContainsString('class="wp-block-statamic-cta alignfull cta-extra sgb-custom-block sgb-custom-block--cta"', $rendered);
         $this->assertStringContainsString('id="cta-one"', $rendered);
-        $this->assertStringContainsString('<a class="wp-block-button__link" href="/contact">Contact</a>', $rendered);
+        $this->assertStringContainsString('<a class="wp-block-button__link wp-element-button" href="/contact">Contact</a>', $rendered);
     }
 
     public function test_it_renders_static_markup_for_common_standard_core_blocks(): void

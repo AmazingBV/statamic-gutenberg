@@ -12,7 +12,7 @@
             <p>{{ $text }}</p>
         @endif
         @if ($buttonText && $buttonUrl)
-            <a class="wp-block-button__link" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
+            <a class="wp-block-button__link wp-element-button" href="{{ $buttonUrl }}">{{ $buttonText }}</a>
         @endif
     </div>
 </section>
