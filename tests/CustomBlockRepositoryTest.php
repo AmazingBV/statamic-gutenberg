@@ -145,7 +145,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":"8px","color":"javascript:alert(1)"},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -178,6 +178,11 @@ PHP,
         $this->assertStringContainsString('text-transform: uppercase', $rendered);
         $this->assertStringContainsString('writing-mode: horizontal-tb', $rendered);
         $this->assertStringContainsString('border-radius: 8px', $rendered);
+        $this->assertStringContainsString('aspect-ratio: 16/9', $rendered);
+        $this->assertStringContainsString('height: auto', $rendered);
+        $this->assertStringContainsString('min-height: 12rem', $rendered);
+        $this->assertStringContainsString('min-width: 20rem', $rendered);
+        $this->assertStringContainsString('width: 50%', $rendered);
         $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $rendered);
         $this->assertStringNotContainsString('javascript:', $rendered);
     }

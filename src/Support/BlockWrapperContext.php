@@ -143,7 +143,7 @@ class BlockWrapperContext
             ...self::spacingDeclarations('padding', $style['spacing']['padding'] ?? []),
             ...self::typographyDeclarations($style['typography'] ?? []),
             ...self::borderDeclarations($style['border'] ?? []),
-            self::declaration('min-height', $style['dimensions']['minHeight'] ?? null),
+            ...self::dimensionsDeclarations($style['dimensions'] ?? []),
             self::declaration('box-shadow', $style['shadow'] ?? null),
         ]));
     }
@@ -238,6 +238,21 @@ class BlockWrapperContext
             self::declaration('border-style', $border['style'] ?? null),
             self::declaration('border-width', $border['width'] ?? null),
             self::declaration('border-radius', $border['radius'] ?? null),
+        ]));
+    }
+
+    private static function dimensionsDeclarations(mixed $dimensions): array
+    {
+        if (! is_array($dimensions)) {
+            return [];
+        }
+
+        return array_values(array_filter([
+            self::declaration('aspect-ratio', $dimensions['aspectRatio'] ?? null),
+            self::declaration('height', $dimensions['height'] ?? null),
+            self::declaration('min-height', $dimensions['minHeight'] ?? null),
+            self::declaration('min-width', $dimensions['minWidth'] ?? null),
+            self::declaration('width', $dimensions['width'] ?? null),
         ]));
     }
 
