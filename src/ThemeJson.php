@@ -664,8 +664,26 @@ class ThemeJson
     private function scopeCustomCss(array $roots, string $css): string
     {
         $root = implode(', ', $roots);
+        $css = trim($css);
 
-        return $this->resolvePresetValue(str_replace('&', $root, trim($css)));
+        if (str_contains($css, '&')) {
+            return $this->resolvePresetValue(str_replace('&', $root, $css));
+        }
+
+        return $this->resolvePresetValue($this->prefixCustomCssSelectors($roots, $css));
+    }
+
+    private function prefixCustomCssSelectors(array $roots, string $css): string
+    {
+        return preg_replace_callback('/(^|})(\s*)([^{}@][^{}]*)\{/s', function (array $matches) use ($roots) {
+            $selectors = collect(explode(',', trim($matches[3])))
+                ->map(fn (string $selector) => trim($selector))
+                ->filter()
+                ->flatMap(fn (string $selector) => collect($roots)->map(fn (string $root) => "{$root} {$selector}"))
+                ->implode(', ');
+
+            return $matches[1].$matches[2].$selectors.' {';
+        }, $css) ?? $css;
     }
 
     private function resolvePresetValue(string $value): string

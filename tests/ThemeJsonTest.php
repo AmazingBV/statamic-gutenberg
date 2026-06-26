@@ -203,6 +203,24 @@ class ThemeJsonTest extends TestCase
         $this->assertStringNotContainsString('.sgb-editor--fullscreen .sgb-page-frame :is(.wp-element-button, .wp-block-button__link, button)', $css);
     }
 
+    public function test_theme_json_custom_css_without_ampersand_is_scoped_to_content_roots(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'styles' => [
+                'css' => '.custom-theme-class, button.custom-action { color: #123456; }',
+            ],
+        ]);
+
+        $editorCss = app(ThemeJson::class)->editorCss();
+        $frontendCss = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .custom-theme-class', $editorCss);
+        $this->assertStringContainsString('.sgb-editor .sgb-canvas button.custom-action', $editorCss);
+        $this->assertStringContainsString('.sgb-content .custom-theme-class', $frontendCss);
+        $this->assertStringNotContainsString("\n.custom-theme-class", $editorCss);
+    }
+
     public function test_theme_json_relative_assets_are_served_from_theme_directory(): void
     {
         $this->writeThemeJson([
