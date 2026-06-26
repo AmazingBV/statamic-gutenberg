@@ -3,6 +3,7 @@ import {
     installStatamicApiFetchFallbacks,
     resolveStatamicApiFetchFallback,
 } from './apiFetchFallbacks';
+import { createMediaPayload } from './serialization';
 
 describe('Statamic Gutenberg apiFetch fallbacks', () => {
     it('returns standalone responses for read-only WordPress REST endpoints', () => {
@@ -18,6 +19,28 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
     it('does not intercept Statamic requests or mutating WordPress requests', () => {
         expect(resolveStatamicApiFetchFallback({ path: '/cp/assets' })).toBeUndefined();
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media', method: 'POST' })).toBeUndefined();
+    });
+
+    it('serves registered Statamic media through WordPress media records', () => {
+        const media = createMediaPayload({
+            id: 'assets::video.mp4',
+            url: '/storage/assets/video.mp4',
+            title: 'Video',
+            caption: 'Caption',
+            type: 'video',
+            mime_type: 'video/mp4',
+        });
+
+        expect(resolveStatamicApiFetchFallback({ path: `/wp/v2/media/${media.id}?context=edit` })).toMatchObject({
+            id: media.id,
+            statamicId: 'assets::video.mp4',
+            source_url: '/storage/assets/video.mp4',
+            media_type: 'video',
+            mime_type: 'video/mp4',
+            title: { raw: 'Video', rendered: 'Video' },
+            caption: { raw: 'Caption', rendered: 'Caption' },
+            type: 'attachment',
+        });
     });
 
     it('installs one middleware that resolves fallback requests before hitting the network', async () => {

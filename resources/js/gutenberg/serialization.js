@@ -1,6 +1,8 @@
 import { createBlock, parse, serialize } from '@wordpress/blocks';
 
 const TRANSIENT_MEDIA_URL_PATTERN = /blob:[^"'\\\s<>]+/gi;
+const MEDIA_REGISTRY_KEY = '__statamicGutenbergMediaPayloads';
+const FALLBACK_MEDIA_REGISTRY = new Map();
 
 export function parseSerialized(value) {
     if (! value || typeof value !== 'string') {
@@ -62,10 +64,70 @@ export function createImageMedia(asset) {
     return createMediaPayload(asset);
 }
 
+function numericMediaId(value) {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+        return Math.trunc(value);
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value)) {
+        const numeric = Number(value);
+
+        return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+    }
+
+    return null;
+}
+
+function stableNumericMediaId(value) {
+    const source = String(value || '');
+
+    if (! source) {
+        return null;
+    }
+
+    let hash = 2166136261;
+
+    for (let index = 0; index < source.length; index += 1) {
+        hash ^= source.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+
+    return (hash >>> 0) % 2147480000 || 1;
+}
+
+function mediaRegistry() {
+    if (typeof window === 'undefined') {
+        return FALLBACK_MEDIA_REGISTRY;
+    }
+
+    if (! (window[MEDIA_REGISTRY_KEY] instanceof Map)) {
+        window[MEDIA_REGISTRY_KEY] = new Map();
+    }
+
+    return window[MEDIA_REGISTRY_KEY];
+}
+
+function registerMediaPayload(payload) {
+    if (! payload?.id) {
+        return payload;
+    }
+
+    mediaRegistry().set(Number(payload.id), payload);
+
+    return payload;
+}
+
+export function findRegisteredMediaPayload(id) {
+    return mediaRegistry().get(Number(id)) || null;
+}
+
 export function createMediaPayload(asset = {}) {
     const mediaType = mediaTypeForAsset(asset);
     const url = asset.url || asset.source_url || '';
     const title = asset.title || asset.filename || '';
+    const statamicId = asset.statamicId || asset.id || asset.path || url || title || '';
+    const id = numericMediaId(asset.wpId || asset.wordpressId || asset.id)
+        || stableNumericMediaId(statamicId);
     const imageSizes = mediaType === 'image'
         ? (asset.sizes || {
             full: { url },
@@ -79,11 +141,12 @@ export function createMediaPayload(asset = {}) {
         })
         : {};
 
-    return {
+    return registerMediaPayload({
+        id,
         url,
         source_url: url,
         link: asset.link || url,
-        statamicId: asset.statamicId || asset.id || asset.path || '',
+        statamicId,
         alt: asset.alt || '',
         alt_text: asset.alt_text || asset.alt || '',
         title,
@@ -98,7 +161,7 @@ export function createMediaPayload(asset = {}) {
             ...(asset.media_details || {}),
             sizes: mediaDetailSizes,
         },
-    };
+    });
 }
 
 export function createAssetBlock(asset) {
@@ -127,12 +190,14 @@ export function attributesForAssetBlock(blockName, asset = {}) {
     switch (blockName) {
         case 'core/audio':
             return {
+                id: media.id,
                 src: url,
                 caption: media.caption || '',
             };
 
         case 'core/cover':
             return {
+                id: media.id,
                 url,
                 alt: media.alt || '',
                 backgroundType: media.media_type === 'video' ? 'video' : 'image',
@@ -141,6 +206,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/file':
             return {
+                id: media.id,
                 href: url,
                 fileName: title,
                 textLinkHref: url,
@@ -149,6 +215,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/media-text':
             return {
+                mediaId: media.id,
                 mediaUrl: url,
                 mediaAlt: media.alt || '',
                 mediaType: media.media_type === 'video' ? 'video' : 'image',
@@ -157,6 +224,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/video':
             return {
+                id: media.id,
                 src: url,
                 caption: media.caption || '',
             };
@@ -164,6 +232,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
         case 'core/image':
         default:
             return {
+                id: media.id,
                 url,
                 alt: media.alt || '',
                 caption: media.caption || '',

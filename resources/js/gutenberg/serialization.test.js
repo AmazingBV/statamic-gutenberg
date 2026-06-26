@@ -2,8 +2,10 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import React from 'react';
 import { getBlockType, registerBlockType } from '@wordpress/blocks';
 import {
+    attributesForAssetBlock,
     createImageBlock,
     createImageMedia,
+    findRegisteredMediaPayload,
     isBlockAllowed,
     normalizeAllowedBlocks,
     parseSerialized,
@@ -68,24 +70,35 @@ describe('Gutenberg serialization helpers', () => {
             id: 'assets::hero.jpg',
             url: '/storage/assets/hero.jpg',
             alt: 'Hero',
+            type: 'image',
         });
 
         expect(block.name).toBe('core/image');
         expect(block.attributes.url).toBe('/storage/assets/hero.jpg');
         expect(block.attributes.alt).toBe('Hero');
-        expect(block.attributes.id).toBeUndefined();
+        expect(block.attributes.id).toEqual(expect.any(Number));
     });
 
-    it('creates WordPress media payloads without Statamic string ids', () => {
+    it('creates WordPress media payloads with stable numeric ids and Statamic ids', () => {
         const media = createImageMedia({
             id: 'assets::hero.jpg',
             url: '/storage/assets/hero.jpg',
             alt: 'Hero',
             title: 'Hero image',
+            type: 'image',
+        });
+        const sameMedia = createImageMedia({
+            id: 'assets::hero.jpg',
+            url: '/storage/assets/hero.jpg',
+            alt: 'Hero',
+            title: 'Hero image',
+            type: 'image',
         });
 
-        expect(media.id).toBeUndefined();
+        expect(media.id).toEqual(expect.any(Number));
+        expect(sameMedia.id).toBe(media.id);
         expect(media.statamicId).toBe('assets::hero.jpg');
+        expect(findRegisteredMediaPayload(media.id)).toEqual(sameMedia);
         expect(media).toMatchObject({
             url: '/storage/assets/hero.jpg',
             source_url: '/storage/assets/hero.jpg',
@@ -93,9 +106,26 @@ describe('Gutenberg serialization helpers', () => {
             alt_text: 'Hero',
             title: 'Hero image',
             caption: '',
-            media_type: 'file',
-            type: 'file',
+            media_type: 'image',
+            type: 'image',
         });
+    });
+
+    it('adds core media ids to direct asset block attributes', () => {
+        const asset = {
+            id: 'assets::hero.jpg',
+            url: '/storage/assets/hero.jpg',
+            alt: 'Hero',
+            title: 'Hero image',
+            type: 'image',
+        };
+        const imageAttributes = attributesForAssetBlock('core/image', asset);
+        const coverAttributes = attributesForAssetBlock('core/cover', asset);
+        const mediaTextAttributes = attributesForAssetBlock('core/media-text', asset);
+
+        expect(imageAttributes.id).toEqual(expect.any(Number));
+        expect(coverAttributes.id).toBe(imageAttributes.id);
+        expect(mediaTextAttributes.mediaId).toBe(imageAttributes.id);
     });
 
     it('strips transient blob media urls before saved content is parsed or serialized', () => {

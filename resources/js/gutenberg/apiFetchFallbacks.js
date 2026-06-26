@@ -1,3 +1,5 @@
+import { findRegisteredMediaPayload } from './serialization';
+
 const INSTALLED_KEY = '__statamicGutenbergApiFetchFallbacksInstalled';
 
 function methodFor(options = {}) {
@@ -77,6 +79,40 @@ function patternCategories() {
             description: category.description || '',
         })).filter((category) => category.name)
         : [];
+}
+
+function mediaRecord(id) {
+    const media = findRegisteredMediaPayload(id);
+
+    if (! media) {
+        return {
+            id,
+            alt_text: '',
+            caption: { raw: '', rendered: '' },
+            media_details: {},
+            media_type: 'file',
+            mime_type: '',
+            source_url: '',
+            title: { raw: '', rendered: '' },
+            type: 'attachment',
+        };
+    }
+
+    const title = media.title || media.filename || '';
+    const caption = media.caption || '';
+
+    return {
+        ...media,
+        id,
+        alt_text: media.alt_text || media.alt || '',
+        caption: { raw: caption, rendered: caption },
+        media_details: media.media_details || {},
+        media_type: media.media_type || media.type || 'file',
+        mime_type: media.mime_type || media.mime || '',
+        source_url: media.source_url || media.url || '',
+        title: { raw: title, rendered: title },
+        type: 'attachment',
+    };
 }
 
 function patternCategoryTerms() {
@@ -275,13 +311,7 @@ function fallbackForKnownWordPressEndpoint(path) {
     if (/^\/wp\/v2\/media\/\d+(?:\?|$)/.test(path)) {
         const id = Number(path.match(/^\/wp\/v2\/media\/(\d+)/)?.[1] || 0);
 
-        return {
-            id,
-            alt_text: '',
-            caption: { rendered: '' },
-            media_details: {},
-            source_url: '',
-        };
+        return mediaRecord(id);
     }
 
     if (/^\/wp\/v2\/(?:media|search|themes|templates|template-parts|block-types|block-directory|pattern-directory|global-styles)(?:\/|\?|$)/.test(path)) {
