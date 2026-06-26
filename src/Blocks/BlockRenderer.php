@@ -813,7 +813,7 @@ class BlockRenderer
 
         return sprintf(
             '<figure%s><div class="wp-block-embed__wrapper"><iframe src="%s" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></figure>',
-            $this->renderAttributes(['class' => implode(' ', $classes)]),
+            BlockWrapperContext::withBlock($block, fn (): string => BlockWrapperContext::wrapperAttributes(['class' => implode(' ', $classes)])),
             e($embedUrl)
         );
     }

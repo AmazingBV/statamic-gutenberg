@@ -87,6 +87,17 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-video"', $rendered);
     }
 
+    public function test_it_preserves_wrapper_attributes_on_constructed_youtube_embeds(): void
+    {
+        $html = '<!-- wp:embed {"url":"https://www.youtube.com/watch?v=tCDvOQI3pco","type":"video","providerNameSlug":"youtube","responsive":true,"align":"wide","className":"audit-embed","anchor":"youtube-one"} --><figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube"><div class="wp-block-embed__wrapper">https://www.youtube.com/watch?v=tCDvOQI3pco</div></figure><!-- /wp:embed -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('id="youtube-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-embed alignwide audit-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"', $rendered);
+        $this->assertStringContainsString('src="https://www.youtube.com/embed/tCDvOQI3pco"', $rendered);
+    }
+
     public function test_it_applies_constrained_layout_attributes_to_cover_inner_blocks(): void
     {
         $html = '<!-- wp:cover {"align":"full","layout":{"type":"constrained","contentSize":"640px","wideSize":"980px"}} --><div class="wp-block-cover alignfull"><div class="wp-block-cover__inner-container"><!-- wp:paragraph --><p>Cover title</p><!-- /wp:paragraph --></div></div><!-- /wp:cover -->';
