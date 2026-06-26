@@ -111,7 +111,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","fontSize":"large","style":{"typography":{"textAlign":"center","fontSize":"clamp(1rem, 2vw, 2rem)"},"spacing":{"padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff"},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"border":{"radius":"8px","color":"javascript:alert(1)"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -120,14 +120,27 @@ PHP,
         $this->assertStringContainsString('has-text-color', $rendered);
         $this->assertStringContainsString('has-light-background-color', $rendered);
         $this->assertStringContainsString('has-background', $rendered);
+        $this->assertStringContainsString('has-brand-gradient-gradient-background', $rendered);
         $this->assertStringContainsString('has-large-font-size', $rendered);
+        $this->assertStringContainsString('has-system-sans-font-family', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
         $this->assertStringContainsString('has-natural-box-shadow', $rendered);
         $this->assertStringContainsString('color: var(--wp--preset--color--secondary)', $rendered);
         $this->assertStringContainsString('background-color: #fff', $rendered);
+        $this->assertStringContainsString('background: var(--wp--preset--gradient--brand-gradient)', $rendered);
+        $this->assertStringContainsString('--wp--style--block-gap: var(--wp--preset--spacing--50)', $rendered);
+        $this->assertStringContainsString('gap: var(--wp--preset--spacing--50)', $rendered);
         $this->assertStringContainsString('margin-bottom: 2rem', $rendered);
         $this->assertStringContainsString('padding-top: var(--wp--preset--spacing--40)', $rendered);
+        $this->assertStringContainsString('font-family: var(--wp--preset--font-family--system-sans)', $rendered);
         $this->assertStringContainsString('font-size: clamp(1rem, 2vw, 2rem)', $rendered);
+        $this->assertStringContainsString('font-style: italic', $rendered);
+        $this->assertStringContainsString('font-weight: 700', $rendered);
+        $this->assertStringContainsString('line-height: 1.4', $rendered);
+        $this->assertStringContainsString('letter-spacing: 0.01em', $rendered);
+        $this->assertStringContainsString('text-decoration: underline', $rendered);
+        $this->assertStringContainsString('text-transform: uppercase', $rendered);
+        $this->assertStringContainsString('writing-mode: horizontal-tb', $rendered);
         $this->assertStringContainsString('border-radius: 8px', $rendered);
         $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $rendered);
         $this->assertStringNotContainsString('javascript:', $rendered);

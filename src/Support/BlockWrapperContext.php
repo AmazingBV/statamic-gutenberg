@@ -92,10 +92,23 @@ class BlockWrapperContext
             $classes[] = 'has-background';
         }
 
+        $gradient = self::safeSlug($block->attribute('gradient'));
+
+        if ($gradient) {
+            $classes[] = "has-{$gradient}-gradient-background";
+            $classes[] = 'has-background';
+        }
+
         $fontSize = self::safeSlug($block->attribute('fontSize'));
 
         if ($fontSize) {
             $classes[] = "has-{$fontSize}-font-size";
+        }
+
+        $fontFamily = self::safeSlug($block->attribute('fontFamily'));
+
+        if ($fontFamily) {
+            $classes[] = "has-{$fontFamily}-font-family";
         }
 
         $style = $block->attribute('style', []);
@@ -120,6 +133,7 @@ class BlockWrapperContext
 
         return array_values(array_filter([
             ...self::colorDeclarations($style['color'] ?? []),
+            ...self::blockGapDeclarations($style['spacing']['blockGap'] ?? null),
             ...self::spacingDeclarations('margin', $style['spacing']['margin'] ?? []),
             ...self::spacingDeclarations('padding', $style['spacing']['padding'] ?? []),
             ...self::typographyDeclarations($style['typography'] ?? []),
@@ -138,7 +152,22 @@ class BlockWrapperContext
         return array_values(array_filter([
             self::declaration('color', $color['text'] ?? null),
             self::declaration('background-color', $color['background'] ?? null),
+            self::declaration('background', $color['gradient'] ?? null),
         ]));
+    }
+
+    private static function blockGapDeclarations(mixed $value): array
+    {
+        $declaration = self::declaration('--wp--style--block-gap', $value);
+
+        if (! $declaration) {
+            return [];
+        }
+
+        return [
+            $declaration,
+            self::declaration('gap', $value),
+        ];
     }
 
     private static function spacingDeclarations(string $property, mixed $values): array
@@ -167,9 +196,15 @@ class BlockWrapperContext
         }
 
         return array_values(array_filter([
+            self::declaration('font-family', $typography['fontFamily'] ?? null),
             self::declaration('font-size', $typography['fontSize'] ?? null),
+            self::declaration('font-style', $typography['fontStyle'] ?? null),
+            self::declaration('font-weight', $typography['fontWeight'] ?? null),
             self::declaration('line-height', $typography['lineHeight'] ?? null),
             self::declaration('letter-spacing', $typography['letterSpacing'] ?? null),
+            self::declaration('text-decoration', $typography['textDecoration'] ?? null),
+            self::declaration('text-transform', $typography['textTransform'] ?? null),
+            self::declaration('writing-mode', $typography['writingMode'] ?? null),
         ]));
     }
 
