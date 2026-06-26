@@ -8,6 +8,8 @@ use Amazingbv\StatamicGutenberg\Blocks\CoreBlocks;
 use Amazingbv\StatamicGutenberg\GutenbergManager;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
+use Statamic\Contracts\Assets\AssetRepository as AssetRepositoryContract;
+use Statamic\Facades\Asset as AssetFacade;
 
 class BlockRendererTest extends TestCase
 {
@@ -416,6 +418,41 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('data-sgb-lightbox-trigger="true"', $rendered);
     }
 
+    public function test_it_renders_statamic_asset_attachment_images_from_ids(): void
+    {
+        $this->bindFakeAsset('assets::hero.jpg');
+
+        $image = wp_get_attachment_image('asset::assets::hero.jpg', 'large', false, [
+            'class' => 'avtb__image',
+            'loading' => 'lazy',
+            'decoding' => 'async',
+        ]);
+
+        $this->assertStringContainsString('src="/storage/assets/hero.jpg"', $image);
+        $this->assertStringContainsString('alt="Hero alt"', $image);
+        $this->assertStringContainsString('class="avtb__image"', $image);
+        $this->assertStringContainsString('loading="lazy"', $image);
+        $this->assertStringContainsString('decoding="async"', $image);
+        $this->assertStringContainsString('width="1200"', $image);
+        $this->assertStringContainsString('height="800"', $image);
+        $this->assertSame('/storage/assets/hero.jpg', wp_get_attachment_url('assets::hero.jpg'));
+        $this->assertSame('', wp_get_attachment_image('assets::missing.jpg'));
+    }
+
+    public function test_it_constructs_core_images_from_statamic_asset_ids_when_url_is_missing(): void
+    {
+        $this->bindFakeAsset('assets::hero.jpg');
+
+        $html = '<!-- wp:image {"id":"assets::hero.jpg"} /-->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-image"', $rendered);
+        $this->assertStringContainsString('src="/storage/assets/hero.jpg"', $rendered);
+        $this->assertStringContainsString('alt="Hero alt"', $rendered);
+        $this->assertStringContainsString('width="1200"', $rendered);
+        $this->assertStringContainsString('height="800"', $rendered);
+    }
+
     public function test_it_renders_icon_blocks_with_wrapper_supports_and_accessible_label(): void
     {
         config([
@@ -464,6 +501,107 @@ class BlockRendererTest extends TestCase
         return [
             'allowed_blocks' => array_merge(CoreBlocks::names(), ['statamic/hero', 'statamic/cta']),
         ];
+    }
+
+    private function bindFakeAsset(string $id): void
+    {
+        $asset = new class
+        {
+            public function url(): string
+            {
+                return '/storage/assets/hero.jpg';
+            }
+
+            public function isImage(): bool
+            {
+                return true;
+            }
+
+            public function isSvg(): bool
+            {
+                return false;
+            }
+
+            public function get(string $key, mixed $fallback = null): mixed
+            {
+                return $key === 'alt' ? 'Hero alt' : $fallback;
+            }
+
+            public function width(): int
+            {
+                return 1200;
+            }
+
+            public function height(): int
+            {
+                return 800;
+            }
+        };
+
+        $this->app->instance(AssetRepositoryContract::class, new class($id, $asset) implements AssetRepositoryContract
+        {
+            public function __construct(private string $id, private mixed $asset)
+            {
+                //
+            }
+
+            public function all()
+            {
+                return collect([$this->asset]);
+            }
+
+            public function whereContainer(string $container)
+            {
+                return collect([$this->asset]);
+            }
+
+            public function whereFolder(string $folder, string $container)
+            {
+                return collect([$this->asset]);
+            }
+
+            public function find(string $asset)
+            {
+                return $asset === $this->id ? $this->asset : null;
+            }
+
+            public function findByUrl(string $url)
+            {
+                return $url === '/storage/assets/hero.jpg' ? $this->asset : null;
+            }
+
+            public function findById(string $id)
+            {
+                return $this->find($id);
+            }
+
+            public function findByPath(string $path)
+            {
+                return null;
+            }
+
+            public function findOrFail(string $asset)
+            {
+                return $this->find($asset);
+            }
+
+            public function make()
+            {
+                return null;
+            }
+
+            public function query()
+            {
+                return null;
+            }
+
+            public function save($asset)
+            {
+                //
+            }
+        });
+
+        AssetFacade::clearResolvedInstance(AssetRepositoryContract::class);
     }
 
     private function bindPatternRepository(array $patterns): void

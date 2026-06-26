@@ -1,6 +1,7 @@
 <?php
 
 use Amazingbv\StatamicGutenberg\Support\BlockWrapperContext;
+use Amazingbv\StatamicGutenberg\Support\StatamicAssetImages;
 
 if (! function_exists('get_block_wrapper_attributes')) {
     function get_block_wrapper_attributes(array $extra_attributes = []): string
@@ -95,7 +96,21 @@ if (! function_exists('sanitize_title')) {
 if (! function_exists('wp_get_attachment_image')) {
     function wp_get_attachment_image(mixed $attachment_id, string|array $size = 'thumbnail', bool $icon = false, array $attr = []): string
     {
-        return '';
+        return StatamicAssetImages::image($attachment_id, $size, $icon, $attr);
+    }
+}
+
+if (! function_exists('wp_get_attachment_url')) {
+    function wp_get_attachment_url(mixed $attachment_id): string
+    {
+        return StatamicAssetImages::url($attachment_id);
+    }
+}
+
+if (! function_exists('wp_get_attachment_image_url')) {
+    function wp_get_attachment_image_url(mixed $attachment_id, string|array $size = 'thumbnail', bool $icon = false): string
+    {
+        return StatamicAssetImages::url($attachment_id);
     }
 }
 

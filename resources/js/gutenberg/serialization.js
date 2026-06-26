@@ -83,6 +83,7 @@ export function createMediaPayload(asset = {}) {
         url,
         source_url: url,
         link: asset.link || url,
+        statamicId: asset.statamicId || asset.id || asset.path || '',
         alt: asset.alt || '',
         alt_text: asset.alt_text || asset.alt || '',
         title,

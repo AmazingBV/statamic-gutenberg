@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg\Blocks;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Amazingbv\StatamicGutenberg\Support\BlockWrapperContext;
+use Amazingbv\StatamicGutenberg\Support\StatamicAssetImages;
 use Amazingbv\StatamicGutenberg\Support\WpBlock;
 use DOMDocument;
 use DOMElement;
@@ -1195,18 +1196,34 @@ class BlockRenderer
     private function renderConstructedImage(Block $block): string
     {
         $url = $block->attribute('url');
+        $alt = $block->attribute('alt', '');
 
         if (! $url) {
-            return '';
-        }
+            $image = StatamicAssetImages::image($this->imageAssetId($block), 'full', false, [
+                'alt' => is_scalar($alt) ? (string) $alt : '',
+            ]);
 
-        $alt = $block->attribute('alt', '');
+            return $image === '' ? '' : '<figure class="wp-block-image">'.$image.'</figure>';
+        }
 
         return sprintf(
             '<figure class="wp-block-image"><img src="%s" alt="%s"></figure>',
             e($url),
             e($alt)
         );
+    }
+
+    private function imageAssetId(Block $block): mixed
+    {
+        foreach (['statamicId', 'mediaId', 'imageId', 'id'] as $attribute) {
+            $value = $block->attribute($attribute);
+
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     private function sanitize(string $html, array $options): string
