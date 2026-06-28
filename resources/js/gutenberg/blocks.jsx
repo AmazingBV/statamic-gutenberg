@@ -57,6 +57,19 @@ export function registerGutenbergBlocks() {
     registered = true;
 }
 
+function cssJustification(value = 'left') {
+    switch (value) {
+        case 'center':
+            return 'center';
+        case 'right':
+            return 'flex-end';
+        case 'space-between':
+            return 'space-between';
+        default:
+            return 'flex-start';
+    }
+}
+
 export function withStatamicLayoutWrapperStyles(BlockListBlock) {
     return function StatamicLayoutBlockListBlock(props) {
         const layout = props.attributes?.layout || {};
@@ -67,6 +80,7 @@ export function withStatamicLayoutWrapperStyles(BlockListBlock) {
         if (props.name === 'core/group' && layout.type === 'flex') {
             style.display = 'flex';
             style.alignItems = 'flex-start';
+            style.justifyContent = cssJustification(layout.justifyContent || layout.contentJustification || 'left');
             style.gap = style.gap || 'var(--wp--style--block-gap)';
             style.flexDirection = layout.orientation === 'vertical' ? 'column' : 'row';
             style.flexWrap = layout.flexWrap === 'nowrap' ? 'nowrap' : 'wrap';
@@ -221,7 +235,24 @@ function registerStatamicBlockFilters() {
 const STATAMIC_BUTTON_CLASS = 'wp-block-button__link wp-element-button';
 const LEGACY_STATAMIC_BUTTON_CLASS = 'wp-block-button__link';
 
+const STATAMIC_WRAPPER_ATTRIBUTES = {
+    align: { type: 'string' },
+    anchor: { type: 'string' },
+    className: { type: 'string' },
+};
+
+const STATAMIC_BLOCK_SUPPORTS = {
+    anchor: true,
+    customClassName: true,
+};
+
+const STATAMIC_DEPRECATED_SUPPORTS = {
+    ...STATAMIC_BLOCK_SUPPORTS,
+    align: ['wide', 'full'],
+};
+
 const STATAMIC_HERO_ATTRIBUTES = {
+    ...STATAMIC_WRAPPER_ATTRIBUTES,
     heading: { type: 'string', default: 'Hero heading' },
     text: { type: 'string', default: '' },
     buttonText: { type: 'string', default: '' },
@@ -229,6 +260,7 @@ const STATAMIC_HERO_ATTRIBUTES = {
 };
 
 const STATAMIC_CTA_ATTRIBUTES = {
+    ...STATAMIC_WRAPPER_ATTRIBUTES,
     heading: { type: 'string', default: 'Call to action' },
     text: { type: 'string', default: '' },
     buttonText: { type: 'string', default: 'Learn more' },
@@ -271,6 +303,7 @@ function registerStatamicBlocks() {
             icon: 'cover-image',
             category: 'theme',
             attributes: STATAMIC_HERO_ATTRIBUTES,
+            supports: STATAMIC_BLOCK_SUPPORTS,
             edit: ({ attributes, setAttributes }) => {
                 const blockProps = useBlockProps({ className: 'sgb-custom-block sgb-custom-block--hero' });
 
@@ -315,6 +348,7 @@ function registerStatamicBlocks() {
             deprecated: [
                 {
                     attributes: STATAMIC_HERO_ATTRIBUTES,
+                    supports: STATAMIC_DEPRECATED_SUPPORTS,
                     save: (props) => saveStatamicHero(props, LEGACY_STATAMIC_BUTTON_CLASS),
                 },
             ],
@@ -328,6 +362,7 @@ function registerStatamicBlocks() {
             icon: 'megaphone',
             category: 'theme',
             attributes: STATAMIC_CTA_ATTRIBUTES,
+            supports: STATAMIC_BLOCK_SUPPORTS,
             edit: ({ attributes, setAttributes }) => {
                 const blockProps = useBlockProps({ className: 'sgb-custom-block sgb-custom-block--cta' });
 
@@ -372,6 +407,7 @@ function registerStatamicBlocks() {
             deprecated: [
                 {
                     attributes: STATAMIC_CTA_ATTRIBUTES,
+                    supports: STATAMIC_DEPRECATED_SUPPORTS,
                     save: (props) => saveStatamicCta(props, LEGACY_STATAMIC_BUTTON_CLASS),
                 },
             ],
