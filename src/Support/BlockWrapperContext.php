@@ -359,10 +359,27 @@ class BlockWrapperContext
 
     private static function mergeStyles(string $existing, string $addition): string
     {
-        return implode('; ', array_filter([
-            trim(rtrim($existing, ';')),
-            trim(rtrim($addition, ';')),
-        ]));
+        $declarations = [];
+
+        foreach ([$existing, $addition] as $style) {
+            foreach (explode(';', $style) as $declaration) {
+                $declaration = trim($declaration);
+
+                if ($declaration === '' || ! str_contains($declaration, ':')) {
+                    continue;
+                }
+
+                [$property, $value] = array_map('trim', explode(':', $declaration, 2));
+
+                if ($property === '' || $value === '') {
+                    continue;
+                }
+
+                $declarations[strtolower($property)] = "{$property}: {$value}";
+            }
+        }
+
+        return implode('; ', array_values($declarations));
     }
 
     private static function baseClass(string $name): string

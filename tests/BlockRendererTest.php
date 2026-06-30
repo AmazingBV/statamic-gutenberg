@@ -626,6 +626,24 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Inner</p>', $rendered);
     }
 
+    public function test_it_deduplicates_wrapper_support_styles_against_saved_markup(): void
+    {
+        $html = '<!-- wp:group {"style":{"spacing":{"padding":{"top":"2rem","bottom":"3rem"}},"background":{"backgroundImage":{"url":"https://site.test/bg.jpg"},"backgroundSize":"cover"}},"layout":{"type":"grid","columnCount":3}} --><div class="wp-block-group" style="padding-top:1rem;padding-bottom:3rem;background-image:url(https://site.test/bg.jpg);background-size:contain;display:block;grid-template-columns:repeat(1,minmax(0,1fr))"><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertSame(1, substr_count($rendered, 'padding-top:'));
+        $this->assertSame(1, substr_count($rendered, 'padding-bottom:'));
+        $this->assertSame(1, substr_count($rendered, 'background-image:'));
+        $this->assertSame(1, substr_count($rendered, 'background-size:'));
+        $this->assertSame(1, substr_count($rendered, 'display:'));
+        $this->assertSame(1, substr_count($rendered, 'grid-template-columns:'));
+        $this->assertStringContainsString('padding-top: 2rem', $rendered);
+        $this->assertStringContainsString('background-size: cover', $rendered);
+        $this->assertStringContainsString('display: grid', $rendered);
+        $this->assertStringContainsString('grid-template-columns: repeat(3, minmax(0, 1fr))', $rendered);
+    }
+
     public function test_it_applies_wrapper_supports_to_wrapperless_container_blocks(): void
     {
         $html = implode('', [
