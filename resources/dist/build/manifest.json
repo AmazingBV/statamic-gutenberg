@@ -15,6 +15,14 @@
     "src": "node_modules/@wordpress/vips/build-module/vips-worker.mjs",
     "isDynamicEntry": true
   },
+  "node_modules/dashicons/fonts/dashicons.eot": {
+    "file": "assets/dashicons-DDlWl2tg.eot",
+    "src": "node_modules/dashicons/fonts/dashicons.eot"
+  },
+  "node_modules/dashicons/fonts/dashicons.ttf": {
+    "file": "assets/dashicons-MbROV69l.ttf",
+    "src": "node_modules/dashicons/fonts/dashicons.ttf"
+  },
   "resources/css/addon.css": {
     "file": "assets/addon-BAQozN_Z.css",
     "src": "resources/css/addon.css",
@@ -34,7 +42,7 @@
     ]
   },
   "resources/js/addon.js": {
-    "file": "assets/addon-DsqlEtXM.js",
+    "file": "assets/addon-NQzsmj9g.js",
     "name": "addon",
     "src": "resources/js/addon.js",
     "isEntry": true,
@@ -46,7 +54,7 @@
     ]
   },
   "resources/js/editor-window.js": {
-    "file": "assets/editor-window-kz5wlHiL.js",
+    "file": "assets/editor-window-DyuFlzNP.js",
     "name": "editor-window",
     "src": "resources/js/editor-window.js",
     "isEntry": true,
@@ -62,7 +70,7 @@
     "isEntry": true
   },
   "resources/js/gutenberg/mount.jsx": {
-    "file": "assets/mount-DlsZFxhH.js",
+    "file": "assets/mount-CFZytW8v.js",
     "name": "mount",
     "src": "resources/js/gutenberg/mount.jsx",
     "isDynamicEntry": true,
@@ -75,7 +83,11 @@
       "node_modules/@wordpress/latex-to-mathml/build-module/index.mjs"
     ],
     "css": [
-      "assets/mount-CN9I6mcw.css"
+      "assets/mount-DzRkovDF.css"
+    ],
+    "assets": [
+      "assets/dashicons-DDlWl2tg.eot",
+      "assets/dashicons-MbROV69l.ttf"
     ]
   }
 }

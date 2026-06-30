@@ -21,6 +21,7 @@
         "@wordpress/icons": "^14.0.1",
         "@wordpress/rich-text": "^7.48.1",
         "@wordpress/url": "^4.48.1",
+        "dashicons": "^0.0.2",
         "react": "18.3.1",
         "react-dom": "18.3.1",
         "vue": "^3.5.38"
