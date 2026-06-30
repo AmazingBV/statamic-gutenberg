@@ -9,6 +9,8 @@ describe('custom block loading', () => {
         expect(editor).toContain("import { loadCustomBlockAssets, prepareCustomBlockRegistry } from './customBlocks'");
         expect(editor).toContain('prepareCustomBlockRegistry(meta?.customBlocks)');
         expect(editor).toContain('loadCustomBlockAssets(customBlocks)');
+        expect(editor).toContain('customBlocks.length > 0 ? [] : parseSerialized(value)');
+        expect(editor).toContain('if (! customBlocksReady) {');
         expect(editor).toContain('Loading custom blocks...');
         expect(loader).toContain('export function prepareCustomBlockRegistry');
         expect(loader).toContain('export function normalizeCustomBlocks');

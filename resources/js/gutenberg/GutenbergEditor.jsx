@@ -730,7 +730,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const lastSerialized = useRef(initialValue);
     const historyRef = useRef({ undo: [], redo: [] });
     const historyCurrentRef = useRef(initialValue);
-    const [blocks, setBlocks] = useState(() => parseSerialized(value));
+    const [blocks, setBlocks] = useState(() => (customBlocks.length > 0 ? [] : parseSerialized(value)));
     const [codeValue, setCodeValue] = useState(initialValue);
     const [codeError, setCodeError] = useState('');
     const [editorMode, setEditorMode] = useState('visual');
@@ -791,11 +791,27 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             setCodeValue(nextValue);
             setCodeError(validation.valid ? '' : validation.message);
 
-            if (validation.valid) {
+            if (validation.valid && customBlocksReady) {
                 setBlocks(parseSerialized(nextValue));
+            } else if (! validation.valid) {
+                setBlocks([]);
             }
         }
-    }, [value]);
+    }, [customBlocksReady, value]);
+
+    useEffect(() => {
+        if (! customBlocksReady) {
+            return;
+        }
+
+        const validation = validateSerialized(lastSerialized.current);
+
+        setCodeError(validation.valid ? '' : validation.message);
+
+        if (validation.valid) {
+            setBlocks(parseSerialized(lastSerialized.current));
+        }
+    }, [customBlocksReady]);
 
     useEffect(() => {
         onValidityChange?.(codeError === '');
