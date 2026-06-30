@@ -11,6 +11,24 @@ function directChildren(element, className) {
     return Array.from(element.children).filter((child) => child.classList.contains(className));
 }
 
+function currentHashTarget(root = document) {
+    if (! window.location.hash || window.location.hash === '#') {
+        return null;
+    }
+
+    let id = window.location.hash.slice(1);
+
+    try {
+        id = decodeURIComponent(id);
+    } catch {
+        return null;
+    }
+
+    const target = document.getElementById(id);
+
+    return target && root.contains(target) ? target : null;
+}
+
 function initFitText(root = document) {
     const headings = Array.from(root.querySelectorAll('.wp-block-heading.has-fit-text'));
 
@@ -166,6 +184,11 @@ function initAccordions(root = document) {
         accordion.dataset.sgbAccordionReady = 'true';
         const autoclose = accordion.dataset.sgbAccordionAutoclose === 'true';
         const items = directChildren(accordion, 'wp-block-accordion-item');
+        const hashTargetItem = () => {
+            const target = currentHashTarget(accordion);
+
+            return target ? items.find((item) => item.contains(target)) : null;
+        };
 
         const setOpen = (item, open) => {
             const button = item.querySelector('.wp-block-accordion-heading__toggle');
@@ -182,6 +205,7 @@ function initAccordions(root = document) {
         };
 
         let hasOpenAutocloseItem = false;
+        const initialHashItem = hashTargetItem();
 
         items.forEach((item, itemIndex) => {
             const heading = item.querySelector('.wp-block-accordion-heading');
@@ -207,7 +231,8 @@ function initAccordions(root = document) {
             panel.setAttribute('role', 'region');
             panel.setAttribute('aria-labelledby', headingId);
 
-            const shouldOpen = item.classList.contains('is-open') && (! autoclose || ! hasOpenAutocloseItem);
+            const shouldOpen = item === initialHashItem
+                || (item.classList.contains('is-open') && (! initialHashItem || ! autoclose) && (! autoclose || ! hasOpenAutocloseItem));
             hasOpenAutocloseItem = hasOpenAutocloseItem || shouldOpen;
             setOpen(item, shouldOpen);
 
@@ -220,6 +245,20 @@ function initAccordions(root = document) {
 
                 setOpen(item, nextOpen);
             });
+        });
+
+        window.addEventListener('hashchange', () => {
+            const item = hashTargetItem();
+
+            if (! item) {
+                return;
+            }
+
+            if (autoclose) {
+                items.forEach((otherItem) => setOpen(otherItem, false));
+            }
+
+            setOpen(item, true);
         });
     });
 }
@@ -248,7 +287,15 @@ function initTabs(root = document) {
         tabList?.setAttribute('role', 'tablist');
 
         const activeFromMarkup = Number.parseInt(tabs.dataset.sgbActiveTabIndex || '0', 10);
-        let activeIndex = Number.isFinite(activeFromMarkup) ? activeFromMarkup : 0;
+        const hashPanelIndex = () => {
+            const target = currentHashTarget(tabs);
+
+            return target ? panels.findIndex((panel) => panel.contains(target)) : -1;
+        };
+        const activeFromHash = hashPanelIndex();
+        let activeIndex = activeFromHash >= 0
+            ? activeFromHash
+            : (Number.isFinite(activeFromMarkup) ? activeFromMarkup : 0);
 
         const setActive = (nextIndex, shouldFocus = false) => {
             activeIndex = Math.max(0, Math.min(nextIndex, pairCount - 1));
@@ -325,6 +372,14 @@ function initTabs(root = document) {
         });
 
         setActive(activeIndex);
+
+        window.addEventListener('hashchange', () => {
+            const nextIndex = hashPanelIndex();
+
+            if (nextIndex >= 0) {
+                setActive(nextIndex);
+            }
+        });
     });
 }
 

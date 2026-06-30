@@ -13,6 +13,7 @@ describe('frontend block interactions', () => {
 
     afterEach(() => {
         document.body.innerHTML = '';
+        window.history.replaceState(null, '', '/');
     });
 
     it('toggles accordion panels with autoclose state', async () => {
@@ -81,6 +82,31 @@ describe('frontend block interactions', () => {
         expect(items[1].querySelector('.wp-block-accordion-panel').hidden).toBe(true);
     });
 
+    it('opens the accordion item containing the current hash target', async () => {
+        window.history.replaceState(null, '', '#target-panel-content');
+        document.body.innerHTML = `
+            <div class="wp-block-accordion" data-sgb-accordion-autoclose="true">
+                <div class="wp-block-accordion-item is-open">
+                    <h3 class="wp-block-accordion-heading"><button class="wp-block-accordion-heading__toggle" type="button">First</button></h3>
+                    <div class="wp-block-accordion-panel">First panel</div>
+                </div>
+                <div class="wp-block-accordion-item">
+                    <h3 class="wp-block-accordion-heading"><button class="wp-block-accordion-heading__toggle" type="button">Second</button></h3>
+                    <div class="wp-block-accordion-panel"><span id="target-panel-content">Second panel</span></div>
+                </div>
+            </div>
+        `;
+
+        await loadFrontend();
+
+        const items = document.querySelectorAll('.wp-block-accordion-item');
+
+        expect(items[0].classList.contains('is-open')).toBe(false);
+        expect(items[0].querySelector('.wp-block-accordion-panel').hidden).toBe(true);
+        expect(items[1].classList.contains('is-open')).toBe(true);
+        expect(items[1].querySelector('.wp-block-accordion-panel').hidden).toBe(false);
+    });
+
     it('keeps nested tabs independent from their parent tabs', async () => {
         document.body.innerHTML = `
             <div class="wp-block-tabs" data-sgb-active-tab-index="0" id="outer">
@@ -126,6 +152,38 @@ describe('frontend block interactions', () => {
         expect(innerPanels[0].hidden).toBe(true);
         expect(innerPanels[1].hidden).toBe(false);
         expect(innerButtons[1].getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('activates the tab panel containing the current hash target', async () => {
+        window.history.replaceState(null, '', '#second-tab-content');
+        document.body.innerHTML = `
+            <div class="wp-block-tabs" data-sgb-active-tab-index="0">
+                <div class="wp-block-tab-list">
+                    <button class="wp-block-tab" type="button">First</button>
+                    <button class="wp-block-tab" type="button">Second</button>
+                </div>
+                <div class="wp-block-tab-panels">
+                    <section class="wp-block-tab-panel" data-sgb-tab-label="First panel"><span id="first-tab-content">First panel</span></section>
+                    <section class="wp-block-tab-panel" data-sgb-tab-label="Second panel"><span id="second-tab-content">Second panel</span></section>
+                </div>
+            </div>
+        `;
+
+        await loadFrontend();
+
+        const buttons = Array.from(document.querySelectorAll('.wp-block-tab'));
+        const panels = Array.from(document.querySelectorAll('.wp-block-tab-panel'));
+
+        expect(buttons[1].getAttribute('aria-selected')).toBe('true');
+        expect(panels[0].hidden).toBe(true);
+        expect(panels[1].hidden).toBe(false);
+
+        window.history.replaceState(null, '', '#first-tab-content');
+        window.dispatchEvent(new Event('hashchange'));
+
+        expect(buttons[0].getAttribute('aria-selected')).toBe('true');
+        expect(panels[0].hidden).toBe(false);
+        expect(panels[1].hidden).toBe(true);
     });
 
     it('ignores extra tab buttons that have no matching panel', async () => {
