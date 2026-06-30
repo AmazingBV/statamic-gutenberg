@@ -163,8 +163,8 @@ class BlockRenderer
                 'role' => 'tabpanel',
                 'data-sgb-tab-label' => (string) $block->attribute('label', ''),
             ]),
-            'core/more' => $this->renderMoreMarker($block),
-            'core/nextpage' => $this->renderNextPageMarker(),
+            'core/more' => $this->renderMoreMarker($block, $options),
+            'core/nextpage' => $this->renderNextPageMarker($block, $options),
             'core/embed' => $this->renderEmbed($block, $options),
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
@@ -494,8 +494,14 @@ class BlockRenderer
         );
     }
 
-    private function renderMoreMarker(Block $block): string
+    private function renderMoreMarker(Block $block, array $options): string
     {
+        $savedHtml = trim($this->sanitize($block->renderableHtml(), $options));
+
+        if ($savedHtml !== '') {
+            return $savedHtml;
+        }
+
         $customText = $this->safeCommentText((string) $block->attribute('customText', ''));
         $marker = $customText !== '' ? '<!--more '.$customText.'-->' : '<!--more-->';
 
@@ -506,8 +512,14 @@ class BlockRenderer
         return $marker;
     }
 
-    private function renderNextPageMarker(): string
+    private function renderNextPageMarker(Block $block, array $options): string
     {
+        $savedHtml = trim($this->sanitize($block->renderableHtml(), $options));
+
+        if ($savedHtml !== '') {
+            return $savedHtml;
+        }
+
         return '<!--nextpage-->';
     }
 
