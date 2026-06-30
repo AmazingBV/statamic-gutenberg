@@ -145,7 +145,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textColumns":"2","textDecoration":"underline","textIndent":"1.5em","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textColumns":"2","textDecoration":"underline","textIndent":"1.5em","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}},"heading":{"color":{"text":"#123456"},"typography":{"fontWeight":"800"}},"button":{"color":{"text":"#111111","background":"#abcdef"},"border":{"radius":"999px"}},"caption":{"typography":{"fontSize":"0.875rem"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -161,6 +161,16 @@ PHP,
         $this->assertStringContainsString('has-system-sans-font-family', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
         $this->assertStringContainsString('has-link-color', $rendered);
+        $this->assertMatchesRegularExpression('/wp-elements-[a-f0-9]{10}/', $rendered);
+        $this->assertStringContainsString('data-statamic-gutenberg-element-styles', $rendered);
+        $this->assertStringContainsString(':is(h1, h2, h3, h4, h5, h6, .wp-block-heading)', $rendered);
+        $this->assertStringContainsString('color: #123456', $rendered);
+        $this->assertStringContainsString('font-weight: 800', $rendered);
+        $this->assertStringContainsString(':is(.wp-element-button, .wp-block-button__link, button:not(.components-button):not([class*="components-"]):not([class*="block-editor-"]))', $rendered);
+        $this->assertStringContainsString('background-color: #abcdef', $rendered);
+        $this->assertStringContainsString('border-radius: 999px', $rendered);
+        $this->assertStringContainsString(':is(figcaption, .wp-element-caption)', $rendered);
+        $this->assertStringContainsString('font-size: 0.875rem', $rendered);
         $this->assertStringContainsString('has-natural-box-shadow', $rendered);
         $this->assertStringContainsString('color: var(--wp--preset--color--secondary)', $rendered);
         $this->assertStringContainsString('background-color: #fff', $rendered);

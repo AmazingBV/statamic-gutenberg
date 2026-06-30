@@ -134,6 +134,12 @@ class BlockWrapperContext
             $classes[] = 'has-link-color';
         }
 
+        $elementClass = ElementStyles::className($block);
+
+        if ($elementClass) {
+            $classes[] = $elementClass;
+        }
+
         $shadow = is_array($style) ? self::presetSlug($style['shadow'] ?? null, 'shadow') : null;
 
         if ($shadow) {

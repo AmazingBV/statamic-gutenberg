@@ -6,6 +6,7 @@ use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Amazingbv\StatamicGutenberg\Support\Duotone;
 use Amazingbv\StatamicGutenberg\Support\BlockWrapperContext;
+use Amazingbv\StatamicGutenberg\Support\ElementStyles;
 use Amazingbv\StatamicGutenberg\Support\StatamicAssetImages;
 use Amazingbv\StatamicGutenberg\Support\WpBlock;
 use Amazingbv\StatamicGutenberg\ThemeJson;
@@ -71,22 +72,29 @@ class BlockRenderer
         $inner = $this->renderBlocks($block->innerBlocks(), $options);
 
         if (is_callable($definition)) {
-            return (string) $definition($block, $inner, $this);
-        }
-
-        if (is_array($definition) && isset($definition['view'])) {
-            return (string) BlockWrapperContext::withBlock($block, fn (): string => view($definition['view'], [
+            $html = (string) $definition($block, $inner, $this);
+        } elseif (is_array($definition) && isset($definition['view'])) {
+            $html = (string) BlockWrapperContext::withBlock($block, fn (): string => view($definition['view'], [
                 'block' => $block,
                 'attrs' => $block->attributes(),
                 'inner' => new HtmlString($inner),
             ])->render());
+        } elseif (is_array($definition) && isset($definition['custom_block'])) {
+            $html = $this->renderCustomBlock($block, $inner, $definition['custom_block'], $options);
+        } else {
+            $html = $this->renderCoreBlock($block, $inner, $options);
         }
 
-        if (is_array($definition) && isset($definition['custom_block'])) {
-            return $this->renderCustomBlock($block, $inner, $definition['custom_block'], $options);
+        return $this->applyElementStyles($block, $html);
+    }
+
+    private function applyElementStyles(Block $block, string $html): string
+    {
+        if ($html === '') {
+            return '';
         }
 
-        return $this->renderCoreBlock($block, $inner, $options);
+        return ElementStyles::styleTag($block).$html;
     }
 
     private function renderCustomBlock(Block $block, string $inner, array $definition, array $options): string
