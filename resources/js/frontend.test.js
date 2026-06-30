@@ -83,7 +83,7 @@ describe('frontend block interactions', () => {
     });
 
     it('opens the accordion item containing the current hash target', async () => {
-        window.history.replaceState(null, '', '#target-panel-content');
+        window.history.replaceState(null, '', '#sgb-accordion-0-panel-1');
         document.body.innerHTML = `
             <div class="wp-block-accordion" data-sgb-accordion-autoclose="true">
                 <div class="wp-block-accordion-item is-open">
@@ -92,7 +92,7 @@ describe('frontend block interactions', () => {
                 </div>
                 <div class="wp-block-accordion-item">
                     <h3 class="wp-block-accordion-heading"><button class="wp-block-accordion-heading__toggle" type="button">Second</button></h3>
-                    <div class="wp-block-accordion-panel"><span id="target-panel-content">Second panel</span></div>
+                    <div class="wp-block-accordion-panel">Second panel</div>
                 </div>
             </div>
         `;

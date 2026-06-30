@@ -204,9 +204,6 @@ function initAccordions(root = document) {
             }
         };
 
-        let hasOpenAutocloseItem = false;
-        const initialHashItem = hashTargetItem();
-
         items.forEach((item, itemIndex) => {
             const heading = item.querySelector('.wp-block-accordion-heading');
             const button = item.querySelector('.wp-block-accordion-heading__toggle');
@@ -230,6 +227,18 @@ function initAccordions(root = document) {
             button.setAttribute('aria-controls', panelId);
             panel.setAttribute('role', 'region');
             panel.setAttribute('aria-labelledby', headingId);
+        });
+
+        let hasOpenAutocloseItem = false;
+        const initialHashItem = hashTargetItem();
+
+        items.forEach((item) => {
+            const button = item.querySelector('.wp-block-accordion-heading__toggle');
+            const panel = item.querySelector('.wp-block-accordion-panel');
+
+            if (! button || ! panel) {
+                return;
+            }
 
             const shouldOpen = item === initialHashItem
                 || (item.classList.contains('is-open') && (! initialHashItem || ! autoclose) && (! autoclose || ! hasOpenAutocloseItem));
