@@ -193,6 +193,8 @@ class PatternRepositoryTest extends TestCase
         $this->assertSame(['statamic/categorized'], array_column($payload['blockPatterns'], 'name'));
         $this->assertSame('<!-- wp:block {"ref":'.$payload['reusableBlocks'][0]['id'].'} /-->', $payload['blockPatterns'][0]['content']);
         $this->assertSame(['wibra'], $payload['blockPatterns'][0]['categories']);
+        $this->assertSame(['statamic/categorized'], array_column($payload['restBlockPatterns'], 'name'));
+        $this->assertSame('<!-- wp:block {"ref":'.$payload['reusableBlocks'][0]['id'].'} /-->', $payload['restBlockPatterns'][0]['content']);
         $this->assertSame(['wibra'], array_column($payload['blockPatternCategories'], 'name'));
         $this->assertSame(['wibra'], array_column($payload['userPatternCategories'], 'name'));
     }

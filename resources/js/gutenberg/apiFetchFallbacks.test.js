@@ -95,6 +95,7 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
             ],
             restBlockPatterns: [
                 { name: 'statamic/hero', title: 'Hero', content: '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->' },
+                { name: 'statamic/synced', title: 'Synced', content: '<!-- wp:block {"ref":123} /-->' },
             ],
         };
 
@@ -110,7 +111,11 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/block-patterns/categories' })).toEqual([
             { name: 'hero', label: 'Hero', description: 'Hero patterns' },
         ]);
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/block-patterns/patterns' })).toHaveLength(1);
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/block-patterns/patterns' })).toHaveLength(2);
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/block-patterns/patterns' })[1]).toMatchObject({
+            name: 'statamic/synced',
+            content: '<!-- wp:block {"ref":123} /-->',
+        });
 
         delete window.StatamicGutenbergPatterns;
     });

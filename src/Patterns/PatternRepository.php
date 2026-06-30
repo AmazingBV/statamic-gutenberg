@@ -37,7 +37,10 @@ class PatternRepository
                 ->values()
                 ->all(),
             'blockPatternCategories' => $this->blockPatternCategories($inserterEntries),
-            'restBlockPatterns' => $this->blockPatterns($entries),
+            'restBlockPatterns' => $inserterEntries
+                ->map(fn ($entry) => $this->editorBlockPatternPayload($entry))
+                ->values()
+                ->all(),
             'restBlockPatternCategories' => $this->blockPatternCategories($inserterEntries),
         ];
     }
