@@ -181,6 +181,8 @@ function initAccordions(root = document) {
             }
         };
 
+        let hasOpenAutocloseItem = false;
+
         items.forEach((item, itemIndex) => {
             const heading = item.querySelector('.wp-block-accordion-heading');
             const button = item.querySelector('.wp-block-accordion-heading__toggle');
@@ -205,7 +207,9 @@ function initAccordions(root = document) {
             panel.setAttribute('role', 'region');
             panel.setAttribute('aria-labelledby', headingId);
 
-            setOpen(item, item.classList.contains('is-open'));
+            const shouldOpen = item.classList.contains('is-open') && (! autoclose || ! hasOpenAutocloseItem);
+            hasOpenAutocloseItem = hasOpenAutocloseItem || shouldOpen;
+            setOpen(item, shouldOpen);
 
             button.addEventListener('click', () => {
                 const nextOpen = ! item.classList.contains('is-open');
@@ -235,8 +239,9 @@ function initTabs(root = document) {
         const panels = panelGroup
             ? directChildren(panelGroup, 'wp-block-tab-panel')
             : directChildren(tabs, 'wp-block-tab-panel');
+        const pairCount = Math.min(tabButtons.length, panels.length);
 
-        if (! tabButtons.length || ! panels.length) {
+        if (! pairCount) {
             return;
         }
 
@@ -246,15 +251,16 @@ function initTabs(root = document) {
         let activeIndex = Number.isFinite(activeFromMarkup) ? activeFromMarkup : 0;
 
         const setActive = (nextIndex, shouldFocus = false) => {
-            activeIndex = Math.max(0, Math.min(nextIndex, tabButtons.length - 1));
+            activeIndex = Math.max(0, Math.min(nextIndex, pairCount - 1));
 
             tabButtons.forEach((button, index) => {
                 const active = index === activeIndex;
                 button.classList.toggle('is-active', active);
-                button.setAttribute('aria-selected', active ? 'true' : 'false');
-                button.setAttribute('tabindex', active ? '0' : '-1');
+                button.setAttribute('aria-selected', active && index < pairCount ? 'true' : 'false');
+                button.setAttribute('tabindex', active && index < pairCount ? '0' : '-1');
+                button.toggleAttribute('disabled', index >= pairCount);
 
-                if (shouldFocus && active) {
+                if (shouldFocus && active && index < pairCount) {
                     button.focus();
                 }
             });
@@ -286,11 +292,19 @@ function initTabs(root = document) {
 
             button.setAttribute('type', 'button');
             button.setAttribute('role', 'tab');
-            button.setAttribute('aria-controls', panelId);
+            if (index < pairCount) {
+                button.setAttribute('aria-controls', panelId);
+            } else {
+                button.removeAttribute('aria-controls');
+            }
             panel?.setAttribute('role', 'tabpanel');
             panel?.setAttribute('aria-labelledby', buttonId);
 
-            button.addEventListener('click', () => setActive(index));
+            button.addEventListener('click', () => {
+                if (index < pairCount) {
+                    setActive(index);
+                }
+            });
             button.addEventListener('keydown', (event) => {
                 if (! ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) {
                     return;
@@ -301,11 +315,11 @@ function initTabs(root = document) {
                 if (event.key === 'Home') {
                     setActive(0, true);
                 } else if (event.key === 'End') {
-                    setActive(tabButtons.length - 1, true);
+                    setActive(pairCount - 1, true);
                 } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-                    setActive(activeIndex <= 0 ? tabButtons.length - 1 : activeIndex - 1, true);
+                    setActive(activeIndex <= 0 ? pairCount - 1 : activeIndex - 1, true);
                 } else {
-                    setActive(activeIndex >= tabButtons.length - 1 ? 0 : activeIndex + 1, true);
+                    setActive(activeIndex >= pairCount - 1 ? 0 : activeIndex + 1, true);
                 }
             });
         });
