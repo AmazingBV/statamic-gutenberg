@@ -79,10 +79,12 @@ class ThemeJson
         return $this->cssForRoots([
             '.sgb-editor .sgb-page-frame',
             '.sgb-editor .sgb-canvas',
+        ], [
+            '.sgb-editor .sgb-page-frame',
         ]);
     }
 
-    private function cssForRoots(array $roots): string
+    private function cssForRoots(array $roots, ?array $rootDeclarationRoots = null): string
     {
         $data = $this->data();
 
@@ -100,7 +102,7 @@ class ThemeJson
             $this->styleDeclarations($styles)
         );
 
-        $rules[] = $this->rule($roots, $rootDeclarations);
+        $rules[] = $this->rule($rootDeclarationRoots ?? $roots, $rootDeclarations);
         $rules = array_merge($rules, $this->presetUtilityRules($roots, $settings));
         $rules = array_merge($rules, $this->elementRules($roots, $styles['elements'] ?? []));
         $rules = array_merge($rules, $this->blockRules($roots, $styles['blocks'] ?? [], $settings));
