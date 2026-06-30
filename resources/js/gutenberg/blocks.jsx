@@ -273,7 +273,7 @@ function saveStatamicHero({ attributes }, buttonClassName = STATAMIC_BUTTON_CLAS
     return (
         <section {...blockProps}>
             <RichText.Content tagName="h1" value={attributes.heading} />
-            {attributes.text ? <p>{attributes.text}</p> : null}
+            {attributes.text ? <RichText.Content tagName="p" value={attributes.text} /> : null}
             {attributes.buttonText && attributes.buttonUrl ? (
                 <a className={buttonClassName} href={attributes.buttonUrl}>{attributes.buttonText}</a>
             ) : null}
@@ -287,7 +287,7 @@ function saveStatamicCta({ attributes }, buttonClassName = STATAMIC_BUTTON_CLASS
     return (
         <section {...blockProps}>
             <RichText.Content tagName="h2" value={attributes.heading} />
-            {attributes.text ? <p>{attributes.text}</p> : null}
+            {attributes.text ? <RichText.Content tagName="p" value={attributes.text} /> : null}
             {attributes.buttonText && attributes.buttonUrl ? (
                 <a className={buttonClassName} href={attributes.buttonUrl}>{attributes.buttonText}</a>
             ) : null}
