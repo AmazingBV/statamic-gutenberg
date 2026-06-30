@@ -101,6 +101,18 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('controls="controls"', $rendered);
     }
 
+    public function test_it_constructs_audio_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:audio {"src":"/storage/podcast.mp3","caption":"Episode <script>alert(1)</script>","autoplay":true,"loop":true,"preload":"metadata"} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-audio"', $rendered);
+        $this->assertStringContainsString('<audio controls="controls" src="/storage/podcast.mp3" autoplay="autoplay" loop="loop" preload="metadata"></audio>', $rendered);
+        $this->assertStringContainsString('<figcaption class="wp-element-caption">Episode &lt;script&gt;alert(1)&lt;/script&gt;</figcaption>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];

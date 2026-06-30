@@ -163,6 +163,7 @@ class BlockRenderer
                 'role' => 'tabpanel',
                 'data-sgb-tab-label' => (string) $block->attribute('label', ''),
             ]),
+            'core/audio' => $this->renderAudio($block, $options),
             'core/more' => $this->renderMoreMarker($block, $options),
             'core/nextpage' => $this->renderNextPageMarker($block, $options),
             'core/embed' => $this->renderEmbed($block, $options),
@@ -1115,6 +1116,50 @@ class BlockRenderer
         });
     }
 
+    private function renderAudio(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html === '') {
+            $src = $block->attribute('src');
+
+            if (is_scalar($src) && trim((string) $src) !== '') {
+                $caption = trim((string) $block->attribute('caption', ''));
+                $html = sprintf(
+                    '<figure class="wp-block-audio"><audio%s></audio>%s</figure>',
+                    $this->renderAttributes([
+                        'controls' => 'controls',
+                        'src' => (string) $src,
+                        'autoplay' => $this->truthy($block->attribute('autoplay', false)) ? 'autoplay' : '',
+                        'loop' => $this->truthy($block->attribute('loop', false)) ? 'loop' : '',
+                        'preload' => $this->safeAudioPreload($block->attribute('preload')),
+                    ]),
+                    $caption !== '' ? '<figcaption class="wp-element-caption">'.e($caption).'</figcaption>' : ''
+                );
+            }
+        }
+
+        if ($html === '') {
+            return '';
+        }
+
+        $html = $this->sanitize($html, $options);
+
+        return $this->transformFirstElement($html, ['figure', 'audio'], function (DOMDocument $document, DOMElement $element): void {
+            if (strtolower($element->tagName) === 'figure') {
+                $this->addClasses($element, ['wp-block-audio']);
+            }
+
+            $audio = strtolower($element->tagName) === 'audio'
+                ? $element
+                : $element->getElementsByTagName('audio')->item(0);
+
+            if ($audio instanceof DOMElement) {
+                $audio->setAttribute('controls', 'controls');
+            }
+        });
+    }
+
     private function renderIcon(Block $block, array $options): string
     {
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
@@ -1582,5 +1627,16 @@ class BlockRenderer
         }
 
         return in_array(strtolower(trim($value)), ['0', 'false', 'no', 'off'], true);
+    }
+
+    private function safeAudioPreload(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = strtolower(trim((string) $value));
+
+        return in_array($value, ['auto', 'metadata', 'none'], true) ? $value : '';
     }
 }
