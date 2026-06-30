@@ -70,6 +70,20 @@ function cssJustification(value = 'left') {
     }
 }
 
+function safeLayoutSize(value) {
+    if (typeof value !== 'string' && typeof value !== 'number') {
+        return '';
+    }
+
+    const size = String(value).trim();
+
+    if (! size || /(?:url|expression|javascript|;|{|}|<|>)/i.test(size)) {
+        return '';
+    }
+
+    return /^[a-z0-9_.,%()+\-*\/\s]+$/i.test(size) ? size : '';
+}
+
 export function withStatamicLayoutWrapperStyles(BlockListBlock) {
     return function StatamicLayoutBlockListBlock(props) {
         const layout = props.attributes?.layout || {};
@@ -89,9 +103,7 @@ export function withStatamicLayoutWrapperStyles(BlockListBlock) {
 
         if (props.name === 'core/group' && layout.type === 'grid') {
             const columnCount = Number.parseInt(layout.columnCount, 10);
-            const minimumColumnWidth = typeof layout.minimumColumnWidth === 'string'
-                ? layout.minimumColumnWidth.trim()
-                : '';
+            const minimumColumnWidth = safeLayoutSize(layout.minimumColumnWidth);
 
             style.display = 'grid';
             style.alignItems = 'flex-start';

@@ -753,11 +753,11 @@ class BlockRenderer
                 $styles[] = 'align-items: flex-start';
 
                 $columnCount = (int) ($layout['columnCount'] ?? 0);
-                $minimumColumnWidth = trim((string) ($layout['minimumColumnWidth'] ?? ''));
+                $minimumColumnWidth = $this->safeLayoutSize($layout['minimumColumnWidth'] ?? null);
 
                 if ($columnCount > 0) {
                     $styles[] = 'grid-template-columns: repeat('.min(12, $columnCount).', minmax(0, 1fr))';
-                } elseif ($minimumColumnWidth !== '') {
+                } elseif ($minimumColumnWidth !== null) {
                     $styles[] = 'grid-template-columns: repeat(auto-fill, minmax(min('.$minimumColumnWidth.', 100%), 1fr))';
                 }
             }

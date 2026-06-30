@@ -112,6 +112,9 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('withStatamicLayoutWrapperStyles');
         expect(source).toContain('layout.type === \'grid\'');
         expect(source).toContain('style.gridTemplateColumns');
+        expect(source).toContain('const minimumColumnWidth = safeLayoutSize(layout.minimumColumnWidth)');
+        expect(source).toContain('function safeLayoutSize(value)');
+        expect(source).toContain('(?:url|expression|javascript|;|{|}|<|>)');
         expect(source).toContain('layout.type === \'flex\'');
         expect(source).toContain('style.textAlign = textAlign');
         expect(source).toContain('style.justifyContent = cssJustification(layout.justifyContent || layout.contentJustification || \'left\')');

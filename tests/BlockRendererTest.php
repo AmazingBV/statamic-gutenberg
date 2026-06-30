@@ -253,6 +253,19 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Grid</p>', $rendered);
     }
 
+    public function test_it_ignores_unsafe_grid_layout_minimum_column_width(): void
+    {
+        $html = '<!-- wp:group {"layout":{"type":"grid","minimumColumnWidth":"14rem);background-image:url(javascript:alert(1))"}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Grid</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-group is-layout-grid wp-block-group-is-layout-grid"', $rendered);
+        $this->assertStringNotContainsString('grid-template-columns:', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
+        $this->assertStringNotContainsString('background-image', $rendered);
+        $this->assertStringContainsString('<p>Grid</p>', $rendered);
+    }
+
     public function test_it_removes_transient_blob_media_urls_from_persisted_markup(): void
     {
         $html = '<!-- wp:cover {"url":"blob:https://site.test/temp"} --><div class="wp-block-cover"><img class="wp-block-cover__image-background" src="blob:https://site.test/temp"><p>Cover</p></div><!-- /wp:cover -->';
