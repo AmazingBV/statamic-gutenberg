@@ -163,6 +163,8 @@ class BlockRenderer
                 'role' => 'tabpanel',
                 'data-sgb-tab-label' => (string) $block->attribute('label', ''),
             ]),
+            'core/more' => $this->renderMoreMarker($block),
+            'core/nextpage' => $this->renderNextPageMarker(),
             'core/embed' => $this->renderEmbed($block, $options),
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
@@ -490,6 +492,33 @@ class BlockRenderer
             $this->renderAttributes(['target' => (string) $block->attribute('linkTarget', '_self')]),
             e($content)
         );
+    }
+
+    private function renderMoreMarker(Block $block): string
+    {
+        $customText = $this->safeCommentText((string) $block->attribute('customText', ''));
+        $marker = $customText !== '' ? '<!--more '.$customText.'-->' : '<!--more-->';
+
+        if ($this->truthy($block->attribute('noTeaser', false))) {
+            $marker .= "\n<!--noteaser-->";
+        }
+
+        return $marker;
+    }
+
+    private function renderNextPageMarker(): string
+    {
+        return '<!--nextpage-->';
+    }
+
+    private function safeCommentText(string $value): string
+    {
+        $value = strip_tags($value);
+        $value = str_replace(['--', '<', '>'], ['-', '', ''], $value);
+        $value = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $value) ?? '';
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     private function renderLoginoutFallback(Block $block): string

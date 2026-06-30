@@ -472,6 +472,20 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('>Continue</a>', $rendered);
     }
 
+    public function test_it_preserves_more_and_nextpage_markers(): void
+    {
+        $html = implode('', [
+            '<!-- wp:more {"customText":"Read more audit","noTeaser":true} --><!--more Read more audit--><!--noteaser--><!-- /wp:more -->',
+            '<!-- wp:nextpage --><!--nextpage--><!-- /wp:nextpage -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<!--more Read more audit-->', $rendered);
+        $this->assertStringContainsString('<!--noteaser-->', $rendered);
+        $this->assertStringContainsString('<!--nextpage-->', $rendered);
+    }
+
     public function test_it_preserves_wrapper_block_attributes(): void
     {
         $html = '<!-- wp:group --><div class="wp-block-group alignwide has-background" style="padding-top:var(--wp--preset--spacing--50)"><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
