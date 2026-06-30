@@ -16,7 +16,7 @@
     "isDynamicEntry": true
   },
   "resources/css/addon.css": {
-    "file": "assets/addon-DwKUbiwn.css",
+    "file": "assets/addon-BazZ8e-1.css",
     "src": "resources/css/addon.css",
     "isEntry": true,
     "name": "addon",
@@ -25,7 +25,7 @@
     ]
   },
   "resources/css/frontend.css": {
-    "file": "assets/frontend-B2nld3IK.css",
+    "file": "assets/frontend-DnQr9dSp.css",
     "src": "resources/css/frontend.css",
     "isEntry": true,
     "name": "frontend",

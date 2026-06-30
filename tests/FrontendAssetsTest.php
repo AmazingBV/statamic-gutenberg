@@ -25,6 +25,8 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('.sgb-content .wp-block-column.is-vertically-aligned-bottom', $css);
         $this->assertStringContainsString('.site-content.sgb-content > .alignfull', $css);
         $this->assertStringContainsString('.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull)', $css);
+        $this->assertStringContainsString('.sgb-content .wp-block-media-text.is-image-fill-element > .wp-block-media-text__media img', $css);
+        $this->assertStringContainsString('object-fit: cover', $css);
         $this->assertStringContainsString('grid-column: 1 / -1', $css);
         $this->assertStringContainsString('width: 100vw', $css);
         $this->assertStringContainsString('max-width: none', $css);

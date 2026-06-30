@@ -37,6 +37,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text.is-stacked-on-mobile', $css);
+        $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-media-text.is-image-fill-element > .wp-block-media-text__media img', $css);
+        $this->assertStringContainsString('object-fit: cover', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-columns', $css);
         $this->assertStringNotContainsString('gap: 2em', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-columns:is(.wp-block-columns)', $css);
