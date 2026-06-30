@@ -164,6 +164,7 @@ class BlockRenderer
                 'data-sgb-tab-label' => (string) $block->attribute('label', ''),
             ]),
             'core/audio' => $this->renderAudio($block, $options),
+            'core/separator' => $this->renderSeparator($block, $options),
             'core/spacer' => $this->renderSpacer($block, $options),
             'core/more' => $this->renderMoreMarker($block, $options),
             'core/nextpage' => $this->renderNextPageMarker($block, $options),
@@ -1188,6 +1189,62 @@ class BlockRenderer
         ]).'></div>';
     }
 
+    private function renderSeparator(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html !== '') {
+            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-separator'], ['hr', 'div']);
+        }
+
+        $tag = $this->safeTagName((string) $block->attribute('tagName', 'hr'), 'hr', ['hr', 'div']);
+        $classes = ['wp-block-separator'];
+        $align = $this->safeClassSlug($block->attribute('align'));
+
+        if ($align && in_array($align, ['center', 'wide', 'full'], true)) {
+            $classes[] = 'align'.$align;
+        }
+
+        array_push($classes, ...$this->safeClassList($block->attribute('className')));
+
+        $opacity = (string) $block->attribute('opacity', 'alpha-channel');
+
+        if ($opacity === 'css') {
+            $classes[] = 'has-css-opacity';
+        } elseif ($opacity === 'alpha-channel') {
+            $classes[] = 'has-alpha-channel-opacity';
+        }
+
+        $backgroundColor = $this->safeClassSlug($block->attribute('backgroundColor'));
+
+        if ($backgroundColor) {
+            $classes[] = "has-{$backgroundColor}-color";
+            $classes[] = 'has-text-color';
+        }
+
+        $style = $block->attribute('style', []);
+        $styleDeclarations = [];
+        $customColor = is_array($style) ? $this->safeStyleValue($style['color']['background'] ?? null) : null;
+
+        if ($customColor) {
+            $styleDeclarations[] = 'color: '.$customColor;
+            $classes[] = 'has-text-color';
+        }
+
+        $styleDeclarations = array_merge($styleDeclarations, $this->safeSpacingDeclarations('margin', is_array($style) ? ($style['spacing']['margin'] ?? []) : []));
+
+        return sprintf(
+            '<%s%s%s>',
+            $tag,
+            $this->renderAttributes([
+                'id' => $this->safeAnchor($block->attribute('anchor')),
+                'class' => implode(' ', array_values(array_unique(array_filter($classes)))),
+                'style' => implode('; ', $styleDeclarations),
+            ]),
+            $tag === 'hr' ? ' /' : ''
+        ).($tag === 'div' ? '</div>' : '');
+    }
+
     private function renderIcon(Block $block, array $options): string
     {
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
@@ -1633,6 +1690,65 @@ class BlockRenderer
         }
 
         return false;
+    }
+
+    private function safeAnchor(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return preg_match('/^[A-Za-z][A-Za-z0-9_:\-\.]*$/', $value) ? $value : '';
+    }
+
+    private function safeClassSlug(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return preg_match('/^[A-Za-z0-9_-]+$/', $value) ? $value : null;
+    }
+
+    private function safeClassList(mixed $value): array
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            preg_split('/\s+/', trim((string) $value)) ?: [],
+            fn (string $class): bool => (bool) preg_match('/^[A-Za-z0-9_-]+$/', $class)
+        ));
+    }
+
+    private function safeSpacingDeclarations(string $property, mixed $values): array
+    {
+        if (is_string($values) || is_numeric($values)) {
+            $value = $this->safeStyleValue($values);
+
+            return $value ? ["{$property}: {$value}"] : [];
+        }
+
+        if (! is_array($values)) {
+            return [];
+        }
+
+        $declarations = [];
+
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $value = $this->safeStyleValue($values[$side] ?? null);
+
+            if ($value) {
+                $declarations[] = "{$property}-{$side}: {$value}";
+            }
+        }
+
+        return $declarations;
     }
 
     private function truthy(mixed $value): bool

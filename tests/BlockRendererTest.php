@@ -126,6 +126,19 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('style="height: var(--wp--preset--spacing--50); width: 20px"', $rendered);
     }
 
+    public function test_it_constructs_separator_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:separator {"tagName":"div","opacity":"css","backgroundColor":"blue","align":"wide","anchor":"separator-one","className":"separator-extra","style":{"spacing":{"margin":{"top":"2rem","bottom":"var:preset|spacing|40"}}}} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringStartsWith('<div', $rendered);
+        $this->assertStringContainsString('id="separator-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-separator alignwide separator-extra has-css-opacity has-blue-color has-text-color"', $rendered);
+        $this->assertStringContainsString('style="margin-top: 2rem; margin-bottom: var(--wp--preset--spacing--40)"', $rendered);
+        $this->assertStringNotContainsString('has-blue-background-color', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];
