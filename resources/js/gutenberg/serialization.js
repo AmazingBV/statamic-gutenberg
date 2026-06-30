@@ -3,19 +3,129 @@ import { createBlock, parse, serialize } from '@wordpress/blocks';
 const TRANSIENT_MEDIA_URL_PATTERN = /blob:[^"'\\\s<>]+/gi;
 const MEDIA_REGISTRY_KEY = '__statamicGutenbergMediaPayloads';
 const FALLBACK_MEDIA_REGISTRY = new Map();
+const BLOCK_COMMENT_PATTERN = /<!--\s*(\/?)wp:([a-z0-9_/-]+)([\s\S]*?)-->/gi;
+
+function normalizeBlockName(name) {
+    return name.includes('/') ? name : `core/${name}`;
+}
+
+function validateBlockCommentAttributes(rawAttributes) {
+    const attributes = rawAttributes.trim().replace(/\/\s*$/, '').trim();
+
+    if (! attributes) {
+        return null;
+    }
+
+    if (! attributes.startsWith('{')) {
+        return 'Block attributes must be valid JSON.';
+    }
+
+    try {
+        JSON.parse(attributes);
+    } catch {
+        return 'Block attributes must be valid JSON.';
+    }
+
+    return null;
+}
+
+export function validateSerialized(value) {
+    if (! value || typeof value !== 'string') {
+        return { valid: true, message: '' };
+    }
+
+    const content = stripTransientMediaUrls(value);
+    const expectedCommentCount = (content.match(/<!--\s*\/?wp:/gi) || []).length;
+    const stack = [];
+    let matchedCommentCount = 0;
+    BLOCK_COMMENT_PATTERN.lastIndex = 0;
+    let match = BLOCK_COMMENT_PATTERN.exec(content);
+
+    while (match) {
+        matchedCommentCount += 1;
+
+        const isClosing = match[1] === '/';
+        const name = normalizeBlockName(match[2]);
+        const body = match[3] || '';
+        const isSelfClosing = ! isClosing && /\/\s*$/.test(body.trim());
+
+        if (isClosing) {
+            const opened = stack.pop();
+
+            if (opened !== name) {
+                return {
+                    valid: false,
+                    message: `Unexpected closing block "${name}".`,
+                };
+            }
+        } else {
+            const attributeError = validateBlockCommentAttributes(body);
+
+            if (attributeError) {
+                return {
+                    valid: false,
+                    message: attributeError,
+                };
+            }
+
+            if (! isSelfClosing) {
+                stack.push(name);
+            }
+        }
+
+        match = BLOCK_COMMENT_PATTERN.exec(content);
+    }
+
+    if (matchedCommentCount !== expectedCommentCount) {
+        return {
+            valid: false,
+            message: 'Block comment syntax is incomplete.',
+        };
+    }
+
+    if (stack.length) {
+        return {
+            valid: false,
+            message: `Missing closing block "${stack[stack.length - 1]}".`,
+        };
+    }
+
+    return { valid: true, message: '' };
+}
+
+export function parseSerializedWithValidation(value) {
+    const validation = validateSerialized(value);
+
+    if (! validation.valid) {
+        return {
+            blocks: [],
+            ...validation,
+        };
+    }
+
+    try {
+        return {
+            blocks: parse(stripTransientMediaUrls(value)),
+            valid: true,
+            message: '',
+        };
+    } catch (error) {
+        console.warn('Unable to parse block editor content.', error);
+
+        return {
+            blocks: [],
+            valid: false,
+            message: 'Unable to parse block editor content.',
+        };
+    }
+}
 
 export function parseSerialized(value) {
     if (! value || typeof value !== 'string') {
         return [];
     }
 
-    try {
-        return parse(stripTransientMediaUrls(value));
-    } catch (error) {
-        console.warn('Unable to parse block editor content.', error);
-
-        return [];
-    }
+    return parseSerializedWithValidation(value).blocks;
 }
 
 export function serializeBlocks(blocks) {

@@ -210,11 +210,17 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('highlightJson');
         expect(source).toContain('sgb-code-highlight');
         expect(source).toContain('syncCodeHighlightScroll');
+        expect(source).toContain('validateSerialized');
+        expect(source).toContain('codeError');
+        expect(source).toContain('onValidityChange');
         expect(source).toContain('wrap="off"');
         expect(css).toContain('.sgb-token--tag-name');
         expect(css).toContain('.sgb-token--json-key');
         expect(css).toContain('.sgb-token--block-name');
+        expect(css).toContain('.sgb-code-editor__error');
         expect(windowSource).toContain('value !== lastAppliedValue');
+        expect(windowSource).toContain('editorValid');
+        expect(windowSource).toContain('Fix code editor syntax before applying');
         expect(windowSource).not.toContain('Close the block editor without applying changes?');
     });
 });

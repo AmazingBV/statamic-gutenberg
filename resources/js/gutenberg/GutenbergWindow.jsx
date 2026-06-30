@@ -34,6 +34,7 @@ export function GutenbergWindow({
     const [lastAppliedValue, setLastAppliedValue] = useState(startingPayload?.value || '');
     const [status, setStatus] = useState(startingPayload ? 'Connected to Statamic' : 'Waiting for field data');
     const [busyAction, setBusyAction] = useState(null);
+    const [editorValid, setEditorValid] = useState(true);
 
     const sendToOpener = useCallback((type, nextValue = '') => {
         if (embedded) {
@@ -122,7 +123,20 @@ export function GutenbergWindow({
         }
     }, [channel, embedded, onChange, payload, sendToOpener]);
 
+    const handleValidityChange = useCallback((isValid) => {
+        setEditorValid(isValid);
+
+        if (! isValid) {
+            setStatus('Code editor has invalid block syntax');
+        }
+    }, []);
+
     const apply = useCallback(async () => {
+        if (! editorValid) {
+            setStatus('Fix code editor syntax before applying');
+            return;
+        }
+
         setBusyAction('apply');
 
         try {
@@ -137,9 +151,14 @@ export function GutenbergWindow({
         } finally {
             setBusyAction(null);
         }
-    }, [embedded, onApply, sendToOpener, value]);
+    }, [editorValid, embedded, onApply, sendToOpener, value]);
 
     const applyAndClose = useCallback(async () => {
+        if (! editorValid) {
+            setStatus('Fix code editor syntax before applying');
+            return;
+        }
+
         setBusyAction('close');
 
         try {
@@ -155,9 +174,14 @@ export function GutenbergWindow({
         } finally {
             setBusyAction(null);
         }
-    }, [embedded, onApply, onClose, sendToOpener, value]);
+    }, [editorValid, embedded, onApply, onClose, sendToOpener, value]);
 
     const applyAndSave = useCallback(async () => {
+        if (! editorValid) {
+            setStatus('Fix code editor syntax before saving');
+            return;
+        }
+
         setBusyAction('save');
 
         try {
@@ -174,7 +198,7 @@ export function GutenbergWindow({
         } finally {
             setBusyAction(null);
         }
-    }, [embedded, onSave, sendToOpener, value]);
+    }, [editorValid, embedded, onSave, sendToOpener, value]);
 
     const closeWithoutApplying = useCallback(() => {
         if (value !== lastAppliedValue && window.confirm && ! window.confirm('Close without applying? Your block editor changes will be lost.')) {
@@ -209,16 +233,16 @@ export function GutenbergWindow({
                 </div>
 
                 <div className="sgb-window__actions">
-                    <span className="sgb-window__status">{status}</span>
+                    <span className={`sgb-window__status${editorValid ? '' : ' sgb-window__status--error'}`}>{status}</span>
                     {embedded ? (
-                        <Button icon={check} variant="primary" onClick={applyAndSave} disabled={busyAction !== null}>
+                        <Button icon={check} variant="primary" onClick={applyAndSave} disabled={busyAction !== null || ! editorValid}>
                             Apply and save
                         </Button>
                     ) : null}
-                    <Button icon={closeIcon} variant="secondary" onClick={applyAndClose} disabled={busyAction !== null}>
+                    <Button icon={closeIcon} variant="secondary" onClick={applyAndClose} disabled={busyAction !== null || ! editorValid}>
                         Apply and close
                     </Button>
-                    <Button icon={check} variant="tertiary" onClick={apply} disabled={busyAction !== null}>
+                    <Button icon={check} variant="tertiary" onClick={apply} disabled={busyAction !== null || ! editorValid}>
                         Apply
                     </Button>
                     {embedded ? (
@@ -234,6 +258,7 @@ export function GutenbergWindow({
                 config={payload.config || {}}
                 meta={payload.meta || {}}
                 onChange={handleChange}
+                onValidityChange={handleValidityChange}
                 variant="fullscreen"
             />
         </div>

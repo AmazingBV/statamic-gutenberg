@@ -36,6 +36,7 @@ import {
     normalizeAllowedBlocks,
     parseSerialized,
     serializeBlocks,
+    validateSerialized,
 } from './serialization';
 
 import '@wordpress/components/build-style/style.css';
@@ -692,7 +693,7 @@ function registerStatamicMediaUploadFilter() {
 
 registerStatamicMediaUploadFilter();
 
-export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 'field' }) {
+export function GutenbergEditor({ value, config, meta = {}, onChange, onValidityChange, variant = 'field' }) {
     if (typeof window !== 'undefined' && meta?.iconsUrl) {
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
@@ -722,6 +723,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
     const historyCurrentRef = useRef(initialValue);
     const [blocks, setBlocks] = useState(() => parseSerialized(value));
     const [codeValue, setCodeValue] = useState(initialValue);
+    const [codeError, setCodeError] = useState('');
     const [editorMode, setEditorMode] = useState('visual');
     const [historyDepths, setHistoryDepths] = useState({ undo: 0, redo: 0 });
     const [isListViewOpen, setListViewOpen] = useState(() => variant === 'fullscreen');
@@ -771,14 +773,24 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         const nextValue = value || '';
 
         if (nextValue !== lastSerialized.current) {
+            const validation = validateSerialized(nextValue);
+
             lastSerialized.current = nextValue;
             historyCurrentRef.current = nextValue;
             historyRef.current = { undo: [], redo: [] };
             setHistoryDepths({ undo: 0, redo: 0 });
             setCodeValue(nextValue);
-            setBlocks(parseSerialized(nextValue));
+            setCodeError(validation.valid ? '' : validation.message);
+
+            if (validation.valid) {
+                setBlocks(parseSerialized(nextValue));
+            }
         }
     }, [value]);
+
+    useEffect(() => {
+        onValidityChange?.(codeError === '');
+    }, [codeError, onValidityChange]);
 
     const updateHistoryDepths = useCallback(() => {
         setHistoryDepths({
@@ -806,10 +818,17 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
     }, [updateHistoryDepths]);
 
     const applySerializedValue = useCallback((serialized) => {
+        const validation = validateSerialized(serialized);
+
         historyCurrentRef.current = serialized;
         lastSerialized.current = serialized;
         setCodeValue(serialized);
-        setBlocks(parseSerialized(serialized));
+        setCodeError(validation.valid ? '' : validation.message);
+
+        if (validation.valid) {
+            setBlocks(parseSerialized(serialized));
+        }
+
         onChange(serialized);
         updateHistoryDepths();
     }, [onChange, updateHistoryDepths]);
@@ -820,15 +839,18 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
         recordHistory(serialized);
         lastSerialized.current = serialized;
         setCodeValue(serialized);
+        setCodeError('');
         onChange(serialized);
     }, [onChange, recordHistory]);
 
     const handleCodeChange = useCallback((event) => {
         const serialized = event.target.value;
+        const validation = validateSerialized(serialized);
 
         recordHistory(serialized);
         lastSerialized.current = serialized;
         setCodeValue(serialized);
+        setCodeError(validation.valid ? '' : validation.message);
         onChange(serialized);
     }, [onChange, recordHistory]);
 
@@ -876,7 +898,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
             const serialized = serializeBlocks(blocks);
             lastSerialized.current = serialized;
             setCodeValue(serialized);
+            setCodeError('');
         } else {
+            const validation = validateSerialized(codeValue);
+
+            if (! validation.valid) {
+                setCodeError(validation.message);
+                return;
+            }
+
+            setCodeError('');
             setBlocks(parseSerialized(codeValue));
         }
 
@@ -1424,9 +1455,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, variant = 
                                         wrap="off"
                                         value={codeValue}
                                         aria-label="Gutenberg code editor"
+                                        aria-invalid={codeError ? 'true' : undefined}
+                                        aria-describedby={codeError ? 'sgb-code-editor-error' : undefined}
                                         onChange={handleCodeChange}
                                         onScroll={syncCodeHighlightScroll}
                                     />
+                                    {codeError ? (
+                                        <p className="sgb-code-editor__error" id="sgb-code-editor-error">
+                                            {codeError}
+                                        </p>
+                                    ) : null}
                                 </div>
                             ) : (
                                 <div className="sgb-page-frame">

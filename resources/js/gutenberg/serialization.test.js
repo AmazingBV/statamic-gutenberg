@@ -9,8 +9,10 @@ import {
     isBlockAllowed,
     normalizeAllowedBlocks,
     parseSerialized,
+    parseSerializedWithValidation,
     serializeBlocks,
     stripTransientMediaUrls,
+    validateSerialized,
 } from './serialization';
 
 beforeAll(() => {
@@ -56,6 +58,24 @@ describe('Gutenberg serialization helpers', () => {
         expect(blocks).toHaveLength(1);
         expect(blocks[0].name).toBe('core/paragraph');
         expect(parseSerialized(serializeBlocks(blocks))[0].name).toBe('core/paragraph');
+    });
+
+    it('reports invalid Gutenberg block comment syntax without parsing blocks', () => {
+        const missingClose = '<!-- wp:paragraph --><p>Hello</p>';
+        const invalidJson = '<!-- wp:paragraph {"style": } --><p>Hello</p><!-- /wp:paragraph -->';
+
+        expect(validateSerialized(missingClose)).toMatchObject({
+            valid: false,
+            message: 'Missing closing block "core/paragraph".',
+        });
+        expect(validateSerialized(invalidJson)).toMatchObject({
+            valid: false,
+            message: 'Block attributes must be valid JSON.',
+        });
+        expect(parseSerializedWithValidation(missingClose)).toMatchObject({
+            blocks: [],
+            valid: false,
+        });
     });
 
     it('normalizes allowed blocks from preload meta first', () => {
