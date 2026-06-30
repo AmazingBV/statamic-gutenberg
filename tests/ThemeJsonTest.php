@@ -369,6 +369,34 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('color: var(--wp--preset--color--brand)', $frontendCss);
     }
 
+    public function test_theme_json_custom_css_inside_at_rules_is_scoped_to_content_roots(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'styles' => [
+                'css' => '@media (min-width: 800px) { .custom-theme-class, button.custom-action:not(.components-button) { color: var:preset|color|brand; } } @supports (display: grid) { & .grid-only { display: grid; } } @keyframes pulse { from { opacity: 0; } to { opacity: 1; } }',
+            ],
+            'settings' => [
+                'color' => [
+                    'palette' => [
+                        ['name' => 'Brand', 'slug' => 'brand', 'color' => '#123456'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $editorCss = app(ThemeJson::class)->editorCss();
+        $frontendCss = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('@media (min-width: 800px) { .sgb-editor .sgb-page-frame .custom-theme-class, .sgb-editor .sgb-canvas .custom-theme-class, .sgb-editor .sgb-page-frame button.custom-action:not(.components-button), .sgb-editor .sgb-canvas button.custom-action:not(.components-button) { color: var(--wp--preset--color--brand); } }', $editorCss);
+        $this->assertStringContainsString('@supports (display: grid) { .sgb-editor .sgb-page-frame .grid-only, .sgb-editor .sgb-canvas .grid-only { display: grid; } }', $editorCss);
+        $this->assertStringContainsString('@media (min-width: 800px) { .sgb-content .custom-theme-class, .sgb-content button.custom-action:not(.components-button) { color: var(--wp--preset--color--brand); } }', $frontendCss);
+        $this->assertStringContainsString('@supports (display: grid) { .sgb-content .grid-only { display: grid; } }', $frontendCss);
+        $this->assertStringContainsString('@keyframes pulse { from { opacity: 0; } to { opacity: 1; } }', $editorCss);
+        $this->assertStringNotContainsString('@media (min-width: 800px) { .custom-theme-class', $editorCss);
+        $this->assertStringNotContainsString('@supports (display: grid) { & .grid-only', $frontendCss);
+    }
+
     public function test_theme_json_relative_assets_are_served_from_theme_directory(): void
     {
         $this->writeThemeJson([

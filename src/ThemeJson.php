@@ -787,21 +787,173 @@ class ThemeJson
 
     private function prefixCustomCssSelectors(array $roots, string $css): string
     {
-        return preg_replace_callback('/(^|})(\s*)([^{}@][^{}]*)\{/s', function (array $matches) use ($roots) {
-            $selectors = collect(explode(',', trim($matches[3])))
-                ->map(fn (string $selector) => trim($selector))
-                ->filter()
-                ->flatMap(function (string $selector) use ($roots) {
-                    return collect($roots)->map(function (string $root) use ($selector) {
-                        return str_contains($selector, '&')
-                            ? str_replace('&', $root, $selector)
-                            : "{$root} {$selector}";
-                    });
-                })
-                ->implode(', ');
+        $output = '';
+        $offset = 0;
 
-            return $matches[1].$matches[2].$selectors.' {';
-        }, $css) ?? $css;
+        while (($open = strpos($css, '{', $offset)) !== false) {
+            $selector = substr($css, $offset, $open - $offset);
+            $close = $this->matchingBraceOffset($css, $open);
+
+            if ($close === null) {
+                $output .= substr($css, $offset);
+                $offset = strlen($css);
+                break;
+            }
+
+            $inner = substr($css, $open + 1, $close - $open - 1);
+            $trimmedSelector = trim($selector);
+
+            if (str_starts_with($trimmedSelector, '@')) {
+                $inner = $this->shouldScopeAtRule($trimmedSelector)
+                    ? $this->prefixCustomCssSelectors($roots, $inner)
+                    : $inner;
+                $output .= $selector.'{'.$inner.'}';
+            } else {
+                $output .= $this->prefixSelectorList($roots, $selector).'{'.$inner.'}';
+            }
+
+            $offset = $close + 1;
+        }
+
+        return $output.substr($css, $offset);
+    }
+
+    private function shouldScopeAtRule(string $selector): bool
+    {
+        return ! preg_match('/^@(?:-webkit-|-moz-|-o-)?(?:keyframes|font-face|page|property|counter-style)\b/i', $selector);
+    }
+
+    private function matchingBraceOffset(string $css, int $open): ?int
+    {
+        $depth = 0;
+        $quote = null;
+        $escaped = false;
+        $length = strlen($css);
+
+        for ($index = $open; $index < $length; $index++) {
+            $char = $css[$index];
+
+            if ($quote !== null) {
+                if ($escaped) {
+                    $escaped = false;
+                    continue;
+                }
+
+                if ($char === '\\') {
+                    $escaped = true;
+                    continue;
+                }
+
+                if ($char === $quote) {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
+            if ($char === '"' || $char === "'") {
+                $quote = $char;
+                continue;
+            }
+
+            if ($char === '{') {
+                $depth++;
+                continue;
+            }
+
+            if ($char === '}') {
+                $depth--;
+
+                if ($depth === 0) {
+                    return $index;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function prefixSelectorList(array $roots, string $selectorList): string
+    {
+        $leadingWhitespace = preg_match('/^\s*/', $selectorList, $leading) ? $leading[0] : '';
+        $trailingWhitespace = preg_match('/\s*$/', $selectorList, $trailing) ? $trailing[0] : '';
+        $prefixed = collect($this->splitSelectorList(trim($selectorList)))
+            ->map(fn (string $selector) => trim($selector))
+            ->filter()
+            ->flatMap(function (string $selector) use ($roots) {
+                return collect($roots)->map(function (string $root) use ($selector) {
+                    return str_contains($selector, '&')
+                        ? str_replace('&', $root, $selector)
+                        : "{$root} {$selector}";
+                });
+            })
+            ->implode(', ');
+
+        return $prefixed === '' ? $selectorList : $leadingWhitespace.$prefixed.$trailingWhitespace;
+    }
+
+    private function splitSelectorList(string $selectorList): array
+    {
+        $selectors = [];
+        $current = '';
+        $depth = 0;
+        $quote = null;
+        $escaped = false;
+        $length = strlen($selectorList);
+
+        for ($index = 0; $index < $length; $index++) {
+            $char = $selectorList[$index];
+
+            if ($quote !== null) {
+                $current .= $char;
+
+                if ($escaped) {
+                    $escaped = false;
+                    continue;
+                }
+
+                if ($char === '\\') {
+                    $escaped = true;
+                    continue;
+                }
+
+                if ($char === $quote) {
+                    $quote = null;
+                }
+
+                continue;
+            }
+
+            if ($char === '"' || $char === "'") {
+                $quote = $char;
+                $current .= $char;
+                continue;
+            }
+
+            if (in_array($char, ['(', '['], true)) {
+                $depth++;
+                $current .= $char;
+                continue;
+            }
+
+            if (in_array($char, [')', ']'], true)) {
+                $depth = max(0, $depth - 1);
+                $current .= $char;
+                continue;
+            }
+
+            if ($char === ',' && $depth === 0) {
+                $selectors[] = $current;
+                $current = '';
+                continue;
+            }
+
+            $current .= $char;
+        }
+
+        $selectors[] = $current;
+
+        return $selectors;
     }
 
     private function resolvePresetValue(string $value): string
