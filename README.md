@@ -798,6 +798,34 @@ Check:
 - The editor script calls `wp.blocks.registerBlockType`.
 - After changing JS, rebuild/publish addon assets and reload the editor.
 
+## License And Commercial Use
+
+This addon is distributed under the GNU General Public License version 2 only
+(`GPL-2.0-only`). The full license text is included in `LICENSE.md`, and the
+same license is declared in `composer.json` and `package.json`.
+
+When you buy or receive the addon from our official distribution channel, you
+get access to the packaged addon, maintained releases, updates, documentation,
+and support. The payment is for that official delivery and support model. It
+does not remove or limit the rights you receive under the GPL.
+
+Under `GPL-2.0-only`, you may use the addon, inspect the source code, modify it
+for your own project, and redistribute your copy under the same license. If you
+redistribute the addon or a modified version of it, the redistributed copy must
+also remain available under `GPL-2.0-only`.
+
+This license applies to the addon package itself. Your own Statamic project,
+content, templates, assets, project-specific `theme.json`, icon definitions,
+patterns, and custom blocks remain your own unless you choose to distribute
+them together with the addon as part of one package.
+
+The addon does not include a Statamic CMS license. You still need a valid
+Statamic license for each Statamic project where Statamic requires one.
+
+The addon includes and builds on WordPress/Gutenberg packages and Dashicons.
+Those dependencies require the distributed addon package to use `GPL-2.0-only`
+as its license.
+
 ## Internal Repository
 
 ```text

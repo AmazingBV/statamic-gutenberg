@@ -1,6 +1,7 @@
 {
     "name": "@amazingbv/statamic-gutenberg",
     "private": true,
+    "license": "GPL-2.0-only",
     "type": "module",
     "scripts": {
         "dev": "vite",
