@@ -2180,24 +2180,23 @@ class BlockRenderer
             $image = StatamicAssetImages::image($this->imageAssetId($block), 'full', false, [
                 'alt' => is_scalar($alt) ? (string) $alt : '',
             ]);
+            $image = $this->applyConstructedImageTargetAttributes($image, $this->imageTargetClasses($block, []), $this->imageTargetStyleDeclarations($block));
 
-            return $image === '' ? '' : '<figure'.$this->fallbackRootAttributes($block, [
-                'class' => implode(' ', $classes),
-            ]).'>'.$image.'</figure>';
+            return $image === '' ? '' : '<figure'.$this->renderAttributes($this->constructedImageFigureAttributeArray($block, $classes)).'>'.$image.'</figure>';
         }
 
-        $imageClasses = [];
+        $imageClasses = $this->imageTargetClasses($block, []);
         $id = $block->attribute('id');
 
         if ((is_int($id) || (is_scalar($id) && ctype_digit((string) $id))) && (int) $id > 0) {
             $imageClasses[] = 'wp-image-'.(int) $id;
         }
 
-        $imageStyles = array_filter([
+        $imageStyles = array_merge($this->imageTargetStyleDeclarations($block), array_filter([
             ($aspectRatio = $this->safeStyleValue($block->attribute('aspectRatio'))) ? 'aspect-ratio: '.$aspectRatio : null,
             ($scale = $this->safeImageObjectFit($block->attribute('scale'))) ? 'object-fit: '.$scale : null,
             ($position = $this->safeFocalPointStyle($block->attribute('focalPoint'))) ? 'object-position: '.$position : null,
-        ]);
+        ]));
         $isDecorative = $this->truthy($block->attribute('isDecorative', false));
         $altValue = $isDecorative ? '' : (is_scalar($alt) ? (string) $alt : '');
         $image = '<img alt="'.e($altValue).'"'.$this->renderAttributes([
@@ -2223,9 +2222,92 @@ class BlockRenderer
         $captionValue = $block->attribute('caption', '');
         $caption = is_scalar($captionValue) ? trim((string) $captionValue) : '';
 
-        return '<figure'.$this->fallbackRootAttributes($block, [
-            'class' => implode(' ', $classes),
-        ]).'>'.$image.($caption !== '' ? '<figcaption class="wp-element-caption">'.$caption.'</figcaption>' : '').'</figure>';
+        return '<figure'.$this->renderAttributes($this->constructedImageFigureAttributeArray($block, $classes)).'>'.$image.($caption !== '' ? '<figcaption class="wp-element-caption">'.$caption.'</figcaption>' : '').'</figure>';
+    }
+
+    private function constructedImageFigureAttributeArray(Block $block, array $classes): array
+    {
+        $align = $this->safeClassSlug($block->attribute('align'));
+
+        if ($align) {
+            $classes[] = 'align'.$align;
+        }
+
+        $classes = array_merge($classes, $this->safeClassList($block->attribute('className')));
+
+        if ($this->imageHasCustomBorder($block)) {
+            $classes[] = 'has-custom-border';
+        }
+
+        $attributes = [
+            'class' => implode(' ', array_values(array_unique(array_filter($classes)))),
+        ];
+        $anchor = $this->safeAnchor($block->attribute('anchor'));
+
+        if ($anchor !== '') {
+            $attributes['id'] = $anchor;
+        }
+
+        $style = $block->attribute('style', []);
+        $margin = is_array($style) ? $this->safeSpacingDeclarations('margin', $style['spacing']['margin'] ?? []) : [];
+
+        if ($margin) {
+            $attributes['style'] = implode('; ', $margin);
+        }
+
+        return $attributes;
+    }
+
+    private function imageHasCustomBorder(Block $block): bool
+    {
+        $style = $block->attribute('style', []);
+        $border = is_array($style) && is_array($style['border'] ?? null) ? $style['border'] : [];
+
+        return $this->searchBorderColorClasses($block) !== []
+            || $this->searchBorderDeclarations($border, 'width') !== []
+            || $this->searchBorderDeclarations($border, 'style') !== []
+            || $this->searchBorderRadiusDeclarations($border['radius'] ?? null) !== [];
+    }
+
+    private function imageTargetClasses(Block $block, array $classes): array
+    {
+        return array_merge($classes, $this->searchBorderColorClasses($block));
+    }
+
+    private function imageTargetStyleDeclarations(Block $block): array
+    {
+        $style = $block->attribute('style', []);
+        $border = is_array($style) && is_array($style['border'] ?? null) ? $style['border'] : [];
+        $declarations = [];
+
+        foreach (['width', 'color', 'style'] as $property) {
+            $declarations = array_merge($declarations, $this->searchBorderDeclarations($border, $property));
+        }
+
+        $declarations = array_merge($declarations, $this->searchBorderRadiusDeclarations($border['radius'] ?? null));
+
+        if ($shadow = $this->safeStyleValue(is_array($style) ? ($style['shadow'] ?? null) : null)) {
+            $declarations[] = 'box-shadow: '.$shadow;
+        }
+
+        return $declarations;
+    }
+
+    private function applyConstructedImageTargetAttributes(string $html, array $classes, array $styles): string
+    {
+        if ($html === '' || ($classes === [] && $styles === [])) {
+            return $html;
+        }
+
+        return $this->transformFirstElement($html, ['img'], function (DOMDocument $document, DOMElement $element) use ($classes, $styles): void {
+            if ($classes) {
+                $this->addClasses($element, $classes);
+            }
+
+            if ($styles) {
+                $element->setAttribute('style', $this->mergeStyles($element->getAttribute('style'), implode('; ', $styles)));
+            }
+        });
     }
 
     private function safeImageDimension(mixed $value): string

@@ -854,12 +854,14 @@ class BlockRendererTest extends TestCase
     {
         $this->bindFakeAsset('assets::hero.jpg');
 
-        $html = '<!-- wp:image {"id":"assets::hero.jpg","align":"wide","anchor":"image-one","className":"image-extra","style":{"spacing":{"margin":{"top":"1rem"}},"border":{"radius":"16px"}}} /-->';
+        $html = '<!-- wp:image {"id":"assets::hero.jpg","align":"wide","anchor":"image-one","className":"image-extra","borderColor":"primary","style":{"spacing":{"margin":{"top":"1rem"}},"border":{"radius":"16px","width":"2px","style":"solid"},"shadow":"var:preset|shadow|natural"}} /-->';
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
-        $this->assertStringContainsString('class="wp-block-image alignwide image-extra"', $rendered);
+        $this->assertStringContainsString('class="wp-block-image alignwide image-extra has-custom-border"', $rendered);
         $this->assertStringContainsString('id="image-one"', $rendered);
-        $this->assertStringContainsString('margin-top: 1rem', $rendered);
+        $this->assertStringContainsString('<figure class="wp-block-image alignwide image-extra has-custom-border" id="image-one" style="margin-top: 1rem"><img', $rendered);
+        $this->assertStringContainsString('class="has-border-color has-primary-border-color"', $rendered);
+        $this->assertStringContainsString('border-width: 2px; border-style: solid; border-radius: 16px; box-shadow: var(--wp--preset--shadow--natural)', $rendered);
         $this->assertStringContainsString('border-radius: 16px', $rendered);
         $this->assertStringContainsString('src="/storage/assets/hero.jpg"', $rendered);
         $this->assertStringContainsString('alt="Hero alt"', $rendered);
@@ -869,12 +871,13 @@ class BlockRendererTest extends TestCase
 
     public function test_it_constructs_core_images_from_urls_with_wrapper_supports(): void
     {
-        $html = '<!-- wp:image {"url":"/storage/photo.jpg","alt":"Photo","align":"wide","anchor":"image-url-one","className":"image-url-extra","style":{"spacing":{"margin":{"bottom":"1.5rem"}}}} /-->';
+        $html = '<!-- wp:image {"url":"/storage/photo.jpg","alt":"Photo","align":"wide","anchor":"image-url-one","className":"image-url-extra","style":{"spacing":{"margin":{"bottom":"1.5rem"}},"border":{"radius":"12px"},"shadow":"0 10px 20px #0003"}} /-->';
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
-        $this->assertStringContainsString('class="wp-block-image alignwide image-url-extra"', $rendered);
+        $this->assertStringContainsString('class="wp-block-image alignwide image-url-extra has-custom-border"', $rendered);
         $this->assertStringContainsString('id="image-url-one"', $rendered);
-        $this->assertStringContainsString('margin-bottom: 1.5rem', $rendered);
+        $this->assertStringContainsString('<figure class="wp-block-image alignwide image-url-extra has-custom-border" id="image-url-one" style="margin-bottom: 1.5rem"><img', $rendered);
+        $this->assertStringContainsString('style="border-radius: 12px; box-shadow: 0 10px 20px #0003"', $rendered);
         $this->assertStringContainsString('src="/storage/photo.jpg"', $rendered);
         $this->assertStringContainsString('alt="Photo"', $rendered);
     }
