@@ -226,6 +226,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
             return {
                 id: media.id,
                 src: url,
+                controls: true,
                 caption: media.caption || '',
             };
 

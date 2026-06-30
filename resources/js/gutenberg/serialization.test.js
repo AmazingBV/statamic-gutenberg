@@ -128,6 +128,16 @@ describe('Gutenberg serialization helpers', () => {
         expect(mediaTextAttributes.mediaId).toBe(imageAttributes.id);
     });
 
+    it('enables controls for inserted video asset blocks', () => {
+        const attributes = attributesForAssetBlock('core/video', {
+            id: 'assets::movie.mp4',
+            url: '/storage/assets/movie.mp4',
+            type: 'video',
+        });
+
+        expect(attributes.controls).toBe(true);
+    });
+
     it('strips transient blob media urls before saved content is parsed or serialized', () => {
         const input = '<!-- wp:cover {"url":"blob:https://site.test/temp-id"} --><div class="wp-block-cover"><img src="blob:https://site.test/temp-id"><p>Cover</p></div><!-- /wp:cover -->';
         const stripped = stripTransientMediaUrls(input);
