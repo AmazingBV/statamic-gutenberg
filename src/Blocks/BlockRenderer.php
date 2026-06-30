@@ -169,6 +169,7 @@ class BlockRenderer
             'core/more' => $this->renderMoreMarker($block, $options),
             'core/nextpage' => $this->renderNextPageMarker($block, $options),
             'core/embed' => $this->renderEmbed($block, $options),
+            'core/file' => $this->renderFile($block, $options),
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
             'core/image' => $this->renderImage($block, $options),
@@ -1267,6 +1268,65 @@ class BlockRenderer
         return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-math'], ['div']);
     }
 
+    private function renderFile(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html !== '') {
+            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-file'], ['div']);
+        }
+
+        $href = $block->attribute('href');
+
+        if (! is_scalar($href) || trim((string) $href) === '') {
+            return '';
+        }
+
+        $href = trim((string) $href);
+        $fileName = trim(wp_strip_all_tags((string) $block->attribute('fileName', '')));
+        $fileName = $fileName !== '' ? $fileName : $this->fileNameFromUrl($href);
+        $fileId = $this->safeAnchor($block->attribute('fileId')) ?: 'wp-block-file--media-'.substr(md5($href), 0, 12);
+        $textLinkHref = $block->attribute('textLinkHref');
+        $textLinkHref = is_scalar($textLinkHref) && trim((string) $textLinkHref) !== '' ? trim((string) $textLinkHref) : $href;
+        $target = $this->safeLinkTarget($block->attribute('textLinkTarget'));
+        $previewHeight = max(120, min(2000, (int) $block->attribute('previewHeight', 600)));
+        $downloadText = trim(wp_strip_all_tags((string) $block->attribute('downloadButtonText', '')));
+        $downloadText = $downloadText !== '' ? $downloadText : 'Download';
+        $inner = '';
+
+        if ($this->truthy($block->attribute('displayPreview', false))) {
+            $inner .= '<object'.$this->renderAttributes([
+                'class' => 'wp-block-file__embed',
+                'data' => $href,
+                'type' => 'application/pdf',
+                'style' => 'width: 100%; height: '.$previewHeight.'px',
+                'aria-label' => $fileName !== '' ? $fileName : 'PDF embed',
+            ]).'></object>';
+        }
+
+        if ($fileName !== '') {
+            $inner .= '<a'.$this->renderAttributes([
+                'id' => $fileId,
+                'href' => $textLinkHref,
+                'target' => $target,
+                'rel' => $target === '_blank' ? 'noreferrer noopener' : '',
+            ]).'>'.e($fileName).'</a>';
+        }
+
+        if (! $this->explicitlyFalse($block->attribute('showDownloadButton', true))) {
+            $inner .= '<a'.$this->renderAttributes([
+                'href' => $href,
+                'class' => 'wp-block-file__button wp-element-button',
+                'download' => 'download',
+                'aria-describedby' => $fileName !== '' ? $fileId : '',
+            ]).'>'.e($downloadText).'</a>';
+        }
+
+        return $this->sanitize('<div'.$this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-file',
+        ]).'>'.$inner.'</div>', $options);
+    }
+
     private function renderIcon(Block $block, array $options): string
     {
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
@@ -1771,6 +1831,25 @@ class BlockRenderer
         }
 
         return $declarations;
+    }
+
+    private function safeLinkTarget(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return in_array($value, ['_blank', '_self', '_parent', '_top'], true) ? $value : '';
+    }
+
+    private function fileNameFromUrl(string $url): string
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $basename = basename($path);
+
+        return $basename !== '' && $basename !== '.' ? $basename : 'Download file';
     }
 
     private function truthy(mixed $value): bool

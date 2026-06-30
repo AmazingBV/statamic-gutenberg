@@ -159,6 +159,21 @@ class BlockRendererTest extends TestCase
         $this->assertSame('<div class="wp-block-math"><math display="block"><mrow><mi>x</mi></mrow></math></div>', $rendered);
     }
 
+    public function test_it_constructs_file_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:file {"href":"https://site.test/storage/test.pdf","fileName":"test.pdf","textLinkHref":"https://site.test/download/test.pdf","textLinkTarget":"_blank","showDownloadButton":true,"downloadButtonText":"Download file","displayPreview":true,"previewHeight":420,"align":"wide","anchor":"file-one"} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-file alignwide"', $rendered);
+        $this->assertStringContainsString('id="file-one"', $rendered);
+        $this->assertStringContainsString('<object class="wp-block-file__embed" data="https://site.test/storage/test.pdf" type="application/pdf" style="width: 100%; height: 420px" aria-label="test.pdf"></object>', $rendered);
+        $this->assertStringContainsString('<a id="wp-block-file--media-', $rendered);
+        $this->assertStringContainsString('href="https://site.test/download/test.pdf" target="_blank" rel="noreferrer noopener">test.pdf</a>', $rendered);
+        $this->assertStringContainsString('class="wp-block-file__button wp-element-button" download="download"', $rendered);
+        $this->assertStringContainsString('>Download file</a>', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];
