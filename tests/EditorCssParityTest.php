@@ -110,6 +110,11 @@ class EditorCssParityTest extends TestCase
             '.sgb-editor--fullscreen .sgb-editor__stage',
             $css
         );
+        $this->assertStringContainsString('flex-direction: column', $css);
+        $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-toolbar', $css);
+        $this->assertStringContainsString('position: relative', $css);
+        $this->assertStringContainsString('flex: 0 0 auto', $css);
+        $this->assertStringContainsString('flex: 1 1 auto', $css);
         $this->assertStringContainsString('padding: 0', $css);
         $this->assertStringContainsString('box-sizing: border-box', $css);
         $this->assertStringContainsString('max-width: none', $css);
