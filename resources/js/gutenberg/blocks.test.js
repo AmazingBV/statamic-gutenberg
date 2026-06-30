@@ -175,6 +175,15 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('width: true');
     });
 
+    it('feeds theme.json shadow presets into the editor', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+
+        expect(source).toContain('shadow: {');
+        expect(source).toContain('const shadow = isPlainObject(themeSettings.shadow) ? themeSettings.shadow : {};');
+        expect(source).toContain('const shadowPresets = presetList(shadow.presets);');
+        expect(source).toContain("assignThemePreset(next, ['shadow', 'presets'], shadowPresets);");
+    });
+
     it('adds native-style editor controls for history, list view and code mode', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');

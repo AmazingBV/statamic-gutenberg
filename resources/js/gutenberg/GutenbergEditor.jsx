@@ -184,6 +184,12 @@ const EDITOR_THEME_SETTINGS = {
             minWidth: true,
             width: true,
         },
+        shadow: {
+            presets: {
+                theme: [],
+                default: [],
+            },
+        },
     },
 };
 
@@ -335,6 +341,13 @@ function applyThemeJsonSettings(baseSettings, themeJson) {
 
     if (aspectRatios.length) {
         assignThemePreset(next, ['dimensions', 'aspectRatios'], aspectRatios);
+    }
+
+    const shadow = isPlainObject(themeSettings.shadow) ? themeSettings.shadow : {};
+    const shadowPresets = presetList(shadow.presets);
+
+    if (shadowPresets.length) {
+        assignThemePreset(next, ['shadow', 'presets'], shadowPresets);
     }
 
     const layout = isPlainObject(themeSettings.layout) ? themeSettings.layout : {};
