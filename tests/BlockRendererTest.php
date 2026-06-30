@@ -626,6 +626,38 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Inner</p>', $rendered);
     }
 
+    public function test_it_applies_wrapper_supports_to_wrapperless_container_blocks(): void
+    {
+        $html = implode('', [
+            '<!-- wp:group {"align":"wide","anchor":"group-one","className":"extra-group","backgroundColor":"blue","style":{"spacing":{"padding":{"top":"1rem","bottom":"2rem"}},"border":{"radius":"12px"}},"layout":{"type":"constrained","contentSize":"640px"}} -->',
+            '<!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph -->',
+            '<!-- /wp:group -->',
+            '<!-- wp:columns {"align":"wide","anchor":"columns-one","style":{"spacing":{"margin":{"top":"2rem"}}}} -->',
+            '<!-- wp:column --><div class="wp-block-column"><p>Column</p></div><!-- /wp:column -->',
+            '<!-- /wp:columns -->',
+            '<!-- wp:buttons {"align":"wide","anchor":"buttons-one","style":{"spacing":{"blockGap":"1rem"}}} -->',
+            '<!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Go</a></div><!-- /wp:button -->',
+            '<!-- /wp:buttons -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-group alignwide extra-group has-blue-background-color has-background is-layout-constrained wp-block-group-is-layout-constrained"', $rendered);
+        $this->assertStringContainsString('id="group-one"', $rendered);
+        $this->assertStringContainsString('padding-top: 1rem', $rendered);
+        $this->assertStringContainsString('padding-bottom: 2rem', $rendered);
+        $this->assertStringContainsString('border-radius: 12px', $rendered);
+        $this->assertStringContainsString('--wp--style--global--content-size: 640px', $rendered);
+        $this->assertStringContainsString('class="wp-block-columns alignwide"', $rendered);
+        $this->assertStringContainsString('id="columns-one"', $rendered);
+        $this->assertStringContainsString('margin-top: 2rem', $rendered);
+        $this->assertStringContainsString('class="wp-block-buttons alignwide"', $rendered);
+        $this->assertStringContainsString('id="buttons-one"', $rendered);
+        $this->assertStringContainsString('--wp--style--block-gap: 1rem', $rendered);
+        $this->assertStringNotContainsString('class="wp-block-button wp-block-buttons', $rendered);
+        $this->assertStringNotContainsString('class="wp-block-column wp-block-columns', $rendered);
+    }
+
     public function test_it_adds_frontend_fit_text_classes_to_headings(): void
     {
         $html = '<!-- wp:heading {"fitText":true} --><h2>Scale me</h2><!-- /wp:heading -->';

@@ -25,6 +25,11 @@ class BlockWrapperContext
         return self::renderAttributes(self::attributes(self::$block, $extraAttributes));
     }
 
+    public static function attributesForBlock(Block $block, array $extraAttributes = []): array
+    {
+        return self::attributes($block, $extraAttributes);
+    }
+
     private static function attributes(?Block $block, array $extraAttributes): array
     {
         $attributes = $extraAttributes;

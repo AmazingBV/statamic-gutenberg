@@ -777,6 +777,11 @@ class BlockRenderer
         );
     }
 
+    private function fallbackRootAttributeArray(Block $block, array $attributes): array
+    {
+        return BlockWrapperContext::attributesForBlock($block, $attributes);
+    }
+
     private function siteUrl(string $path = '/'): string
     {
         try {
@@ -811,29 +816,23 @@ class BlockRenderer
         array $allowedTags = ['div'],
         array $extraAttributes = []
     ): string {
-        $fragment = $this->firstElementFragment($this->sanitize($block->renderableHtml(), $options));
-
-        if (! $fragment) {
-            $attributes = $this->applyLayoutAttributes($block, array_merge(['class' => $baseClass], $extraAttributes), $baseClass);
-
-            return sprintf(
-                '<%s%s>%s</%s>',
-                $fallbackTag,
-                $this->renderAttributes($attributes),
-                $inner,
-                $fallbackTag
-            );
-        }
-
-        $tag = in_array($fragment['tag'], $allowedTags, true) ? $fragment['tag'] : $fallbackTag;
-        $attributes = array_merge($fragment['attributes'], $extraAttributes);
+        $renderableHtml = $this->sanitize($block->renderableHtml(), $options);
+        $fragment = $this->firstElementFragment($renderableHtml);
+        $hasSavedWrapper = $fragment && $this->fragmentHasClass($fragment, $baseClass);
+        $tag = $hasSavedWrapper && in_array($fragment['tag'], $allowedTags, true) ? $fragment['tag'] : $fallbackTag;
+        $attributes = $hasSavedWrapper
+            ? $this->fallbackRootAttributeArray($block, array_merge($fragment['attributes'], $extraAttributes))
+            : $this->fallbackRootAttributeArray($block, array_merge(['class' => $baseClass], $extraAttributes));
         $attributes = $this->applyLayoutAttributes($block, $attributes, $baseClass);
+        $content = $inner !== ''
+            ? $inner
+            : ($hasSavedWrapper ? (string) $fragment['html'] : $renderableHtml);
 
         return sprintf(
             '<%s%s>%s</%s>',
             $tag,
             $this->renderAttributes($attributes),
-            $inner !== '' ? $inner : $fragment['html'],
+            $content,
             $tag
         );
     }
@@ -1907,6 +1906,11 @@ class BlockRenderer
         }
 
         return null;
+    }
+
+    private function fragmentHasClass(array $fragment, string $className): bool
+    {
+        return in_array($className, preg_split('/\s+/', trim((string) (($fragment['attributes'] ?? [])['class'] ?? ''))) ?: [], true);
     }
 
     private function firstElementMatches(string $html, string $tagName, string $className): bool
