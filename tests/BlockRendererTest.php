@@ -795,6 +795,26 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('alt="Photo"', $rendered);
     }
 
+    public function test_it_constructs_core_images_with_link_caption_and_sizing_attributes(): void
+    {
+        $html = '<!-- wp:image {"url":"/storage/photo.jpg","alt":"Photo","caption":"<strong>Caption</strong><script>alert(1)</script>","href":"/gallery","linkTarget":"_blank","rel":"noopener","linkClass":"image-link","id":42,"sizeSlug":"large","width":320,"height":180,"aspectRatio":"16/9","scale":"cover","focalPoint":{"x":0.25,"y":0.75},"title":"Photo title","isDecorative":true} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-image size-large"', $rendered);
+        $this->assertStringContainsString('<a class="image-link" href="/gallery" target="_blank" rel="noopener">', $rendered);
+        $this->assertStringContainsString('class="wp-image-42"', $rendered);
+        $this->assertStringContainsString('width="320"', $rendered);
+        $this->assertStringContainsString('height="180"', $rendered);
+        $this->assertStringContainsString('title="Photo title"', $rendered);
+        $this->assertStringContainsString('role="presentation"', $rendered);
+        $this->assertStringContainsString('style="aspect-ratio: 16/9; object-fit: cover; object-position: 25% 75%"', $rendered);
+        $this->assertStringContainsString('alt=""', $rendered);
+        $this->assertStringContainsString('<figcaption class="wp-element-caption"><strong>Caption</strong></figcaption>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+        $this->assertStringNotContainsString('alt="Photo"', $rendered);
+    }
+
     public function test_it_renders_icon_blocks_with_wrapper_supports_and_accessible_label(): void
     {
         config([

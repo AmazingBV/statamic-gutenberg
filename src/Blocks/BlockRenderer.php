@@ -1867,6 +1867,12 @@ class BlockRenderer
     {
         $url = $block->attribute('url');
         $alt = $block->attribute('alt', '');
+        $classes = ['wp-block-image'];
+        $sizeSlug = $this->safeClassSlug($block->attribute('sizeSlug'));
+
+        if ($sizeSlug) {
+            $classes[] = 'size-'.$sizeSlug;
+        }
 
         if (! $url) {
             $image = StatamicAssetImages::image($this->imageAssetId($block), 'full', false, [
@@ -1874,18 +1880,91 @@ class BlockRenderer
             ]);
 
             return $image === '' ? '' : '<figure'.$this->fallbackRootAttributes($block, [
-                'class' => 'wp-block-image',
+                'class' => implode(' ', $classes),
             ]).'>'.$image.'</figure>';
         }
 
-        return sprintf(
-            '<figure%s><img src="%s" alt="%s"></figure>',
-            $this->fallbackRootAttributes($block, [
-                'class' => 'wp-block-image',
-            ]),
-            e($url),
-            e($alt)
-        );
+        $imageClasses = [];
+        $id = $block->attribute('id');
+
+        if ((is_int($id) || (is_scalar($id) && ctype_digit((string) $id))) && (int) $id > 0) {
+            $imageClasses[] = 'wp-image-'.(int) $id;
+        }
+
+        $imageStyles = array_filter([
+            ($aspectRatio = $this->safeStyleValue($block->attribute('aspectRatio'))) ? 'aspect-ratio: '.$aspectRatio : null,
+            ($scale = $this->safeImageObjectFit($block->attribute('scale'))) ? 'object-fit: '.$scale : null,
+            ($position = $this->safeFocalPointStyle($block->attribute('focalPoint'))) ? 'object-position: '.$position : null,
+        ]);
+        $isDecorative = $this->truthy($block->attribute('isDecorative', false));
+        $altValue = $isDecorative ? '' : (is_scalar($alt) ? (string) $alt : '');
+        $image = '<img alt="'.e($altValue).'"'.$this->renderAttributes([
+            'src' => (string) $url,
+            'class' => implode(' ', $imageClasses),
+            'width' => $this->safeImageDimension($block->attribute('width')),
+            'height' => $this->safeImageDimension($block->attribute('height')),
+            'title' => is_scalar($block->attribute('title')) ? trim((string) $block->attribute('title')) : '',
+            'role' => $isDecorative ? 'presentation' : '',
+            'style' => implode('; ', $imageStyles),
+        ]).'>';
+        $href = $block->attribute('href');
+
+        if (is_scalar($href) && trim((string) $href) !== '') {
+            $image = '<a'.$this->renderAttributes([
+                'class' => implode(' ', $this->safeClassList($block->attribute('linkClass'))),
+                'href' => trim((string) $href),
+                'target' => $this->safeLinkTarget($block->attribute('linkTarget')),
+                'rel' => is_scalar($block->attribute('rel')) ? trim((string) $block->attribute('rel')) : '',
+            ]).'>'.$image.'</a>';
+        }
+
+        $captionValue = $block->attribute('caption', '');
+        $caption = is_scalar($captionValue) ? trim((string) $captionValue) : '';
+
+        return '<figure'.$this->fallbackRootAttributes($block, [
+            'class' => implode(' ', $classes),
+        ]).'>'.$image.($caption !== '' ? '<figcaption class="wp-element-caption">'.$caption.'</figcaption>' : '').'</figure>';
+    }
+
+    private function safeImageDimension(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return preg_match('/^[1-9][0-9]*$/', $value) ? $value : '';
+    }
+
+    private function safeImageObjectFit(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return in_array($value, ['cover', 'contain', 'fill', 'none', 'scale-down'], true) ? $value : '';
+    }
+
+    private function safeFocalPointStyle(mixed $value): string
+    {
+        if (! is_array($value)) {
+            return '';
+        }
+
+        $x = $value['x'] ?? null;
+        $y = $value['y'] ?? null;
+
+        if (! is_numeric($x) || ! is_numeric($y)) {
+            return '';
+        }
+
+        $x = max(0, min(1, (float) $x));
+        $y = max(0, min(1, (float) $y));
+
+        return round($x * 100, 4).'% '.round($y * 100, 4).'%';
     }
 
     private function imageAssetId(Block $block): mixed
