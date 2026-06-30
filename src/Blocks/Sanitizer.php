@@ -44,6 +44,7 @@ class Sanitizer
         'border-top-width',
         'border-width',
         'bottom',
+        'box-sizing',
         'box-shadow',
         'color',
         'column-count',

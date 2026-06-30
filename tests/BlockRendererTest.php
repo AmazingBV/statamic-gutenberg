@@ -750,6 +750,29 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('class="wp-block-column wp-block-columns', $rendered);
     }
 
+    public function test_it_applies_child_layout_sizing_and_grid_placement(): void
+    {
+        $html = implode('', [
+            '<!-- wp:group {"layout":{"type":"grid","columnCount":4}} -->',
+            '<!-- wp:group {"style":{"layout":{"columnStart":2,"columnSpan":3,"rowStart":1,"rowSpan":2}}} -->',
+            '<!-- wp:paragraph --><p>Placed</p><!-- /wp:paragraph -->',
+            '<!-- /wp:group -->',
+            '<!-- wp:spacer {"style":{"layout":{"selfStretch":"fixed","flexSize":"18rem"}}} /-->',
+            '<!-- wp:spacer {"style":{"layout":{"selfStretch":"fill"}}} /-->',
+            '<!-- /wp:group -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('display: grid', $rendered);
+        $this->assertStringContainsString('grid-template-columns: repeat(4, minmax(0, 1fr))', $rendered);
+        $this->assertStringContainsString('grid-column: 2 / span 3', $rendered);
+        $this->assertStringContainsString('grid-row: 1 / span 2', $rendered);
+        $this->assertStringContainsString('flex-basis: 18rem', $rendered);
+        $this->assertStringContainsString('box-sizing: border-box', $rendered);
+        $this->assertStringContainsString('flex-grow: 1', $rendered);
+    }
+
     public function test_it_applies_background_image_supports_to_wrapper_blocks(): void
     {
         $html = implode('', [

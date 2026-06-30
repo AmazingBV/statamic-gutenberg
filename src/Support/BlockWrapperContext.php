@@ -168,8 +168,53 @@ class BlockWrapperContext
             ...self::borderDeclarations($style['border'] ?? []),
             ...self::dimensionsDeclarations($style['dimensions'] ?? []),
             ...self::positionDeclarations($style['position'] ?? []),
+            ...self::layoutChildDeclarations($style['layout'] ?? []),
             self::declaration('box-shadow', $style['shadow'] ?? null),
         ]));
+    }
+
+    private static function layoutChildDeclarations(mixed $layout): array
+    {
+        if (! is_array($layout)) {
+            return [];
+        }
+
+        $declarations = [];
+        $selfStretch = self::safeSlug($layout['selfStretch'] ?? null);
+
+        if ($selfStretch === 'fixed') {
+            $flexSize = self::safeCssValue($layout['flexSize'] ?? null);
+
+            if ($flexSize) {
+                $declarations[] = 'flex-basis: '.$flexSize;
+                $declarations[] = 'box-sizing: border-box';
+            }
+        } elseif ($selfStretch === 'fill') {
+            $declarations[] = 'flex-grow: 1';
+        }
+
+        $columnStart = self::positiveInteger($layout['columnStart'] ?? null);
+        $columnSpan = self::positiveInteger($layout['columnSpan'] ?? null);
+        $rowStart = self::positiveInteger($layout['rowStart'] ?? null);
+        $rowSpan = self::positiveInteger($layout['rowSpan'] ?? null);
+
+        if ($columnStart && $columnSpan) {
+            $declarations[] = 'grid-column: '.$columnStart.' / span '.$columnSpan;
+        } elseif ($columnStart) {
+            $declarations[] = 'grid-column: '.$columnStart;
+        } elseif ($columnSpan) {
+            $declarations[] = 'grid-column: span '.$columnSpan;
+        }
+
+        if ($rowStart && $rowSpan) {
+            $declarations[] = 'grid-row: '.$rowStart.' / span '.$rowSpan;
+        } elseif ($rowStart) {
+            $declarations[] = 'grid-row: '.$rowStart;
+        } elseif ($rowSpan) {
+            $declarations[] = 'grid-row: span '.$rowSpan;
+        }
+
+        return $declarations;
     }
 
     private static function positionDeclarations(mixed $position): array
@@ -391,6 +436,25 @@ class BlockWrapperContext
         }
 
         return $value;
+    }
+
+    private static function positiveInteger(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value > 0 ? $value : null;
+        }
+
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if (! preg_match('/^[1-9]\d*$/', $value)) {
+            return null;
+        }
+
+        return (int) $value;
     }
 
     private static function safeCssUrl(mixed $value): ?string
