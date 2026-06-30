@@ -491,7 +491,9 @@ class ThemeJson
                 'fontWeight' => 'font-weight',
                 'letterSpacing' => 'letter-spacing',
                 'lineHeight' => 'line-height',
+                'textColumns' => 'column-count',
                 'textDecoration' => 'text-decoration',
+                'textIndent' => 'text-indent',
                 'textTransform' => 'text-transform',
                 'writingMode' => 'writing-mode',
             ]));

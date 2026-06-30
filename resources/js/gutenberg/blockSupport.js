@@ -59,6 +59,8 @@ export function withTextFormattingSupport(settings, name) {
     const attributes = { ...(settings.attributes || {}) };
 
     typography.textAlign = ['justify'];
+    typography.textColumns = true;
+    typography.textIndent = true;
     color.text = true;
 
     if (! attributes.style?.type) {

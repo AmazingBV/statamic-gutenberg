@@ -145,7 +145,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textColumns":"2","textDecoration":"underline","textIndent":"1.5em","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -176,7 +176,9 @@ PHP,
         $this->assertStringContainsString('font-weight: 700', $rendered);
         $this->assertStringContainsString('line-height: 1.4', $rendered);
         $this->assertStringContainsString('letter-spacing: 0.01em', $rendered);
+        $this->assertStringContainsString('column-count: 2', $rendered);
         $this->assertStringContainsString('text-decoration: underline', $rendered);
+        $this->assertStringContainsString('text-indent: 1.5em', $rendered);
         $this->assertStringContainsString('text-transform: uppercase', $rendered);
         $this->assertStringContainsString('writing-mode: horizontal-tb', $rendered);
         $this->assertStringContainsString('border-top-left-radius: 8px', $rendered);

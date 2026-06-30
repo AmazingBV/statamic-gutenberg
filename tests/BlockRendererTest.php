@@ -421,7 +421,7 @@ class BlockRendererTest extends TestCase
     public function test_it_preserves_safe_gutenberg_inline_styles(): void
     {
         $html = implode('', [
-            '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->',
+            '<!-- wp:paragraph --><p style="margin-top:var(--wp--preset--spacing--40);padding:12px;color:#111;text-indent:2em;column-count:2;position:absolute;background-image:url(javascript:alert(1))">Styled</p><!-- /wp:paragraph -->',
             '<!-- wp:button --><div class="wp-block-button" style="--wp--block-button--width:50%;width:var(--wp--block-button--width)"><a class="wp-block-button__link wp-element-button">Button</a></div><!-- /wp:button -->',
         ]);
 
@@ -430,6 +430,8 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('margin-top: var(--wp--preset--spacing--40)', $rendered);
         $this->assertStringContainsString('padding: 12px', $rendered);
         $this->assertStringContainsString('color: #111', $rendered);
+        $this->assertStringContainsString('text-indent: 2em', $rendered);
+        $this->assertStringContainsString('column-count: 2', $rendered);
         $this->assertStringContainsString('--wp--block-button--width: 50%', $rendered);
         $this->assertStringContainsString('width: var(--wp--block-button--width)', $rendered);
         $this->assertStringNotContainsString('position', $rendered);

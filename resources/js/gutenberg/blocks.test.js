@@ -70,6 +70,8 @@ describe('registerGutenbergBlocks', () => {
         expect(settings.supports.typography).toMatchObject({
             fontSize: true,
             textAlign: ['justify'],
+            textColumns: true,
+            textIndent: true,
         });
         expect(settings.supports.color).toMatchObject({
             gradients: true,
@@ -84,6 +86,8 @@ describe('registerGutenbergBlocks', () => {
 
         expect(settings.supports.align).toEqual(['wide', 'full']);
         expect(settings.supports.typography.textAlign).toEqual(['justify']);
+        expect(settings.supports.typography.textColumns).toBe(true);
+        expect(settings.supports.typography.textIndent).toBe(true);
         expect(settings.supports.color.text).toBe(true);
         expect(textAlignClassName({ style: { typography: { textAlign: 'justify' } } })).toBe('has-text-align-justify');
         expect(textAlignClassName({ style: { typography: { textAlign: 'invalid' } } })).toBe('');

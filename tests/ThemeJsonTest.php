@@ -124,6 +124,8 @@ class ThemeJsonTest extends TestCase
                     'core/paragraph' => [
                         'typography' => [
                             'fontSize' => 'var:preset|font-size|huge',
+                            'textColumns' => '2',
+                            'textIndent' => '1.5em',
                         ],
                         'dimensions' => [
                             'minHeight' => '12rem',
@@ -205,6 +207,8 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('.sgb-content a', $frontendCss);
         $this->assertStringContainsString('.sgb-content p', $frontendCss);
         $this->assertStringContainsString('font-size: var(--wp--preset--font-size--huge)', $frontendCss);
+        $this->assertStringContainsString('column-count: 2', $frontendCss);
+        $this->assertStringContainsString('text-indent: 1.5em', $frontendCss);
         $this->assertStringContainsString('min-height: 12rem', $frontendCss);
         $this->assertStringContainsString('min-width: 20rem', $frontendCss);
         $this->assertStringContainsString('width: 50%', $frontendCss);

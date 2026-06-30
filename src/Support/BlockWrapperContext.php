@@ -251,7 +251,9 @@ class BlockWrapperContext
             self::declaration('font-weight', $typography['fontWeight'] ?? null),
             self::declaration('line-height', $typography['lineHeight'] ?? null),
             self::declaration('letter-spacing', $typography['letterSpacing'] ?? null),
+            self::declaration('column-count', $typography['textColumns'] ?? null),
             self::declaration('text-decoration', $typography['textDecoration'] ?? null),
+            self::declaration('text-indent', $typography['textIndent'] ?? null),
             self::declaration('text-transform', $typography['textTransform'] ?? null),
             self::declaration('writing-mode', $typography['writingMode'] ?? null),
         ]));

@@ -86,6 +86,8 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("blockGap: true", $editor);
         $this->assertStringContainsString('text: true', $editor);
         $this->assertStringContainsString('link: true', $editor);
+        $this->assertStringContainsString('textColumns: true', $editor);
+        $this->assertStringContainsString('textIndent: true', $editor);
         $this->assertStringNotContainsString('image as imageIcon', $editor);
         $this->assertStringNotContainsString('label="Open Statamic assets"', $editor);
         $this->assertStringContainsString('.block-editor-tabbed-sidebar__tab:nth-child(3)', $css);
