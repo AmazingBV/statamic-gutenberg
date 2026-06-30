@@ -114,6 +114,37 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         expect(next).not.toHaveBeenCalled();
     });
 
+    it('proxies block renderer requests to the Statamic preview endpoint', async () => {
+        window.StatamicGutenbergBlockRendererUrl = '/cp/amazingbv/statamic-gutenberg/block-renderer';
+        window.StatamicGutenbergAllowedBlocks = ['core/paragraph'];
+        const fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ rendered: '<section>Preview</section>' }),
+        });
+        vi.stubGlobal('fetch', fetch);
+
+        await expect(resolveStatamicApiFetchFallback({
+            path: '/wp/v2/block-renderer/amazing/card?context=edit&attributes=%7B%22heading%22%3A%22Preview%22%7D',
+        })).resolves.toEqual({ rendered: '<section>Preview</section>' });
+
+        expect(fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/cp/amazingbv/statamic-gutenberg/block-renderer'),
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({
+                    name: 'amazing/card',
+                    attributes: { heading: 'Preview' },
+                    content: '',
+                    allowed_blocks: ['core/paragraph'],
+                }),
+            }),
+        );
+
+        vi.unstubAllGlobals();
+        delete window.StatamicGutenbergBlockRendererUrl;
+        delete window.StatamicGutenbergAllowedBlocks;
+    });
+
     it('serves Statamic patterns through WordPress-compatible endpoints', async () => {
         window.StatamicGutenbergPatterns = {
             reusableBlocks: [

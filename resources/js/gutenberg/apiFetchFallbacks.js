@@ -46,6 +46,16 @@ function statamicIconsUrl() {
     return typeof window !== 'undefined' ? window.StatamicGutenbergIconsUrl : null;
 }
 
+function statamicBlockRendererUrl() {
+    return typeof window !== 'undefined' ? window.StatamicGutenbergBlockRendererUrl : null;
+}
+
+function statamicAllowedBlocks() {
+    const blocks = typeof window !== 'undefined' ? window.StatamicGutenbergAllowedBlocks : null;
+
+    return Array.isArray(blocks) ? blocks : [];
+}
+
 function statamicPatterns() {
     const payload = typeof window !== 'undefined' ? window.StatamicGutenbergPatterns : null;
 
@@ -256,6 +266,82 @@ function fallbackForOembedProxy(path) {
     };
 }
 
+function isPlainObject(value) {
+    return value && typeof value === 'object' && ! Array.isArray(value);
+}
+
+function blockRendererNameFromPath(path) {
+    const match = path.match(/^\/wp\/v2\/block-renderer\/(.+?)(?:\?|$)/);
+
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function blockRendererAttributes(url, options = {}) {
+    const dataAttributes = options.data?.attributes;
+
+    if (isPlainObject(dataAttributes)) {
+        return dataAttributes;
+    }
+
+    const rawAttributes = url.searchParams.get('attributes');
+
+    if (rawAttributes) {
+        try {
+            const decoded = JSON.parse(rawAttributes);
+
+            if (isPlainObject(decoded)) {
+                return decoded;
+            }
+        } catch {
+            return {};
+        }
+    }
+
+    const attributes = {};
+
+    url.searchParams.forEach((value, key) => {
+        const match = key.match(/^attributes\[(.+)]$/);
+
+        if (match) {
+            attributes[match[1]] = value;
+        }
+    });
+
+    return attributes;
+}
+
+function resolveBlockRendererRequest(path, options = {}) {
+    const endpoint = statamicBlockRendererUrl();
+    const name = blockRendererNameFromPath(path);
+
+    if (! endpoint || ! name) {
+        return undefined;
+    }
+
+    const url = new URL(path, currentOrigin());
+    return fetch(sameOriginRequestUrl(endpoint).toString(), {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            name,
+            attributes: blockRendererAttributes(url, options),
+            content: options.data?.content || url.searchParams.get('content') || '',
+            allowed_blocks: statamicAllowedBlocks(),
+        }),
+    }).then((response) => {
+        if (! response.ok) {
+            throw new Error('Unable to render block preview.');
+        }
+
+        return response.json();
+    });
+}
+
 function fallbackForKnownWordPressEndpoint(path) {
     if (/^\/wp\/v2\/icons(?:\/|\?|$)/.test(path)) {
         return resolveStatamicIconsRequest(path);
@@ -304,10 +390,6 @@ function fallbackForKnownWordPressEndpoint(path) {
         };
     }
 
-    if (/^\/wp\/v2\/block-renderer\//.test(path)) {
-        return { rendered: '' };
-    }
-
     if (/^\/wp\/v2\/media\/\d+(?:\?|$)/.test(path)) {
         const id = Number(path.match(/^\/wp\/v2\/media\/(\d+)/)?.[1] || 0);
 
@@ -330,11 +412,17 @@ function genericReadOnlyFallback(path) {
 }
 
 export function resolveStatamicApiFetchFallback(options = {}) {
+    const path = apiPath(options).replace(/^\/index\.php/, '');
+    const blockRendererFallback = resolveBlockRendererRequest(path, options);
+
+    if (blockRendererFallback !== undefined) {
+        return blockRendererFallback;
+    }
+
     if (! isReadOnly(options)) {
         return undefined;
     }
 
-    const path = apiPath(options).replace(/^\/index\.php/, '');
     const oembedFallback = fallbackForOembedProxy(path);
 
     if (oembedFallback !== undefined) {
@@ -384,7 +472,9 @@ export function installStatamicApiFetchFallbacks(apiFetch) {
         const fallback = resolveStatamicApiFetchFallback(options);
 
         if (fallback !== undefined) {
-            return Promise.resolve(options?.parse === false ? fallbackResponse(fallback) : fallback);
+            return Promise.resolve(fallback).then((data) => (
+                options?.parse === false ? fallbackResponse(data) : data
+            ));
         }
 
         return next(options);

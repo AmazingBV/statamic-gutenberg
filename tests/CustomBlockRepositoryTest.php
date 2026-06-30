@@ -6,6 +6,8 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 use Amazingbv\StatamicGutenberg\GutenbergManager;
+use Amazingbv\StatamicGutenberg\Http\Controllers\CP\BlockRendererController;
+use Illuminate\Http\Request;
 
 class CustomBlockRepositoryTest extends TestCase
 {
@@ -258,6 +260,48 @@ PHP,
         $this->assertStringContainsString('id="tabs-', $rendered);
         $this->assertStringContainsString('data-title="First"', $rendered);
         $this->assertStringContainsString('<p>Inner</p>', $rendered);
+    }
+
+    public function test_custom_dynamic_blocks_can_render_editor_preview_payloads(): void
+    {
+        $this->writeCustomBlock('custom-card', [
+            'apiVersion' => 3,
+            'name' => 'amazing/card',
+            'title' => 'Card',
+            'render' => 'file:./render.php',
+        ], [
+            'render.php' => <<<'PHP'
+<?php
+
+return '<section'.get_block_wrapper_attributes(['class' => 'custom-card-preview']).'><h2>'.esc_html($attributes['heading'] ?? '').'</h2>'.$content.'</section>';
+PHP,
+        ]);
+
+        $request = Request::create(
+            '/cp/amazingbv/statamic-gutenberg/block-renderer',
+            'POST',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode([
+                'name' => 'amazing/card',
+                'attributes' => [
+                    'heading' => 'Preview title',
+                    'align' => 'wide',
+                ],
+                'content' => '<!-- wp:paragraph --><p>Inner preview</p><!-- /wp:paragraph -->',
+                'allowed_blocks' => ['core/paragraph'],
+            ], JSON_UNESCAPED_SLASHES)
+        );
+
+        $payload = app(BlockRendererController::class)
+            ->__invoke($request, app(BlockRenderer::class))
+            ->getData(true);
+
+        $this->assertStringContainsString('class="wp-block-amazing-card alignwide custom-card-preview"', $payload['rendered']);
+        $this->assertStringContainsString('<h2>Preview title</h2>', $payload['rendered']);
+        $this->assertStringContainsString('<p>Inner preview</p>', $payload['rendered']);
     }
 
     public function test_custom_dynamic_block_render_files_support_wordpress_i18n_calls(): void

@@ -702,6 +702,15 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         () => normalizeAllowedBlocks(config, meta),
         [config, meta],
     );
+
+    if (typeof window !== 'undefined') {
+        if (meta?.blockRendererUrl) {
+            window.StatamicGutenbergBlockRendererUrl = meta.blockRendererUrl;
+        }
+
+        window.StatamicGutenbergAllowedBlocks = allowedBlockTypes;
+    }
+
     const rawPatternSettings = isPlainObject(meta?.patterns)
         ? meta.patterns
         : (typeof window !== 'undefined' && isPlainObject(window.StatamicGutenbergPatterns)

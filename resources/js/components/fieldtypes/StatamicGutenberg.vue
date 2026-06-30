@@ -63,6 +63,14 @@ function exposeEditorMeta(meta) {
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
 
+    if (meta?.blockRendererUrl) {
+        window.StatamicGutenbergBlockRendererUrl = meta.blockRendererUrl;
+    }
+
+    if (Array.isArray(meta?.allowedBlocks)) {
+        window.StatamicGutenbergAllowedBlocks = meta.allowedBlocks;
+    }
+
     if (meta?.patterns) {
         window.StatamicGutenbergPatterns = meta.patterns;
     }
