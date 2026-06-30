@@ -227,14 +227,19 @@ function initTabs(root = document) {
         }
 
         tabs.dataset.sgbTabsReady = 'true';
-        const tabButtons = Array.from(tabs.querySelectorAll('.wp-block-tab'));
-        const panels = Array.from(tabs.querySelectorAll('.wp-block-tab-panel'));
+        const tabList = tabs.querySelector(':scope > .wp-block-tab-list, :scope > .wp-block-tabs-list');
+        const panelGroup = tabs.querySelector(':scope > .wp-block-tab-panels');
+        const tabButtons = tabList
+            ? directChildren(tabList, 'wp-block-tab')
+            : directChildren(tabs, 'wp-block-tab');
+        const panels = panelGroup
+            ? directChildren(panelGroup, 'wp-block-tab-panel')
+            : directChildren(tabs, 'wp-block-tab-panel');
 
         if (! tabButtons.length || ! panels.length) {
             return;
         }
 
-        const tabList = tabs.querySelector('.wp-block-tab-list, .wp-block-tabs-list');
         tabList?.setAttribute('role', 'tablist');
 
         const activeFromMarkup = Number.parseInt(tabs.dataset.sgbActiveTabIndex || '0', 10);
