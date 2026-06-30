@@ -1110,6 +1110,11 @@ class BlockRenderer
     private function renderHeading(Block $block, array $options): string
     {
         $html = trim($block->renderableHtml());
+        $classes = ['wp-block-heading'];
+
+        if ($this->truthy($block->attribute('fitText', false))) {
+            $classes[] = 'has-fit-text';
+        }
 
         if ($html === '') {
             $content = trim((string) $block->attribute('content', ''));
@@ -1119,13 +1124,16 @@ class BlockRenderer
             }
 
             $level = max(1, min(6, (int) $block->attribute('level', 2)));
-            $html = sprintf('<h%d>%s</h%d>', $level, $content, $level);
-        }
 
-        $classes = ['wp-block-heading'];
-
-        if ($this->truthy($block->attribute('fitText', false))) {
-            $classes[] = 'has-fit-text';
+            return $this->sanitize(sprintf(
+                '<h%d%s>%s</h%d>',
+                $level,
+                $this->fallbackRootAttributes($block, [
+                    'class' => implode(' ', $classes),
+                ]),
+                $content,
+                $level
+            ), $options);
         }
 
         return $this->addClassesToFirstElement(
@@ -1842,11 +1850,16 @@ class BlockRenderer
                 'alt' => is_scalar($alt) ? (string) $alt : '',
             ]);
 
-            return $image === '' ? '' : '<figure class="wp-block-image">'.$image.'</figure>';
+            return $image === '' ? '' : '<figure'.$this->fallbackRootAttributes($block, [
+                'class' => 'wp-block-image',
+            ]).'>'.$image.'</figure>';
         }
 
         return sprintf(
-            '<figure class="wp-block-image"><img src="%s" alt="%s"></figure>',
+            '<figure%s><img src="%s" alt="%s"></figure>',
+            $this->fallbackRootAttributes($block, [
+                'class' => 'wp-block-image',
+            ]),
             e($url),
             e($alt)
         );

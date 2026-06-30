@@ -668,6 +668,20 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<h2', $rendered);
     }
 
+    public function test_it_applies_wrapper_supports_to_constructed_headings(): void
+    {
+        $html = '<!-- wp:heading {"level":3,"content":"Title <em>here</em><script>alert(1)</script>","align":"wide","anchor":"heading-one","className":"extra-heading","textColor":"blue","fontSize":"large","style":{"typography":{"textAlign":"right"},"spacing":{"margin":{"top":"1rem"}}}} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<h3', $rendered);
+        $this->assertStringContainsString('class="wp-block-heading alignwide extra-heading has-blue-color has-text-color has-large-font-size has-text-align-right"', $rendered);
+        $this->assertStringContainsString('id="heading-one"', $rendered);
+        $this->assertStringContainsString('style="margin-top: 1rem"', $rendered);
+        $this->assertStringContainsString('Title <em>here</em>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+    }
+
     public function test_it_adds_lightbox_frontend_markup_to_enabled_images(): void
     {
         $html = '<!-- wp:image {"lightbox":{"enabled":true}} --><figure class="wp-block-image"><img src="/assets/photo.jpg" alt="Photo"></figure><!-- /wp:image -->';
@@ -704,14 +718,29 @@ class BlockRendererTest extends TestCase
     {
         $this->bindFakeAsset('assets::hero.jpg');
 
-        $html = '<!-- wp:image {"id":"assets::hero.jpg"} /-->';
+        $html = '<!-- wp:image {"id":"assets::hero.jpg","align":"wide","anchor":"image-one","className":"image-extra","style":{"spacing":{"margin":{"top":"1rem"}},"border":{"radius":"16px"}}} /-->';
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
-        $this->assertStringContainsString('class="wp-block-image"', $rendered);
+        $this->assertStringContainsString('class="wp-block-image alignwide image-extra"', $rendered);
+        $this->assertStringContainsString('id="image-one"', $rendered);
+        $this->assertStringContainsString('margin-top: 1rem', $rendered);
+        $this->assertStringContainsString('border-radius: 16px', $rendered);
         $this->assertStringContainsString('src="/storage/assets/hero.jpg"', $rendered);
         $this->assertStringContainsString('alt="Hero alt"', $rendered);
         $this->assertStringContainsString('width="1200"', $rendered);
         $this->assertStringContainsString('height="800"', $rendered);
+    }
+
+    public function test_it_constructs_core_images_from_urls_with_wrapper_supports(): void
+    {
+        $html = '<!-- wp:image {"url":"/storage/photo.jpg","alt":"Photo","align":"wide","anchor":"image-url-one","className":"image-url-extra","style":{"spacing":{"margin":{"bottom":"1.5rem"}}}} /-->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-image alignwide image-url-extra"', $rendered);
+        $this->assertStringContainsString('id="image-url-one"', $rendered);
+        $this->assertStringContainsString('margin-bottom: 1.5rem', $rendered);
+        $this->assertStringContainsString('src="/storage/photo.jpg"', $rendered);
+        $this->assertStringContainsString('alt="Photo"', $rendered);
     }
 
     public function test_it_renders_icon_blocks_with_wrapper_supports_and_accessible_label(): void
