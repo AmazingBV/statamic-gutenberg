@@ -147,7 +147,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textColumns":"2","textDecoration":"underline","textIndent":"1.5em","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}},"heading":{"color":{"text":"#123456"},"typography":{"fontWeight":"800"}},"button":{"color":{"text":"#111111","background":"#abcdef"},"border":{"radius":"999px"}},"caption":{"typography":{"fontSize":"0.875rem"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textColumns":"2","textDecoration":"underline","textIndent":"1.5em","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}},"heading":{"color":{"text":"#123456"},"typography":{"fontWeight":"800"}},"button":{"color":{"text":"#111111","background":"#abcdef"},"border":{"radius":"999px"}},"caption":{"typography":{"fontSize":"0.875rem"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"position":{"type":"sticky","top":"0px"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -162,6 +162,7 @@ PHP,
         $this->assertStringContainsString('has-large-font-size', $rendered);
         $this->assertStringContainsString('has-system-sans-font-family', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
+        $this->assertStringContainsString('is-position-sticky', $rendered);
         $this->assertStringContainsString('has-link-color', $rendered);
         $this->assertMatchesRegularExpression('/wp-elements-[a-f0-9]{10}/', $rendered);
         $this->assertStringContainsString('data-statamic-gutenberg-element-styles', $rendered);
@@ -209,6 +210,9 @@ PHP,
         $this->assertStringContainsString('min-height: 12rem', $rendered);
         $this->assertStringContainsString('min-width: 20rem', $rendered);
         $this->assertStringContainsString('width: 50%', $rendered);
+        $this->assertStringContainsString('position: sticky', $rendered);
+        $this->assertStringContainsString('top: 0px', $rendered);
+        $this->assertStringContainsString('z-index: 10', $rendered);
         $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $rendered);
         $this->assertStringNotContainsString('javascript:', $rendered);
     }

@@ -43,6 +43,7 @@ class Sanitizer
         'border-top-style',
         'border-top-width',
         'border-width',
+        'bottom',
         'box-shadow',
         'color',
         'column-count',
@@ -71,6 +72,7 @@ class Sanitizer
         'grid-template-rows',
         'height',
         'justify-content',
+        'left',
         'letter-spacing',
         'line-height',
         'margin',
@@ -92,13 +94,17 @@ class Sanitizer
         'place-content',
         'place-items',
         'place-self',
+        'position',
+        'right',
         'row-gap',
         'text-align',
         'text-decoration',
         'text-indent',
         'text-transform',
+        'top',
         'width',
         'writing-mode',
+        'z-index',
         '--wp--block-button--width',
     ];
 
@@ -223,6 +229,7 @@ class Sanitizer
     private function sanitizeStyle(string $style): string
     {
         $declarations = [];
+        $rawDeclarations = [];
 
         foreach (explode(';', $style) as $declaration) {
             if (! str_contains($declaration, ':')) {
@@ -233,6 +240,44 @@ class Sanitizer
             $property = strtolower(preg_replace('/\s+/', '', $property));
 
             if (! in_array($property, self::SAFE_STYLE_PROPERTIES, true)) {
+                continue;
+            }
+
+            $rawDeclarations[] = [$property, $value];
+        }
+
+        $hasStickyPosition = false;
+
+        foreach ($rawDeclarations as [$property, $value]) {
+            if ($property === 'position' && strtolower(trim($value)) === 'sticky') {
+                $hasStickyPosition = true;
+
+                break;
+            }
+        }
+
+        foreach ($rawDeclarations as [$property, $value]) {
+            if ($property === 'position') {
+                if (strtolower(trim($value)) !== 'sticky') {
+                    continue;
+                }
+
+                $declarations[] = 'position: sticky';
+
+                continue;
+            }
+
+            if (in_array($property, ['top', 'right', 'bottom', 'left'], true) && ! $hasStickyPosition) {
+                continue;
+            }
+
+            if ($property === 'z-index') {
+                if (! $hasStickyPosition || ! preg_match('/^-?\d+$/', trim($value))) {
+                    continue;
+                }
+
+                $declarations[] = 'z-index: '.trim($value);
+
                 continue;
             }
 

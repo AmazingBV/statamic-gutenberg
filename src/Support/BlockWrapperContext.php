@@ -145,6 +145,10 @@ class BlockWrapperContext
         if ($shadow) {
             $classes[] = "has-{$shadow}-box-shadow";
         }
+
+        if (is_array($style) && self::positionType($style['position'] ?? null) === 'sticky') {
+            $classes[] = 'is-position-sticky';
+        }
     }
 
     private static function styleDeclarations(mixed $style): array
@@ -163,8 +167,37 @@ class BlockWrapperContext
             ...self::typographyDeclarations($style['typography'] ?? []),
             ...self::borderDeclarations($style['border'] ?? []),
             ...self::dimensionsDeclarations($style['dimensions'] ?? []),
+            ...self::positionDeclarations($style['position'] ?? []),
             self::declaration('box-shadow', $style['shadow'] ?? null),
         ]));
+    }
+
+    private static function positionDeclarations(mixed $position): array
+    {
+        if (self::positionType($position) !== 'sticky') {
+            return [];
+        }
+
+        $declarations = ['position: sticky'];
+
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $declarations[] = self::declaration($side, is_array($position) ? ($position[$side] ?? null) : null);
+        }
+
+        $declarations[] = 'z-index: 10';
+
+        return array_values(array_filter($declarations));
+    }
+
+    private static function positionType(mixed $position): ?string
+    {
+        if (! is_array($position)) {
+            return null;
+        }
+
+        $type = self::safeSlug($position['type'] ?? null);
+
+        return $type === 'sticky' ? $type : null;
     }
 
     private static function backgroundDeclarations(mixed $background): array

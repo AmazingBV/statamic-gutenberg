@@ -438,6 +438,40 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('url(', $rendered);
     }
 
+    public function test_it_renders_sticky_position_support_without_allowing_other_position_types(): void
+    {
+        $html = implode('', [
+            '<!-- wp:group {"style":{"position":{"type":"sticky","top":"0px","left":"calc(1rem + 2px)","right":"javascript:alert(1)"}}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Sticky</p><!-- /wp:paragraph --></div><!-- /wp:group -->',
+            '<!-- wp:group {"style":{"position":{"type":"fixed","top":"0px"}}} --><div class="wp-block-group"><!-- wp:paragraph --><p>Fixed</p><!-- /wp:paragraph --></div><!-- /wp:group -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('is-position-sticky', $rendered);
+        $this->assertStringContainsString('position: sticky', $rendered);
+        $this->assertStringContainsString('top: 0px', $rendered);
+        $this->assertStringContainsString('left: calc(1rem + 2px)', $rendered);
+        $this->assertStringContainsString('z-index: 10', $rendered);
+        $this->assertStringNotContainsString('right: javascript', $rendered);
+        $this->assertStringNotContainsString('position: fixed', $rendered);
+        $this->assertStringNotContainsString('is-position-fixed', $rendered);
+    }
+
+    public function test_sanitizer_only_preserves_offsets_when_position_is_sticky(): void
+    {
+        $html = implode('', [
+            '<!-- wp:group --><div class="wp-block-group" style="position:sticky;top:0px;z-index:10"><p>Sticky</p></div><!-- /wp:group -->',
+            '<!-- wp:group --><div class="wp-block-group" style="top:0px;z-index:10;position:absolute"><p>Absolute</p></div><!-- /wp:group -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('position: sticky', $rendered);
+        $this->assertStringContainsString('top: 0px', $rendered);
+        $this->assertStringContainsString('z-index: 10', $rendered);
+        $this->assertStringNotContainsString('position: absolute', $rendered);
+    }
+
     public function test_it_preserves_text_alignment_and_color_markup(): void
     {
         $html = implode('', [
