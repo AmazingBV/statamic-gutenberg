@@ -135,6 +135,7 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('supports: STATAMIC_BLOCK_SUPPORTS');
         expect(source).toContain('supports: STATAMIC_DEPRECATED_SUPPORTS');
         expect(source).toContain('<RichText.Content tagName="p" value={attributes.text} />');
+        expect(source).toContain('save: () => null');
         expect(source).toContain('save: (props) => saveStatamicHero(props, LEGACY_STATAMIC_BUTTON_CLASS)');
         expect(source).toContain('save: (props) => saveStatamicCta(props, LEGACY_STATAMIC_BUTTON_CLASS)');
         expect(source).toContain('deprecated: [');

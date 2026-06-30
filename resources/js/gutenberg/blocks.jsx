@@ -360,6 +360,11 @@ function registerStatamicBlocks() {
             deprecated: [
                 {
                     attributes: STATAMIC_HERO_ATTRIBUTES,
+                    supports: STATAMIC_BLOCK_SUPPORTS,
+                    save: () => null,
+                },
+                {
+                    attributes: STATAMIC_HERO_ATTRIBUTES,
                     supports: STATAMIC_DEPRECATED_SUPPORTS,
                     save: (props) => saveStatamicHero(props, LEGACY_STATAMIC_BUTTON_CLASS),
                 },
@@ -417,6 +422,11 @@ function registerStatamicBlocks() {
             },
             save: saveStatamicCta,
             deprecated: [
+                {
+                    attributes: STATAMIC_CTA_ATTRIBUTES,
+                    supports: STATAMIC_BLOCK_SUPPORTS,
+                    save: () => null,
+                },
                 {
                     attributes: STATAMIC_CTA_ATTRIBUTES,
                     supports: STATAMIC_DEPRECATED_SUPPORTS,
