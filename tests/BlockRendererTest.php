@@ -139,6 +139,26 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('has-blue-background-color', $rendered);
     }
 
+    public function test_it_constructs_math_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:math {"latex":"x^2=5","mathML":"<mrow><msup><mi>x</mi><mn>2</mn></msup><mo>=</mo><mn>5</mn></mrow><script>alert(1)</script>"} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-math"', $rendered);
+        $this->assertStringContainsString('<math display="block"><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>=</mo><mn>5</mn></mrow></math>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+    }
+
+    public function test_it_preserves_saved_math_markup(): void
+    {
+        $html = '<!-- wp:math {"latex":"x"} --><div class="wp-block-math"><math display="block"><mrow><mi>x</mi></mrow></math></div><!-- /wp:math -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertSame('<div class="wp-block-math"><math display="block"><mrow><mi>x</mi></mrow></math></div>', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];

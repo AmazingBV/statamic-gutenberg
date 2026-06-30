@@ -172,6 +172,7 @@ class BlockRenderer
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
             'core/image' => $this->renderImage($block, $options),
+            'core/math' => $this->renderMath($block, $options),
             'core/video' => $this->renderVideo($block, $options),
             default => $this->renderStaticOrFallbackCoreBlock($block, $inner, $options),
         };
@@ -1243,6 +1244,27 @@ class BlockRenderer
             ]),
             $tag === 'hr' ? ' /' : ''
         ).($tag === 'div' ? '</div>' : '');
+    }
+
+    private function renderMath(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html === '') {
+            $latex = trim((string) $block->attribute('latex', ''));
+            $mathML = trim((string) $block->attribute('mathML', ''));
+
+            if ($latex === '' || $mathML === '') {
+                return '';
+            }
+
+            $math = str_starts_with(ltrim($mathML), '<math')
+                ? $mathML
+                : '<math display="block">'.$mathML.'</math>';
+            $html = '<div class="wp-block-math">'.$math.'</div>';
+        }
+
+        return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-math'], ['div']);
     }
 
     private function renderIcon(Block $block, array $options): string
