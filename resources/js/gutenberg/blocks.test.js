@@ -203,6 +203,17 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain("assignThemePreset(next, ['shadow', 'presets'], shadowPresets);");
     });
 
+    it('inserts selected Statamic gallery assets as nested image blocks', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+
+        expect(source).toContain('createImageBlock');
+        expect(source).toContain("selectedBlock?.name === 'core/gallery'");
+        expect(source).toContain('multiple: Boolean(options.multiple || isSelectedGallery)');
+        expect(source).toContain('selectedAssets.map((selectedAsset) => createImageBlock(selectedAsset))');
+        expect(source).toContain('uploaded.map((asset) => createImageBlock(asset))');
+        expect(source).toContain('assetPicker?.multiple');
+    });
+
     it('adds native-style editor controls for history, list view and code mode', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const windowSource = fs.readFileSync('resources/js/gutenberg/GutenbergWindow.jsx', 'utf8');

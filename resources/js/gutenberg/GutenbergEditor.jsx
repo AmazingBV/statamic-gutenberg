@@ -32,6 +32,7 @@ import { applyPatternSettings, filterPatternPayload } from './patternSettings';
 import {
     attributesForAssetBlock,
     createAssetBlock,
+    createImageBlock,
     createMediaPayload,
     normalizeAllowedBlocks,
     parseSerialized,
@@ -1018,6 +1019,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const openAssetPicker = useCallback((options = {}) => {
         const requestedViaMediaUpload = Object.prototype.hasOwnProperty.call(options, 'allowedTypes')
             || typeof options.onSelect === 'function';
+        const isSelectedGallery = ! requestedViaMediaUpload && selectedBlock?.name === 'core/gallery';
         const type = typeFromAllowedTypes(options.allowedTypes)
             || supportedTypeForBlock(selectedBlock?.name)
             || (requestedViaMediaUpload ? 'file' : 'image');
@@ -1038,6 +1040,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             accept: filter.accept,
             extensions: filter.extensions,
             mimeTypes: filter.mimeTypes,
+            multiple: Boolean(options.multiple || isSelectedGallery),
             title: ASSET_TYPE_LABELS[type] || 'Assets',
         });
     }, [selectedBlock?.name]);
@@ -1073,13 +1076,24 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const insertSelectedAssets = useCallback(() => {
         const callback = mediaPickerCallbackRef.current;
 
-        if (! callback?.multiple || ! selectedAssets.length) {
+        if (! selectedAssets.length) {
             return;
         }
 
-        callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)));
+        if (callback?.multiple) {
+            callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)));
+        } else if (selectedBlock?.name === 'core/gallery') {
+            insertBlocks(
+                selectedAssets.map((selectedAsset) => createImageBlock(selectedAsset)),
+                undefined,
+                selectedBlock.clientId,
+            );
+        } else {
+            return;
+        }
+
         closeAssetPicker();
-    }, [closeAssetPicker, selectedAssets]);
+    }, [closeAssetPicker, insertBlocks, selectedAssets, selectedBlock]);
 
     const selectAsset = useCallback((asset) => {
         const callback = mediaPickerCallbackRef.current;
@@ -1094,6 +1108,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             const media = createMediaPayload(asset);
             callback.onSelect(media);
             closeAssetPicker();
+
+            return;
+        }
+
+        if (selectedBlock?.name === 'core/gallery') {
+            toggleSelectedAsset(asset);
 
             return;
         }
@@ -1178,6 +1198,17 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                     return;
                 }
 
+                if (selectedBlock?.name === 'core/gallery') {
+                    insertBlocks(
+                        uploaded.map((asset) => createImageBlock(asset)),
+                        undefined,
+                        selectedBlock.clientId,
+                    );
+                    closeAssetPicker();
+
+                    return;
+                }
+
                 selectAsset(uploaded[0]);
             }
         } catch (error) {
@@ -1185,7 +1216,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         } finally {
             setAssetsUploading(false);
         }
-    }, [assetFolder, assetPicker?.type, closeAssetPicker, selectAsset, uploadFiles]);
+    }, [assetFolder, assetPicker?.type, closeAssetPicker, insertBlocks, selectAsset, selectedBlock, uploadFiles]);
 
     const isFullscreen = variant === 'fullscreen';
 
@@ -1300,7 +1331,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         () => new Set(selectedAssets.map((asset) => assetKey(asset))),
         [selectedAssets],
     );
-    const isMultipleAssetPicker = Boolean(mediaPickerCallbackRef.current?.multiple);
+    const isMultipleAssetPicker = Boolean(mediaPickerCallbackRef.current?.multiple || assetPicker?.multiple);
 
     const assetBrowser = assetPicker ? (
         <div className="sgb-assets-modal" role="dialog" aria-modal="true" aria-label="Statamic assets">
