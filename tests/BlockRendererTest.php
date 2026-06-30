@@ -113,6 +113,19 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('<script>', $rendered);
     }
 
+    public function test_it_constructs_spacer_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:spacer {"height":"var:preset|spacing|50","width":"20px","align":"wide","anchor":"spacer-one"} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<div', $rendered);
+        $this->assertStringContainsString('class="wp-block-spacer alignwide"', $rendered);
+        $this->assertStringContainsString('id="spacer-one"', $rendered);
+        $this->assertStringContainsString('aria-hidden="true"', $rendered);
+        $this->assertStringContainsString('style="height: var(--wp--preset--spacing--50); width: 20px"', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];

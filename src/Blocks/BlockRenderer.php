@@ -164,6 +164,7 @@ class BlockRenderer
                 'data-sgb-tab-label' => (string) $block->attribute('label', ''),
             ]),
             'core/audio' => $this->renderAudio($block, $options),
+            'core/spacer' => $this->renderSpacer($block, $options),
             'core/more' => $this->renderMoreMarker($block, $options),
             'core/nextpage' => $this->renderNextPageMarker($block, $options),
             'core/embed' => $this->renderEmbed($block, $options),
@@ -1158,6 +1159,33 @@ class BlockRenderer
                 $audio->setAttribute('controls', 'controls');
             }
         });
+    }
+
+    private function renderSpacer(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html !== '') {
+            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-spacer'], ['div']);
+        }
+
+        $attributes = $block->attributes();
+        $style = $block->attribute('style', []);
+        $selfStretch = is_array($style) ? (string) ($style['layout']['selfStretch'] ?? '') : '';
+        $heightValue = array_key_exists('height', $attributes) || ! in_array($selfStretch, ['fill', 'fit'], true)
+            ? $this->safeStyleValue($block->attribute('height', '100px'))
+            : null;
+        $widthValue = $this->safeStyleValue($block->attribute('width'));
+        $styles = array_filter([
+            $heightValue ? 'height: '.$heightValue : null,
+            $widthValue ? 'width: '.$widthValue : null,
+        ]);
+
+        return '<div'.$this->fallbackRootAttributes($block, [
+            'class' => 'wp-block-spacer',
+            'aria-hidden' => 'true',
+            'style' => implode('; ', $styles),
+        ]).'></div>';
     }
 
     private function renderIcon(Block $block, array $options): string
