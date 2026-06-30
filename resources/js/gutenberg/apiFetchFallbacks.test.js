@@ -3,7 +3,7 @@ import {
     installStatamicApiFetchFallbacks,
     resolveStatamicApiFetchFallback,
 } from './apiFetchFallbacks';
-import { createMediaPayload } from './serialization';
+import { createMediaPayload, parseSerialized } from './serialization';
 
 describe('Statamic Gutenberg apiFetch fallbacks', () => {
     it('returns standalone responses for read-only WordPress REST endpoints', () => {
@@ -40,6 +40,60 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
             title: { raw: 'Video', rendered: 'Video' },
             caption: { raw: 'Caption', rendered: 'Caption' },
             type: 'attachment',
+        });
+    });
+
+    it('hydrates persisted Statamic media identities when serialized content is reopened', () => {
+        parseSerialized([
+            '<!-- wp:image {"id":12345,"statamicId":"assets::hero.jpg","url":"/storage/assets/hero.jpg","alt":"Hero"} --><figure class="wp-block-image"><img src="/storage/assets/hero.jpg" alt="Hero"></figure><!-- /wp:image -->',
+            '<!-- wp:cover {"id":12346,"statamicId":"assets::cover.jpg","url":"/storage/assets/cover.jpg","alt":"Cover"} /-->',
+            '<!-- wp:audio {"id":12347,"statamicId":"assets::podcast.mp3","src":"/storage/assets/podcast.mp3","caption":"Episode"} /-->',
+            '<!-- wp:file {"id":12348,"statamicId":"assets::brochure.pdf","href":"/storage/assets/brochure.pdf","fileName":"Brochure.pdf"} /-->',
+            '<!-- wp:media-text {"mediaId":12349,"statamicId":"assets::media.jpg","mediaUrl":"/storage/assets/media.jpg","mediaAlt":"Media","mediaType":"image"} --><div class="wp-block-media-text"><figure class="wp-block-media-text__media"><img src="/storage/assets/media.jpg" alt="Media"></figure><div class="wp-block-media-text__content"></div></div><!-- /wp:media-text -->',
+            '<!-- wp:video {"id":12350,"statamicId":"assets::movie.mp4","src":"/storage/assets/movie.mp4","caption":"Movie"} /-->',
+        ].join(''));
+
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12345?context=edit' })).toMatchObject({
+            id: 12345,
+            statamicId: 'assets::hero.jpg',
+            source_url: '/storage/assets/hero.jpg',
+            alt_text: 'Hero',
+            media_type: 'image',
+        });
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12346?context=edit' })).toMatchObject({
+            id: 12346,
+            statamicId: 'assets::cover.jpg',
+            source_url: '/storage/assets/cover.jpg',
+            alt_text: 'Cover',
+            media_type: 'image',
+        });
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12347?context=edit' })).toMatchObject({
+            id: 12347,
+            statamicId: 'assets::podcast.mp3',
+            source_url: '/storage/assets/podcast.mp3',
+            caption: { raw: 'Episode', rendered: 'Episode' },
+            media_type: 'audio',
+        });
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12348?context=edit' })).toMatchObject({
+            id: 12348,
+            statamicId: 'assets::brochure.pdf',
+            source_url: '/storage/assets/brochure.pdf',
+            title: { raw: 'Brochure.pdf', rendered: 'Brochure.pdf' },
+            media_type: 'file',
+        });
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12349?context=edit' })).toMatchObject({
+            id: 12349,
+            statamicId: 'assets::media.jpg',
+            source_url: '/storage/assets/media.jpg',
+            alt_text: 'Media',
+            media_type: 'image',
+        });
+        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12350?context=edit' })).toMatchObject({
+            id: 12350,
+            statamicId: 'assets::movie.mp4',
+            source_url: '/storage/assets/movie.mp4',
+            caption: { raw: 'Movie', rendered: 'Movie' },
+            media_type: 'video',
         });
     });
 

@@ -104,8 +104,14 @@ export function parseSerializedWithValidation(value) {
     }
 
     try {
+        const content = stripTransientMediaUrls(value);
+        hydratePersistedMediaPayloadsFromSerialized(content);
+
+        const blocks = parse(content);
+        hydratePersistedMediaPayloads(blocks);
+
         return {
-            blocks: parse(stripTransientMediaUrls(value)),
+            blocks,
             valid: true,
             message: '',
         };
@@ -229,6 +235,153 @@ function registerMediaPayload(payload) {
 
 export function findRegisteredMediaPayload(id) {
     return mediaRegistry().get(Number(id)) || null;
+}
+
+function filenameFromUrl(url) {
+    if (! url || typeof url !== 'string') {
+        return '';
+    }
+
+    try {
+        const pathname = new URL(url, 'https://statamic.localhost').pathname;
+        const filename = pathname.split('/').filter(Boolean).pop() || '';
+
+        return decodeURIComponent(filename);
+    } catch {
+        const filename = url.split('?')[0].split('#')[0].split('/').filter(Boolean).pop() || '';
+
+        return filename ? decodeURIComponent(filename) : '';
+    }
+}
+
+function scalarString(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return String(value);
+    }
+
+    return typeof value === 'string' ? value : '';
+}
+
+function mediaAssetFromPersistedBlock(block = {}) {
+    const name = block.name || '';
+    const attributes = block.attributes || {};
+    const statamicId = scalarString(attributes.statamicId);
+    let id = attributes.id;
+    let url = '';
+    let type = 'file';
+    let alt = '';
+    let caption = '';
+    let title = '';
+
+    switch (name) {
+        case 'core/audio':
+            url = scalarString(attributes.src);
+            type = 'audio';
+            caption = scalarString(attributes.caption);
+            break;
+
+        case 'core/cover':
+            url = scalarString(attributes.url);
+            type = attributes.backgroundType === 'video' ? 'video' : 'image';
+            alt = scalarString(attributes.alt);
+            break;
+
+        case 'core/file':
+            url = scalarString(attributes.href) || scalarString(attributes.textLinkHref);
+            type = 'file';
+            title = scalarString(attributes.fileName) || scalarString(attributes.textLinkHref);
+            break;
+
+        case 'core/image':
+            url = scalarString(attributes.url);
+            type = 'image';
+            alt = scalarString(attributes.alt);
+            caption = scalarString(attributes.caption);
+            break;
+
+        case 'core/media-text':
+            id = attributes.mediaId;
+            url = scalarString(attributes.mediaUrl);
+            type = attributes.mediaType === 'video' ? 'video' : 'image';
+            alt = scalarString(attributes.mediaAlt);
+            break;
+
+        case 'core/video':
+            url = scalarString(attributes.src);
+            type = 'video';
+            caption = scalarString(attributes.caption);
+            break;
+
+        default:
+            return null;
+    }
+
+    if (! statamicId && ! url) {
+        return null;
+    }
+
+    title = title || filenameFromUrl(url);
+
+    return {
+        wpId: id,
+        id: statamicId || url,
+        statamicId: statamicId || url,
+        url,
+        alt,
+        caption,
+        title,
+        filename: title,
+        type,
+        media_type: type,
+    };
+}
+
+export function hydratePersistedMediaPayloads(blocks = []) {
+    if (! Array.isArray(blocks)) {
+        return;
+    }
+
+    blocks.forEach((block) => {
+        const asset = mediaAssetFromPersistedBlock(block);
+
+        if (asset) {
+            createMediaPayload(asset);
+        }
+
+        hydratePersistedMediaPayloads(block?.innerBlocks || []);
+    });
+}
+
+function hydratePersistedMediaPayloadsFromSerialized(content) {
+    if (! content || typeof content !== 'string') {
+        return;
+    }
+
+    BLOCK_COMMENT_PATTERN.lastIndex = 0;
+    let match = BLOCK_COMMENT_PATTERN.exec(content);
+
+    while (match) {
+        const isClosing = match[1] === '/';
+        const name = normalizeBlockName(match[2]);
+        const rawAttributes = (match[3] || '').trim().replace(/\/\s*$/, '').trim();
+
+        if (! isClosing && rawAttributes.startsWith('{')) {
+            try {
+                const asset = mediaAssetFromPersistedBlock({
+                    name,
+                    attributes: JSON.parse(rawAttributes),
+                });
+
+                if (asset) {
+                    createMediaPayload(asset);
+                }
+            } catch {
+                // The syntax validator reports malformed JSON before parsing reaches this point.
+            }
+        }
+
+        match = BLOCK_COMMENT_PATTERN.exec(content);
+    }
 }
 
 export function createMediaPayload(asset = {}) {
