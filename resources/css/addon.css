@@ -356,7 +356,7 @@
 .sgb-assets-modal {
     position: absolute;
     inset: 52px 0 0;
-    z-index: 10000000;
+    z-index: 2147482003;
     display: grid;
     place-items: center;
     padding: 24px;

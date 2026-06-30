@@ -176,5 +176,7 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('aria-pressed={isMultipleAssetPicker ? isSelected : undefined}', $editor);
         $this->assertStringContainsString("className={`sgb-asset\${isSelected ? ' is-selected' : ''}`}", $editor);
         $this->assertStringContainsString('.sgb-asset.is-selected', $css);
+        $this->assertStringContainsString('.sgb-assets-modal', $css);
+        $this->assertStringContainsString('z-index: 2147482003', $css);
     }
 }
