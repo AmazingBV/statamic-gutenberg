@@ -236,6 +236,37 @@ PHP,
         $this->assertStringContainsString('<p>Inner</p>', $rendered);
     }
 
+    public function test_custom_dynamic_block_render_files_support_wordpress_i18n_calls(): void
+    {
+        $this->writeCustomBlock('custom-card', [
+            'apiVersion' => 3,
+            'name' => 'amazing/card',
+            'title' => 'Card',
+            'render' => 'file:./render.php',
+        ], [
+            'render.php' => <<<'PHP'
+<?php
+
+$title = trim( $attributes['title'] ?? '' );
+
+if ( '' === $title ) {
+    $title = __( 'Tab', 'amazing-card' );
+}
+
+return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'><span>'.esc_html( $title ).'</span>'.$content.'</section>';
+PHP,
+        ]);
+
+        $html = '<!-- wp:amazing/card --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => ['core/paragraph'],
+        ]);
+
+        $this->assertStringContainsString('class="wp-block-amazing-card custom-card"', $rendered);
+        $this->assertStringContainsString('<span>Tab</span>', $rendered);
+        $this->assertStringContainsString('<p>Inner</p>', $rendered);
+    }
+
     public function test_custom_block_assets_are_served_without_exposing_php_render_files(): void
     {
         $this->writeCustomBlock('custom-card', [

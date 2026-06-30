@@ -113,7 +113,8 @@ class BlockRenderer
                 $block = $wpBlock;
 
                 ob_start();
-                $result = include $render;
+                $source = $this->rewriteWordPressTranslationCalls((string) file_get_contents($render));
+                $result = $source === null ? include $render : eval('?>'.$source);
                 $output = (string) ob_get_clean();
 
                 if (is_string($result) || $result instanceof Stringable) {
@@ -125,6 +126,82 @@ class BlockRenderer
         }
 
         return trim($this->sanitize($block->renderableHtml(), $options));
+    }
+
+    private function rewriteWordPressTranslationCalls(string|false $source): ?string
+    {
+        if (! is_string($source) || ! str_contains($source, '__')) {
+            return null;
+        }
+
+        $tokens = token_get_all($source);
+        $rewritten = '';
+        $changed = false;
+
+        foreach ($tokens as $index => $token) {
+            if (
+                is_array($token)
+                && $token[0] === T_STRING
+                && $token[1] === '__'
+                && $this->isFunctionCallToken($tokens, $index)
+            ) {
+                $rewritten .= 'sgb_wp_translate';
+                $changed = true;
+
+                continue;
+            }
+
+            $rewritten .= is_array($token) ? $token[1] : $token;
+        }
+
+        return $changed ? $rewritten : null;
+    }
+
+    private function isFunctionCallToken(array $tokens, int $index): bool
+    {
+        $next = $this->nextMeaningfulToken($tokens, $index);
+
+        if ($next !== '(') {
+            return false;
+        }
+
+        $previous = $this->previousMeaningfulToken($tokens, $index);
+
+        if (is_array($previous)) {
+            return ! in_array($previous[0], [T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION], true);
+        }
+
+        return $previous !== '\\';
+    }
+
+    private function nextMeaningfulToken(array $tokens, int $index): mixed
+    {
+        for ($i = $index + 1; $i < count($tokens); $i++) {
+            $token = $tokens[$i];
+
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token;
+        }
+
+        return null;
+    }
+
+    private function previousMeaningfulToken(array $tokens, int $index): mixed
+    {
+        for ($i = $index - 1; $i >= 0; $i--) {
+            $token = $tokens[$i];
+
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            return $token;
+        }
+
+        return null;
     }
 
     private function renderCoreBlock(Block $block, string $inner, array $options): string

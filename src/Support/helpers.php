@@ -31,17 +31,28 @@ if (! function_exists('esc_html')) {
     }
 }
 
+if (! function_exists('sgb_wp_translate')) {
+    function sgb_wp_translate(string $text, ?string $domain = null): string
+    {
+        try {
+            return function_exists('__') ? __($text) : $text;
+        } catch (\Throwable) {
+            return $text;
+        }
+    }
+}
+
 if (! function_exists('esc_html__')) {
     function esc_html__(string $text, ?string $domain = null): string
     {
-        return esc_html(function_exists('__') ? __($text) : $text);
+        return esc_html(sgb_wp_translate($text, $domain));
     }
 }
 
 if (! function_exists('esc_attr__')) {
     function esc_attr__(string $text, ?string $domain = null): string
     {
-        return esc_attr(function_exists('__') ? __($text) : $text);
+        return esc_attr(sgb_wp_translate($text, $domain));
     }
 }
 
@@ -149,6 +160,6 @@ if (! function_exists('wp_unique_id')) {
 if (! function_exists('_x')) {
     function _x(string $text, string $context, ?string $domain = null): string
     {
-        return function_exists('__') ? __($text) : $text;
+        return sgb_wp_translate($text, $domain);
     }
 }
