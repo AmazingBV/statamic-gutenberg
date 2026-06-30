@@ -169,6 +169,7 @@ class BlockRenderer
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
             'core/image' => $this->renderImage($block, $options),
+            'core/video' => $this->renderVideo($block, $options),
             default => $this->renderStaticOrFallbackCoreBlock($block, $inner, $options),
         };
     }
@@ -1073,6 +1074,47 @@ class BlockRenderer
         return $this->applyDuotone($block, $html);
     }
 
+    private function renderVideo(Block $block, array $options): string
+    {
+        $html = trim($block->renderableHtml());
+
+        if ($html === '') {
+            $src = $block->attribute('src');
+
+            if (is_scalar($src) && trim((string) $src) !== '') {
+                $html = sprintf('<figure class="wp-block-video"><video src="%s"></video></figure>', e((string) $src));
+            }
+        }
+
+        if ($html === '') {
+            return '';
+        }
+
+        $html = $this->sanitize($html, $options);
+
+        return $this->transformFirstElement($html, ['figure', 'video'], function (DOMDocument $document, DOMElement $element) use ($block): void {
+            if (strtolower($element->tagName) === 'figure') {
+                $this->addClasses($element, ['wp-block-video']);
+            }
+
+            $video = strtolower($element->tagName) === 'video'
+                ? $element
+                : $element->getElementsByTagName('video')->item(0);
+
+            if (! $video instanceof DOMElement) {
+                return;
+            }
+
+            if ($this->explicitlyFalse($block->attribute('controls'))) {
+                $video->removeAttribute('controls');
+
+                return;
+            }
+
+            $video->setAttribute('controls', 'controls');
+        });
+    }
+
     private function renderIcon(Block $block, array $options): string
     {
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
@@ -1523,5 +1565,22 @@ class BlockRenderer
     private function truthy(mixed $value): bool
     {
         return $value === true || $value === 1 || $value === '1' || $value === 'true';
+    }
+
+    private function explicitlyFalse(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value === false;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value === 0.0;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim($value)), ['0', 'false', 'no', 'off'], true);
     }
 }

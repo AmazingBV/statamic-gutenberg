@@ -77,7 +77,7 @@ class BlockRendererTest extends TestCase
             '<!-- wp:gallery --><figure class="wp-block-gallery has-nested-images columns-default"><!-- wp:image --><figure class="wp-block-image"><img src="/storage/a.jpg" alt=""></figure><!-- /wp:image --></figure><!-- /wp:gallery -->',
             '<!-- wp:table --><figure class="wp-block-table"><table><tbody><tr><td>A</td></tr></tbody></table></figure><!-- /wp:table -->',
             '<!-- wp:details --><details class="wp-block-details"><summary>More</summary><p>Details</p></details><!-- /wp:details -->',
-            '<!-- wp:video --><figure class="wp-block-video"><video controls src="/storage/movie.mp4"></video></figure><!-- /wp:video -->',
+            '<!-- wp:video --><figure class="wp-block-video"><video src="/storage/movie.mp4"></video></figure><!-- /wp:video -->',
         ]);
 
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
@@ -88,6 +88,17 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-table"', $rendered);
         $this->assertStringContainsString('class="wp-block-details"', $rendered);
         $this->assertStringContainsString('class="wp-block-video"', $rendered);
+        $this->assertStringContainsString('controls="controls"', $rendered);
+    }
+
+    public function test_it_respects_disabled_video_controls(): void
+    {
+        $html = '<!-- wp:video {"controls":false} --><figure class="wp-block-video"><video controls src="/storage/movie.mp4"></video></figure><!-- /wp:video -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-video"', $rendered);
+        $this->assertStringNotContainsString('controls="controls"', $rendered);
     }
 
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
