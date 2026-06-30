@@ -143,7 +143,19 @@ class ThemeJsonTest extends TestCase
                             'outline' => [
                                 'border' => [
                                     'color' => 'var:preset|color|brand',
+                                    'radius' => [
+                                        'topLeft' => '8px',
+                                        'topRight' => '10px',
+                                        'bottomLeft' => '12px',
+                                        'bottomRight' => '14px',
+                                    ],
                                     'style' => 'solid',
+                                    'top' => [
+                                        'color' => '#abcdef',
+                                        'style' => 'dashed',
+                                        'width' => '2px',
+                                    ],
+                                    'right' => '1px dotted #123456',
                                     'width' => '1px',
                                 ],
                                 'color' => [
@@ -203,6 +215,14 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('font-weight: 700 !important', $frontendCss);
         $this->assertStringContainsString('.sgb-content .wp-block-button.is-style-outline :is(.wp-element-button, .wp-block-button__link)', $frontendCss);
         $this->assertStringContainsString('border-color: var(--wp--preset--color--brand) !important', $frontendCss);
+        $this->assertStringContainsString('border-top-left-radius: 8px !important', $frontendCss);
+        $this->assertStringContainsString('border-top-right-radius: 10px !important', $frontendCss);
+        $this->assertStringContainsString('border-bottom-left-radius: 12px !important', $frontendCss);
+        $this->assertStringContainsString('border-bottom-right-radius: 14px !important', $frontendCss);
+        $this->assertStringContainsString('border-top-color: #abcdef !important', $frontendCss);
+        $this->assertStringContainsString('border-top-style: dashed !important', $frontendCss);
+        $this->assertStringContainsString('border-top-width: 2px !important', $frontendCss);
+        $this->assertStringContainsString('border-right: 1px dotted #123456 !important', $frontendCss);
         $this->assertStringContainsString('background-color: transparent !important', $frontendCss);
         $this->assertStringContainsString('.sgb-content .custom-theme-class', $frontendCss);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame', $payload['css']);

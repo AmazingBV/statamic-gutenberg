@@ -502,12 +502,7 @@ class ThemeJson
         }
 
         if (is_array($styles['border'] ?? null)) {
-            $declarations = array_merge($declarations, $this->propertyDeclarations($styles['border'], [
-                'color' => 'border-color',
-                'radius' => 'border-radius',
-                'style' => 'border-style',
-                'width' => 'border-width',
-            ]));
+            $declarations = array_merge($declarations, $this->borderDeclarations($styles['border']));
         }
 
         if (is_array($styles['dimensions'] ?? null)) {
@@ -529,6 +524,48 @@ class ThemeJson
                 'shadow' => 'box-shadow',
                 'natural' => 'box-shadow',
             ]));
+        }
+
+        return $declarations;
+    }
+
+    private function borderDeclarations(array $border): array
+    {
+        $declarations = $this->propertyDeclarations($border, [
+            'color' => 'border-color',
+            'style' => 'border-style',
+            'width' => 'border-width',
+        ]);
+
+        if (is_array($border['radius'] ?? null)) {
+            $declarations = array_merge($declarations, $this->propertyDeclarations($border['radius'], [
+                'topLeft' => 'border-top-left-radius',
+                'top-left' => 'border-top-left-radius',
+                'topRight' => 'border-top-right-radius',
+                'top-right' => 'border-top-right-radius',
+                'bottomLeft' => 'border-bottom-left-radius',
+                'bottom-left' => 'border-bottom-left-radius',
+                'bottomRight' => 'border-bottom-right-radius',
+                'bottom-right' => 'border-bottom-right-radius',
+            ]));
+        } else {
+            $declarations = array_merge($declarations, $this->propertyDeclarations($border, [
+                'radius' => 'border-radius',
+            ]));
+        }
+
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $value = $border[$side] ?? null;
+
+            if (is_array($value)) {
+                $declarations = array_merge($declarations, $this->propertyDeclarations($value, [
+                    'color' => "border-{$side}-color",
+                    'style' => "border-{$side}-style",
+                    'width' => "border-{$side}-width",
+                ]));
+            } elseif ($safe = $this->safeCssValue($value)) {
+                $declarations[] = "border-{$side}: ".$this->resolvePresetValue($safe);
+            }
         }
 
         return $declarations;

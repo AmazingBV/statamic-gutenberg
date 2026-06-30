@@ -145,7 +145,7 @@ return '<section'.get_block_wrapper_attributes(['class' => 'custom-card']).'>'.$
 PHP,
         ]);
 
-        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":"8px","color":"javascript:alert(1)"},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
+        $html = '<!-- wp:amazing/card {"textColor":"primary","backgroundColor":"light","gradient":"brand-gradient","fontSize":"large","fontFamily":"system-sans","borderColor":"primary","style":{"typography":{"textAlign":"center","fontFamily":"var:preset|font-family|system-sans","fontSize":"clamp(1rem, 2vw, 2rem)","fontStyle":"italic","fontWeight":"700","lineHeight":"1.4","letterSpacing":"0.01em","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb"},"spacing":{"blockGap":"var:preset|spacing|50","padding":{"top":"var:preset|spacing|40"},"margin":{"bottom":"2rem"}},"color":{"text":"var:preset|color|secondary","background":"#fff","gradient":"var:preset|gradient|brand-gradient"},"elements":{"link":{"color":{"text":"var:preset|color|primary"}}},"border":{"radius":{"topLeft":"8px","topRight":"10px","bottomLeft":"12px","bottomRight":"14px"},"color":"javascript:alert(1)","top":{"color":"var:preset|color|primary","style":"solid","width":"2px"},"right":"1px dotted #ddd","bottom":{"color":"#222","style":"dashed","width":"3px"}},"dimensions":{"aspectRatio":"16/9","height":"auto","minHeight":"12rem","minWidth":"20rem","width":"50%"},"shadow":"var:preset|shadow|natural"}} --><!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph --><!-- /wp:amazing/card -->';
         $rendered = (string) app(BlockRenderer::class)->render($html, [
             'allowed_blocks' => ['core/paragraph'],
         ]);
@@ -155,6 +155,8 @@ PHP,
         $this->assertStringContainsString('has-light-background-color', $rendered);
         $this->assertStringContainsString('has-background', $rendered);
         $this->assertStringContainsString('has-brand-gradient-gradient-background', $rendered);
+        $this->assertStringContainsString('has-primary-border-color', $rendered);
+        $this->assertStringContainsString('has-border-color', $rendered);
         $this->assertStringContainsString('has-large-font-size', $rendered);
         $this->assertStringContainsString('has-system-sans-font-family', $rendered);
         $this->assertStringContainsString('has-text-align-center', $rendered);
@@ -177,7 +179,17 @@ PHP,
         $this->assertStringContainsString('text-decoration: underline', $rendered);
         $this->assertStringContainsString('text-transform: uppercase', $rendered);
         $this->assertStringContainsString('writing-mode: horizontal-tb', $rendered);
-        $this->assertStringContainsString('border-radius: 8px', $rendered);
+        $this->assertStringContainsString('border-top-left-radius: 8px', $rendered);
+        $this->assertStringContainsString('border-top-right-radius: 10px', $rendered);
+        $this->assertStringContainsString('border-bottom-left-radius: 12px', $rendered);
+        $this->assertStringContainsString('border-bottom-right-radius: 14px', $rendered);
+        $this->assertStringContainsString('border-top-color: var(--wp--preset--color--primary)', $rendered);
+        $this->assertStringContainsString('border-top-style: solid', $rendered);
+        $this->assertStringContainsString('border-top-width: 2px', $rendered);
+        $this->assertStringContainsString('border-right: 1px dotted #ddd', $rendered);
+        $this->assertStringContainsString('border-bottom-color: #222', $rendered);
+        $this->assertStringContainsString('border-bottom-style: dashed', $rendered);
+        $this->assertStringContainsString('border-bottom-width: 3px', $rendered);
         $this->assertStringContainsString('aspect-ratio: 16/9', $rendered);
         $this->assertStringContainsString('height: auto', $rendered);
         $this->assertStringContainsString('min-height: 12rem', $rendered);

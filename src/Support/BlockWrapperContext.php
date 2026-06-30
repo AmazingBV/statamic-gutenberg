@@ -104,6 +104,13 @@ class BlockWrapperContext
             $classes[] = 'has-background';
         }
 
+        $borderColor = self::safeSlug($block->attribute('borderColor'));
+
+        if ($borderColor) {
+            $classes[] = "has-{$borderColor}-border-color";
+            $classes[] = 'has-border-color';
+        }
+
         $fontSize = self::safeSlug($block->attribute('fontSize'));
 
         if ($fontSize) {
@@ -256,12 +263,52 @@ class BlockWrapperContext
             return [];
         }
 
-        return array_values(array_filter([
+        $declarations = [
             self::declaration('border-color', $border['color'] ?? null),
             self::declaration('border-style', $border['style'] ?? null),
             self::declaration('border-width', $border['width'] ?? null),
-            self::declaration('border-radius', $border['radius'] ?? null),
-        ]));
+            ...self::borderRadiusDeclarations($border['radius'] ?? null),
+        ];
+
+        foreach (['top', 'right', 'bottom', 'left'] as $side) {
+            $declarations = [
+                ...$declarations,
+                ...self::borderSideDeclarations($side, $border[$side] ?? null),
+            ];
+        }
+
+        return array_values(array_filter($declarations));
+    }
+
+    private static function borderRadiusDeclarations(mixed $radius): array
+    {
+        if (! is_array($radius)) {
+            return [self::declaration('border-radius', $radius)];
+        }
+
+        return [
+            self::declaration('border-top-left-radius', $radius['topLeft'] ?? $radius['top-left'] ?? null),
+            self::declaration('border-top-right-radius', $radius['topRight'] ?? $radius['top-right'] ?? null),
+            self::declaration('border-bottom-left-radius', $radius['bottomLeft'] ?? $radius['bottom-left'] ?? null),
+            self::declaration('border-bottom-right-radius', $radius['bottomRight'] ?? $radius['bottom-right'] ?? null),
+        ];
+    }
+
+    private static function borderSideDeclarations(string $side, mixed $value): array
+    {
+        if (is_string($value) || is_numeric($value)) {
+            return [self::declaration("border-{$side}", $value)];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return [
+            self::declaration("border-{$side}-color", $value['color'] ?? null),
+            self::declaration("border-{$side}-style", $value['style'] ?? null),
+            self::declaration("border-{$side}-width", $value['width'] ?? null),
+        ];
     }
 
     private static function dimensionsDeclarations(mixed $dimensions): array
