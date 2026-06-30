@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { mergeBlockSettings } from './customBlockSettings';
 
 describe('custom block loading', () => {
     it('loads custom block assets before rendering the editor', () => {
@@ -25,5 +26,34 @@ describe('custom block loading', () => {
         expect(loader).toContain('registerFallbackBlocks(items)');
         expect(loader).toContain('blocks.registerBlockType(block.name');
         expect(loader).toContain('window.StatamicGutenbergCustomBlocks');
+    });
+
+    it('deep merges nested metadata supports with editor settings', () => {
+        expect(mergeBlockSettings({
+            supports: {
+                color: {
+                    text: true,
+                    background: true,
+                },
+                spacing: {
+                    padding: true,
+                },
+            },
+        }, {
+            supports: {
+                color: {
+                    gradients: true,
+                },
+            },
+        }).supports).toEqual({
+            color: {
+                text: true,
+                background: true,
+                gradients: true,
+            },
+            spacing: {
+                padding: true,
+            },
+        });
     });
 });

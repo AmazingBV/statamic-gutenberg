@@ -10,6 +10,7 @@ import * as richText from '@wordpress/rich-text';
 import * as url from '@wordpress/url';
 import * as React from 'react';
 import * as ReactJSXRuntime from 'react/jsx-runtime';
+import { mergeBlockSettings } from './customBlockSettings';
 
 const SCRIPT_REGISTRY_KEY = '__statamicGutenbergCustomBlockScripts';
 const STYLE_SELECTOR = 'link[data-sgb-custom-block-style]';
@@ -144,21 +145,6 @@ function replaceFallbackBlock(name, settings, getBlockType, unregisterBlockType)
 
 function hasCustomEdit(settings) {
     return Boolean(settings && typeof settings === 'object' && typeof settings.edit === 'function');
-}
-
-function mergeBlockSettings(metadata = {}, settings = {}) {
-    return {
-        ...metadata,
-        ...settings,
-        attributes: {
-            ...(metadata.attributes || {}),
-            ...(settings.attributes || {}),
-        },
-        supports: {
-            ...(metadata.supports || {}),
-            ...(settings.supports || {}),
-        },
-    };
 }
 
 function appendStyles(styles) {
