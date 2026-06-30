@@ -296,10 +296,14 @@ export function attributesForAssetBlock(blockName, asset = {}) {
     const media = createMediaPayload(asset);
     const url = media.url;
     const title = media.title || media.filename || '';
+    const assetIdentity = {
+        statamicId: media.statamicId,
+    };
 
     switch (blockName) {
         case 'core/audio':
             return {
+                ...assetIdentity,
                 id: media.id,
                 src: url,
                 caption: media.caption || '',
@@ -307,6 +311,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/cover':
             return {
+                ...assetIdentity,
                 id: media.id,
                 url,
                 alt: media.alt || '',
@@ -316,6 +321,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/file':
             return {
+                ...assetIdentity,
                 id: media.id,
                 href: url,
                 fileName: title,
@@ -325,6 +331,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/media-text':
             return {
+                ...assetIdentity,
                 mediaId: media.id,
                 mediaUrl: url,
                 mediaAlt: media.alt || '',
@@ -334,6 +341,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
 
         case 'core/video':
             return {
+                ...assetIdentity,
                 id: media.id,
                 src: url,
                 controls: true,
@@ -343,6 +351,7 @@ export function attributesForAssetBlock(blockName, asset = {}) {
         case 'core/image':
         default:
             return {
+                ...assetIdentity,
                 id: media.id,
                 url,
                 alt: media.alt || '',

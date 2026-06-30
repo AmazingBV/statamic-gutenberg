@@ -1,6 +1,14 @@
 export const WIDE_FULL_ALIGNMENTS = ['wide', 'full'];
 export const TEXT_FORMATTING_BLOCKS = ['core/paragraph', 'core/heading'];
 export const TEXT_ALIGNMENTS = ['left', 'center', 'right', 'justify'];
+export const STATAMIC_MEDIA_IDENTITY_BLOCKS = [
+    'core/audio',
+    'core/cover',
+    'core/file',
+    'core/image',
+    'core/media-text',
+    'core/video',
+];
 
 export function withWideFullAlignSupport(settings) {
     const supports = { ...(settings.supports || {}) };
@@ -44,6 +52,25 @@ export function isTextFormattingBlock(name) {
     return TEXT_FORMATTING_BLOCKS.includes(name);
 }
 
+export function withStatamicMediaIdentitySupport(settings, name) {
+    if (! STATAMIC_MEDIA_IDENTITY_BLOCKS.includes(name)) {
+        return settings;
+    }
+
+    const attributes = { ...(settings.attributes || {}) };
+
+    if (! attributes.statamicId?.type) {
+        attributes.statamicId = {
+            type: 'string',
+        };
+    }
+
+    return {
+        ...settings,
+        attributes,
+    };
+}
+
 export function withTextFormattingSupport(settings, name) {
     if (! isTextFormattingBlock(name)) {
         return settings;
@@ -81,7 +108,7 @@ export function withTextFormattingSupport(settings, name) {
 }
 
 export function withStatamicBlockSupport(settings, name) {
-    return withTextFormattingSupport(withWideFullAlignSupport(settings, name), name);
+    return withStatamicMediaIdentitySupport(withTextFormattingSupport(withWideFullAlignSupport(settings, name), name), name);
 }
 
 export function textAlignClassName(attributes = {}) {

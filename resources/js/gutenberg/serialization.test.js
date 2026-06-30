@@ -39,6 +39,7 @@ beforeAll(() => {
             category: 'media',
             attributes: {
                 id: { type: 'string' },
+                statamicId: { type: 'string' },
                 url: { type: 'string' },
                 alt: { type: 'string' },
             },
@@ -97,6 +98,7 @@ describe('Gutenberg serialization helpers', () => {
         expect(block.attributes.url).toBe('/storage/assets/hero.jpg');
         expect(block.attributes.alt).toBe('Hero');
         expect(block.attributes.id).toEqual(expect.any(Number));
+        expect(block.attributes.statamicId).toBe('assets::hero.jpg');
     });
 
     it('creates WordPress media payloads with stable numeric ids and Statamic ids', () => {
@@ -146,6 +148,9 @@ describe('Gutenberg serialization helpers', () => {
         expect(imageAttributes.id).toEqual(expect.any(Number));
         expect(coverAttributes.id).toBe(imageAttributes.id);
         expect(mediaTextAttributes.mediaId).toBe(imageAttributes.id);
+        expect(imageAttributes.statamicId).toBe('assets::hero.jpg');
+        expect(coverAttributes.statamicId).toBe('assets::hero.jpg');
+        expect(mediaTextAttributes.statamicId).toBe('assets::hero.jpg');
     });
 
     it('enables controls for inserted video asset blocks', () => {

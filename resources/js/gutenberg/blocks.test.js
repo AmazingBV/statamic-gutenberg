@@ -2,10 +2,12 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     addTextAlignSaveProps,
+    STATAMIC_MEDIA_IDENTITY_BLOCKS,
     TEXT_ALIGNMENTS,
     TEXT_FORMATTING_BLOCKS,
     WIDE_FULL_ALIGNMENTS,
     textAlignClassName,
+    withStatamicMediaIdentitySupport,
     withStatamicBlockSupport,
     withTextFormattingSupport,
     withWideFullAlignSupport,
@@ -81,6 +83,15 @@ describe('registerGutenbergBlocks', () => {
         expect(withTextFormattingSupport({ supports: {} }, 'core/image').supports).toEqual({});
     });
 
+    it('registers Statamic asset identity on core media blocks', () => {
+        expect(STATAMIC_MEDIA_IDENTITY_BLOCKS).toContain('core/image');
+        expect(STATAMIC_MEDIA_IDENTITY_BLOCKS).toContain('core/media-text');
+        expect(withStatamicMediaIdentitySupport({ attributes: {} }, 'core/image').attributes.statamicId)
+            .toEqual({ type: 'string' });
+        expect(withStatamicMediaIdentitySupport({ attributes: {} }, 'core/paragraph').attributes)
+            .toEqual({});
+    });
+
     it('combines align, text formatting and text align save props', () => {
         const settings = withStatamicBlockSupport({ supports: { align: ['wide'] }, attributes: {} }, 'core/heading');
 
@@ -107,6 +118,9 @@ describe('registerGutenbergBlocks', () => {
         )).toEqual({
             className: 'wp-block-image',
         });
+
+        expect(withStatamicBlockSupport({ supports: {}, attributes: {} }, 'core/image').attributes.statamicId)
+            .toEqual({ type: 'string' });
     });
 
     it('adds editor wrapper styles for group flex and grid layouts', () => {
