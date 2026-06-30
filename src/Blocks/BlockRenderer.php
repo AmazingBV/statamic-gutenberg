@@ -824,9 +824,10 @@ class BlockRenderer
             ? $this->fallbackRootAttributeArray($block, array_merge($fragment['attributes'], $extraAttributes))
             : $this->fallbackRootAttributeArray($block, array_merge(['class' => $baseClass], $extraAttributes));
         $attributes = $this->applyLayoutAttributes($block, $attributes, $baseClass);
+        $hasParsedInnerBlocks = count($block->innerBlocks()) > 0;
         $content = $inner !== ''
             ? $inner
-            : ($hasSavedWrapper ? (string) $fragment['html'] : $renderableHtml);
+            : ($hasParsedInnerBlocks ? '' : ($hasSavedWrapper ? (string) $fragment['html'] : $renderableHtml));
 
         return sprintf(
             '<%s%s>%s</%s>',
