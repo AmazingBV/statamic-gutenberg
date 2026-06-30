@@ -776,8 +776,6 @@ class ThemeJson
         $special = [
             'core/paragraph' => 'p',
             'core/heading' => '.wp-block-heading',
-            'statamic/hero' => ':is(.wp-block-statamic-hero, .sgb-custom-block--hero)',
-            'statamic/cta' => ':is(.wp-block-statamic-cta, .sgb-custom-block--cta)',
         ];
 
         if (isset($special[$name])) {

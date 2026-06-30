@@ -140,21 +140,6 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain("return 'flex-end'");
     });
 
-    it('keeps deprecated save output for legacy Statamic button markup', () => {
-        const source = fs.readFileSync('resources/js/gutenberg/blocks.jsx', 'utf8');
-
-        expect(source).toContain("const LEGACY_STATAMIC_BUTTON_CLASS = 'wp-block-button__link'");
-        expect(source).toContain('const STATAMIC_WRAPPER_ATTRIBUTES = {');
-        expect(source).toContain("anchor: { type: 'string' }");
-        expect(source).toContain('supports: STATAMIC_BLOCK_SUPPORTS');
-        expect(source).toContain('supports: STATAMIC_DEPRECATED_SUPPORTS');
-        expect(source).toContain('<RichText.Content tagName="p" value={attributes.text} />');
-        expect(source).toContain('save: () => null');
-        expect(source).toContain('save: (props) => saveStatamicHero(props, LEGACY_STATAMIC_BUTTON_CLASS)');
-        expect(source).toContain('save: (props) => saveStatamicCta(props, LEGACY_STATAMIC_BUTTON_CLASS)');
-        expect(source).toContain('deprecated: [');
-    });
-
     it('feeds Statamic patterns into native Gutenberg editor settings', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
         const fieldtypeSource = fs.readFileSync('resources/js/components/fieldtypes/StatamicGutenberg.vue', 'utf8');

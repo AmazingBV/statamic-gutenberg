@@ -20,7 +20,7 @@ class Gutenberg extends Fieldtype
                 'fields' => [
                     'allowed_blocks' => [
                         'display' => 'Allowed Blocks',
-                        'instructions' => 'Use block names such as core/paragraph or statamic/hero.',
+                        'instructions' => 'Use block names such as core/paragraph, core/heading, or a project custom block.',
                         'type' => 'list',
                         'default' => config('statamic-gutenberg.allowed_blocks', []),
                     ],
@@ -77,11 +77,14 @@ class Gutenberg extends Fieldtype
             'iconsUrl' => cp_route('amazingbv.statamic-gutenberg.icons.index'),
             'patternsUrl' => cp_route('amazingbv.statamic-gutenberg.patterns.index'),
             'blockRendererUrl' => cp_route('amazingbv.statamic-gutenberg.block-renderer'),
+            'bardPreviewUrl' => cp_route('amazingbv.statamic-gutenberg.bard-preview'),
+            'bardPreviewDebounceMs' => (int) config('statamic-gutenberg.bard_blocks.preview_debounce_ms', 300),
             'editorUrl' => cp_route('amazingbv.statamic-gutenberg.editor'),
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
             'themeJson' => app(GutenbergManager::class)->editorTheme(),
             'patterns' => app(GutenbergManager::class)->editorPatterns($allowedBlocks),
             'customBlocks' => app(GutenbergManager::class)->editorCustomBlocks(),
+            'bardBlocks' => app(GutenbergManager::class)->editorBardBlocks(),
         ];
     }
 

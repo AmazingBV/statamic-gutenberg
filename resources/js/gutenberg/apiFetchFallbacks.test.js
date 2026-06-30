@@ -179,7 +179,7 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
                 { id: 10, name: 'hero', slug: 'hero', label: 'Hero', description: 'Hero patterns' },
             ],
             restBlockPatterns: [
-                { name: 'statamic/hero', title: 'Hero', content: '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->' },
+                { name: 'statamic/example', title: 'Hero', content: '<!-- wp:paragraph --><p>Hero</p><!-- /wp:paragraph -->' },
                 { name: 'statamic/synced', title: 'Synced', content: '<!-- wp:block {"ref":123} /-->' },
             ],
         };

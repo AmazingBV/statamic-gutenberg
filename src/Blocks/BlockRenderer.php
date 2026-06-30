@@ -2,6 +2,7 @@
 
 namespace Amazingbv\StatamicGutenberg\Blocks;
 
+use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Amazingbv\StatamicGutenberg\Support\Duotone;
@@ -25,6 +26,7 @@ class BlockRenderer
         private Sanitizer $sanitizer,
         private PatternRepository $patterns,
         private ThemeJson $themeJson,
+        private BardBlockRepository $bardBlocks,
     ) {
         //
     }
@@ -79,6 +81,8 @@ class BlockRenderer
                 'attrs' => $block->attributes(),
                 'inner' => new HtmlString($inner),
             ])->render());
+        } elseif (is_array($definition) && isset($definition['bard_block'])) {
+            $html = $this->renderBardBlock($block, $definition['bard_block'], $options);
         } elseif (is_array($definition) && isset($definition['custom_block'])) {
             $html = $this->renderCustomBlock($block, $inner, $definition['custom_block'], $options);
         } else {
@@ -95,6 +99,11 @@ class BlockRenderer
         }
 
         return ElementStyles::styleTag($block).$html;
+    }
+
+    private function renderBardBlock(Block $block, array $definition, array $options): string
+    {
+        return $this->sanitize($this->bardBlocks->render($definition['name'] ?? $block->name(), $block->attributes()), $options);
     }
 
     private function renderCustomBlock(Block $block, string $inner, array $definition, array $options): string

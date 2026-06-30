@@ -25,6 +25,7 @@ import {
     update as refreshIcon,
     upload as uploadIcon,
 } from '@wordpress/icons';
+import { prepareBardBlockRegistry } from './bardBlocks';
 import { loadCustomBlockAssets, prepareCustomBlockRegistry } from './customBlocks';
 import { installStatamicApiFetchFallbacks } from './apiFetchFallbacks';
 import { registerGutenbergBlocks } from './blocks.jsx';
@@ -721,10 +722,18 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         () => filterPatternPayload(rawPatternSettings, allowedBlockTypes),
         [rawPatternSettings, allowedBlockTypes],
     );
+    const bardBlocks = useMemo(
+        () => prepareBardBlockRegistry(meta?.bardBlocks, {
+            previewUrl: meta?.bardPreviewUrl,
+            debounceMs: meta?.bardPreviewDebounceMs,
+        }),
+        [meta],
+    );
     const customBlocks = useMemo(() => prepareCustomBlockRegistry(meta?.customBlocks), [meta]);
 
     if (typeof window !== 'undefined' && isPlainObject(patternSettings)) {
         window.StatamicGutenbergPatterns = patternSettings;
+        window.StatamicGutenbergBardBlocks = Object.fromEntries(bardBlocks.map((block) => [block.name, block]));
     }
 
     const initialValue = value || '';

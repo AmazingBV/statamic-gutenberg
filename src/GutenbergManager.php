@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg;
 use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
+use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
 use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Illuminate\Support\HtmlString;
@@ -18,6 +19,7 @@ class GutenbergManager
         private ThemeJson $themeJson,
         private PatternRepository $patterns,
         private CustomBlockRepository $customBlocks,
+        private BardBlockRepository $bardBlocks,
     ) {
         //
     }
@@ -106,6 +108,11 @@ class GutenbergManager
     public function editorCustomBlocks(): array
     {
         return $this->customBlocks->editorPayload();
+    }
+
+    public function editorBardBlocks(): array
+    {
+        return $this->bardBlocks->editorPayload();
     }
 
     private function frontendScriptAssets(): array

@@ -26,7 +26,6 @@ class BlockRendererTest extends TestCase
         $this->assertContains('core/table', $allowed);
         $this->assertContains('core/video', $allowed);
         $this->assertContains('core/icon', $allowed);
-        $this->assertContains('statamic/hero', $allowed);
         $this->assertNotContains('core/query', $allowed);
         $this->assertNotContains('core/form', $allowed);
         $this->assertNotContains('core/tabs', $allowed);
@@ -50,23 +49,6 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<p>Hello</p>', $rendered);
         $this->assertStringNotContainsString('onclick', $rendered);
         $this->assertStringNotContainsString('script', $rendered);
-    }
-
-    public function test_it_renders_builtin_statamic_blocks_with_gutenberg_wrapper_attributes(): void
-    {
-        $html = implode('', [
-            '<!-- wp:statamic/hero {"heading":"Audit hero","text":"Intro","buttonText":"Read","buttonUrl":"/read","align":"wide","className":"extra","anchor":"hero-one"} --><section></section><!-- /wp:statamic/hero -->',
-            '<!-- wp:statamic/cta {"heading":"Audit CTA","text":"Act now","buttonText":"Contact","buttonUrl":"/contact","align":"full","className":"cta-extra","anchor":"cta-one"} --><section></section><!-- /wp:statamic/cta -->',
-        ]);
-
-        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
-
-        $this->assertStringContainsString('class="wp-block-statamic-hero alignwide extra sgb-custom-block sgb-custom-block--hero"', $rendered);
-        $this->assertStringContainsString('id="hero-one"', $rendered);
-        $this->assertStringContainsString('<a class="wp-block-button__link wp-element-button" href="/read">Read</a>', $rendered);
-        $this->assertStringContainsString('class="wp-block-statamic-cta alignfull cta-extra sgb-custom-block sgb-custom-block--cta"', $rendered);
-        $this->assertStringContainsString('id="cta-one"', $rendered);
-        $this->assertStringContainsString('<a class="wp-block-button__link wp-element-button" href="/contact">Contact</a>', $rendered);
     }
 
     public function test_it_renders_static_markup_for_common_standard_core_blocks(): void
@@ -948,7 +930,7 @@ class BlockRendererTest extends TestCase
     private function allCoreAllowedOptions(): array
     {
         return [
-            'allowed_blocks' => array_merge(CoreBlocks::names(), ['statamic/hero', 'statamic/cta']),
+            'allowed_blocks' => CoreBlocks::names(),
         ];
     }
 

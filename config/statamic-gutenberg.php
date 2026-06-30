@@ -52,8 +52,6 @@ return [
         'core/table',
         'core/verse',
         'core/video',
-        'statamic/hero',
-        'statamic/cta',
     ],
 
     /*
@@ -123,6 +121,46 @@ return [
     |
     */
     'custom_blocks_path' => resource_path('vendor/statamic-gutenberg/blocks'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bard Blocks
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, Statamic Bard sets are exposed as Gutenberg blocks. The
+    | editor stores all set field values in block attributes, shows the controls
+    | in the sidebar, and renders only a server-side preview in the canvas.
+    |
+    | With `sources` set to `auto`, Bard sets are discovered from project and
+    | namespaced blueprints plus project fieldsets. If two sets use the same
+    | handle, the generated block name is prefixed with a source slug, e.g.
+    | `bard/pages-content-hero`.
+    |
+    | Rendering looks for an explicit view in `views` first. Keys can be the
+    | full block name (`bard/hero`), `source.set` (`pages.content.hero`), or the
+    | set handle (`hero`). If no explicit view is configured, the repository will
+    | try the `view_prefixes` conventions. Missing render views return empty
+    | output by default; set `missing_behavior` to `placeholder` while developing
+    | if you want visible fallback markup.
+    |
+    */
+    'bard_blocks' => [
+        'enabled' => true,
+        'sources' => 'auto',
+        'unknown_field_fallback' => 'textarea',
+        'preview_debounce_ms' => 300,
+        'block_namespace' => 'bard',
+        'blueprints_path' => resource_path('blueprints'),
+        'fieldsets_path' => resource_path('fieldsets'),
+        'views' => [],
+        'view_prefixes' => [
+            'bard',
+            'sets',
+            'partials.bard',
+            'partials.sets',
+        ],
+        'missing_behavior' => 'empty',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -224,12 +262,5 @@ return [
     | here when they provide `render` in block.json or a conventional block.php.
     |
     */
-    'blocks' => [
-        'statamic/hero' => [
-            'view' => 'statamic-gutenberg::blocks.hero',
-        ],
-        'statamic/cta' => [
-            'view' => 'statamic-gutenberg::blocks.cta',
-        ],
-    ],
+    'blocks' => [],
 ];

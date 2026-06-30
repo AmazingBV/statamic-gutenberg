@@ -2,13 +2,17 @@
 
 namespace Amazingbv\StatamicGutenberg\Blocks;
 
+use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
 use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 
 class BlockRegistry
 {
     private array $blocks = [];
 
-    public function __construct(private CustomBlockRepository $customBlocks)
+    public function __construct(
+        private CustomBlockRepository $customBlocks,
+        private BardBlockRepository $bardBlocks,
+    )
     {
         //
     }
@@ -26,6 +30,7 @@ class BlockRegistry
     {
         return $this->blocks[$name]
             ?? config("statamic-gutenberg.blocks.{$name}")
+            ?? ($this->bardBlocks->find($name) ? ['bard_block' => $this->bardBlocks->find($name)] : null)
             ?? ($this->customBlocks->find($name) ? ['custom_block' => $this->customBlocks->find($name)] : null);
     }
 
@@ -38,6 +43,7 @@ class BlockRegistry
             ...$allowed,
             ...$this->customBlocks->names(),
             ...$this->customBlocks->dependencyNames(),
+            ...$this->bardBlocks->names(),
         ])));
     }
 

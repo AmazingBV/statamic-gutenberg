@@ -143,7 +143,7 @@ tabs:
 Per field you can override:
 
 - `allowed_blocks`: block names that may be inserted, for example
-  `core/paragraph`, `core/heading`, `core/image`, `statamic/hero`.
+  `core/paragraph`, `core/heading`, `core/image`, or a project custom block.
 - `assets_container`: the Statamic Asset container used by the media picker and
   upload flow.
 - `render_mode`: `blade` for parsed block rendering, or `raw` for sanitized
@@ -210,8 +210,8 @@ Register or override a block renderer from a service provider:
 ```php
 use Gutenberg;
 
-Gutenberg::block('statamic/hero', [
-    'view' => 'blocks.hero',
+Gutenberg::block('project/notice', [
+    'view' => 'blocks.notice',
 ]);
 
 Gutenberg::block('custom/notice', function ($block, string $inner, $renderer): string {
@@ -299,8 +299,6 @@ core/spacer
 core/table
 core/verse
 core/video
-statamic/hero
-statamic/cta
 ```
 
 Some internal child blocks are also listed where Gutenberg requires them, such
@@ -685,23 +683,6 @@ Local custom block assets are served through:
 
 The addon appends cache-busting `?ver=` values from matching `.asset.php` files
 when available, or from file modification times.
-
-## Built-In Statamic Blocks
-
-The addon includes simple demo mappings:
-
-- `statamic/hero` renders `statamic-gutenberg::blocks.hero`.
-- `statamic/cta` renders `statamic-gutenberg::blocks.cta`.
-
-Override or remove these in `config/statamic-gutenberg.php`:
-
-```php
-'blocks' => [
-    'statamic/hero' => [
-        'view' => 'blocks.hero',
-    ],
-],
-```
 
 ## Security Notes
 
