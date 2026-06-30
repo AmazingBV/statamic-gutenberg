@@ -661,8 +661,8 @@ class BlockRendererTest extends TestCase
             '<!-- wp:group {"align":"wide","anchor":"group-one","className":"extra-group","backgroundColor":"blue","style":{"spacing":{"padding":{"top":"1rem","bottom":"2rem"}},"border":{"radius":"12px"}},"layout":{"type":"constrained","contentSize":"640px"}} -->',
             '<!-- wp:paragraph --><p>Inner</p><!-- /wp:paragraph -->',
             '<!-- /wp:group -->',
-            '<!-- wp:columns {"align":"wide","anchor":"columns-one","style":{"spacing":{"margin":{"top":"2rem"}}}} -->',
-            '<!-- wp:column --><div class="wp-block-column"><p>Column</p></div><!-- /wp:column -->',
+            '<!-- wp:columns {"align":"wide","anchor":"columns-one","verticalAlignment":"center","isStackedOnMobile":false,"style":{"spacing":{"margin":{"top":"2rem"}}}} -->',
+            '<!-- wp:column {"width":"33.33%","verticalAlignment":"bottom"} --><div class="wp-block-column"><p>Column</p></div><!-- /wp:column -->',
             '<!-- /wp:columns -->',
             '<!-- wp:buttons {"align":"wide","anchor":"buttons-one","style":{"spacing":{"blockGap":"1rem"}}} -->',
             '<!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Go</a></div><!-- /wp:button -->',
@@ -677,9 +677,11 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('padding-bottom: 2rem', $rendered);
         $this->assertStringContainsString('border-radius: 12px', $rendered);
         $this->assertStringContainsString('--wp--style--global--content-size: 640px', $rendered);
-        $this->assertStringContainsString('class="wp-block-columns alignwide"', $rendered);
+        $this->assertStringContainsString('class="wp-block-columns alignwide are-vertically-aligned-center is-not-stacked-on-mobile"', $rendered);
         $this->assertStringContainsString('id="columns-one"', $rendered);
         $this->assertStringContainsString('margin-top: 2rem', $rendered);
+        $this->assertStringContainsString('class="wp-block-column is-vertically-aligned-bottom"', $rendered);
+        $this->assertStringContainsString('style="flex-basis: 33.33%"', $rendered);
         $this->assertStringContainsString('class="wp-block-buttons alignwide"', $rendered);
         $this->assertStringContainsString('id="buttons-one"', $rendered);
         $this->assertStringContainsString('--wp--style--block-gap: 1rem', $rendered);

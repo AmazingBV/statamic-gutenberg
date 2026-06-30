@@ -887,6 +887,28 @@ class BlockRenderer
                     $styles[] = 'grid-template-columns: repeat(auto-fill, minmax(min('.$minimumColumnWidth.', 100%), 1fr))';
                 }
             }
+        } elseif ($baseClass === 'wp-block-columns') {
+            $alignment = $this->safeClassSlug($block->attribute('verticalAlignment'));
+
+            if ($alignment && in_array($alignment, ['top', 'center', 'bottom'], true)) {
+                $classes[] = 'are-vertically-aligned-'.$alignment;
+            }
+
+            if ($this->explicitlyFalse($block->attribute('isStackedOnMobile', true))) {
+                $classes[] = 'is-not-stacked-on-mobile';
+            }
+        } elseif ($baseClass === 'wp-block-column') {
+            $alignment = $this->safeClassSlug($block->attribute('verticalAlignment'));
+
+            if ($alignment && in_array($alignment, ['top', 'center', 'bottom', 'stretch'], true)) {
+                $classes[] = 'is-vertically-aligned-'.$alignment;
+            }
+
+            $width = $this->safeStyleValue($block->attribute('width'));
+
+            if ($width) {
+                $styles[] = 'flex-basis: '.$width;
+            }
         }
 
         $attributes['class'] = $this->mergeClasses($attributes['class'] ?? '', $classes);
