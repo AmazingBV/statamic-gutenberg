@@ -346,6 +346,7 @@ class BlockRenderer
         $buttonUseIcon = $this->truthy($block->attribute('buttonUseIcon', false));
         $inputId = wp_unique_id('sgb-search-input-');
         $classes = ['wp-block-search', 'sgb-core-fallback-search'];
+        $styles = $this->searchElementStyles($block, $buttonPosition, $showLabel);
 
         $classes[] = $buttonPosition === 'no-button'
             ? 'wp-block-search__no-button'
@@ -360,22 +361,23 @@ class BlockRenderer
         }
 
         return sprintf(
-            '<form role="search" method="get"%s><label class="wp-block-search__label%s" for="%s">%s</label><div%s><input class="wp-block-search__input" id="%s" type="search" name="q" value="" placeholder="%s">%s%s</div></form>',
-            $this->fallbackRootAttributes($block, [
+            '<form role="search" method="get"%s><label%s>%s</label><div%s><input%s>%s%s</div></form>',
+            $this->renderAttributes($this->searchRootAttributeArray($block, [
                 'class' => implode(' ', $classes),
                 'action' => $this->siteUrl('/search'),
-            ]),
-            $showLabel ? '' : ' sgb-screen-reader-text',
-            e($inputId),
+            ])),
+            $this->renderAttributes($this->searchLabelAttributeArray($block, $inputId, $showLabel, $styles['label'])),
             e($label),
             $this->renderAttributes([
-                'class' => 'wp-block-search__inside-wrapper',
-                'style' => $this->searchInsideWrapperStyle($block),
+                'class' => $this->mergeClasses(
+                    'wp-block-search__inside-wrapper',
+                    $buttonPosition === 'button-inside' ? $this->searchBorderColorClasses($block) : []
+                ),
+                'style' => $styles['wrapper'],
             ]),
-            e($inputId),
-            e($placeholder),
+            $this->renderAttributes($this->searchInputAttributeArray($block, $inputId, $placeholder, $buttonPosition, $styles['input'])),
             $this->searchHiddenInputs($block),
-            $hasButton ? $this->searchButton($button, $buttonUseIcon) : '',
+            $hasButton ? $this->searchButton($block, $button, $buttonUseIcon, $buttonPosition, $styles['button']) : '',
         );
     }
 
@@ -386,24 +388,305 @@ class BlockRenderer
             : 'button-outside';
     }
 
-    private function searchInsideWrapperStyle(Block $block): string
+    private function searchRootAttributeArray(Block $block, array $attributes): array
     {
+        $classes = ['wp-block-search'];
+        $align = $this->safeClassSlug($block->attribute('align'));
+
+        if ($align) {
+            $classes[] = 'align'.$align;
+        }
+
+        $classes = array_merge($classes, $this->safeClassList($block->attribute('className')));
+        $classes = array_merge($classes, $this->safeClassList($attributes['class'] ?? ''));
+        $attributes['class'] = implode(' ', array_values(array_unique(array_filter($classes))));
+
+        $anchor = $this->safeAnchor($block->attribute('anchor'));
+
+        if ($anchor !== '' && ! isset($attributes['id'])) {
+            $attributes['id'] = $anchor;
+        }
+
+        $style = $block->attribute('style', []);
+        $margin = is_array($style) ? $this->safeSpacingDeclarations('margin', $style['spacing']['margin'] ?? []) : [];
+
+        if ($margin) {
+            $attributes['style'] = $this->mergeStyles((string) ($attributes['style'] ?? ''), implode('; ', $margin));
+        }
+
+        return $attributes;
+    }
+
+    private function searchLabelAttributeArray(Block $block, string $inputId, bool $showLabel, string $style): array
+    {
+        $classes = ['wp-block-search__label'];
+
+        if (! $showLabel) {
+            $classes[] = 'sgb-screen-reader-text';
+        } else {
+            $classes = array_merge($classes, $this->searchTypographyClasses($block));
+        }
+
+        return [
+            'class' => implode(' ', array_values(array_unique(array_filter($classes)))),
+            'for' => $inputId,
+            'style' => $style,
+        ];
+    }
+
+    private function searchInputAttributeArray(Block $block, string $inputId, string $placeholder, string $buttonPosition, string $style): array
+    {
+        $classes = ['wp-block-search__input'];
+        $classes = array_merge($classes, $this->searchTypographyClasses($block));
+
+        if ($buttonPosition !== 'button-inside') {
+            $classes = array_merge($classes, $this->searchBorderColorClasses($block));
+        }
+
+        if ($buttonPosition === 'no-button') {
+            $classes = array_merge($classes, $this->searchColorClasses($block));
+        }
+
+        return [
+            'class' => implode(' ', array_values(array_unique(array_filter($classes)))),
+            'id' => $inputId,
+            'type' => 'search',
+            'name' => 'q',
+            'value' => '',
+            'placeholder' => $placeholder,
+            'style' => $style,
+        ];
+    }
+
+    private function searchElementStyles(Block $block, string $buttonPosition, bool $showLabel): array
+    {
+        $style = $block->attribute('style', []);
+        $style = is_array($style) ? $style : [];
+        $border = is_array($style['border'] ?? null) ? $style['border'] : [];
+        $color = is_array($style['color'] ?? null) ? $style['color'] : [];
+        $typography = is_array($style['typography'] ?? null) ? $style['typography'] : [];
+        $isButtonInside = $buttonPosition === 'button-inside';
+        $useInputForColors = $buttonPosition === 'no-button';
+        $wrapperStyles = [];
+        $inputStyles = [];
+        $buttonStyles = [];
+        $labelStyles = [];
         $width = $block->attribute('width');
 
-        if (! is_string($width) && ! is_numeric($width)) {
-            return '';
+        if (is_string($width) || is_numeric($width)) {
+            $width = trim((string) $width);
+
+            if ($width !== '' && preg_match('/^\d+(?:\.\d+)?$/', $width)) {
+                $unit = (string) $block->attribute('widthUnit', '%');
+                $unit = in_array($unit, ['%', 'px', 'em', 'rem', 'vw', 'vh'], true) ? $unit : '%';
+                $wrapperStyles[] = 'width: '.$width.$unit;
+            }
         }
 
-        $width = trim((string) $width);
-
-        if ($width === '' || ! preg_match('/^\d+(?:\.\d+)?$/', $width)) {
-            return '';
+        foreach (['width', 'color', 'style'] as $property) {
+            foreach ($this->searchBorderDeclarations($border, $property) as $declaration) {
+                if ($isButtonInside) {
+                    $wrapperStyles[] = $declaration;
+                } else {
+                    $inputStyles[] = $declaration;
+                    $buttonStyles[] = $declaration;
+                }
+            }
         }
 
-        $unit = (string) $block->attribute('widthUnit', '%');
-        $unit = in_array($unit, ['%', 'px', 'em', 'rem', 'vw', 'vh'], true) ? $unit : '%';
+        foreach ($this->searchBorderRadiusDeclarations($border['radius'] ?? null) as $declaration) {
+            $inputStyles[] = $declaration;
+            $buttonStyles[] = $declaration;
 
-        return 'width: '.$width.$unit;
+            if ($isButtonInside && preg_match('/^([^:]+):\s*(.+)$/', $declaration, $matches) && trim($matches[2]) !== '0') {
+                $wrapperStyles[] = trim($matches[1]).': calc('.trim($matches[2]).' + 4px)';
+            }
+        }
+
+        $colorTarget = $useInputForColors ? $inputStyles : $buttonStyles;
+
+        if ($text = $this->safeStyleValue($color['text'] ?? null)) {
+            $colorTarget[] = 'color: '.$text;
+        }
+
+        if ($background = $this->safeStyleValue($color['background'] ?? null)) {
+            $colorTarget[] = 'background-color: '.$background;
+        }
+
+        if ($gradient = $this->safeStyleValue($color['gradient'] ?? null)) {
+            $colorTarget[] = 'background: '.$gradient;
+        }
+
+        if ($useInputForColors) {
+            $inputStyles = $colorTarget;
+        } else {
+            $buttonStyles = $colorTarget;
+        }
+
+        foreach ($this->searchTypographyDeclarations($typography) as $declaration) {
+            $labelStyles[] = $declaration;
+            $inputStyles[] = $declaration;
+            $buttonStyles[] = $declaration;
+        }
+
+        if ($textDecoration = $this->safeStyleValue($typography['textDecoration'] ?? null)) {
+            $buttonStyles[] = 'text-decoration: '.$textDecoration;
+
+            if ($showLabel) {
+                $labelStyles[] = 'text-decoration: '.$textDecoration;
+            }
+        }
+
+        return [
+            'wrapper' => implode('; ', array_values(array_filter($wrapperStyles))),
+            'input' => implode('; ', array_values(array_filter($inputStyles))),
+            'button' => implode('; ', array_values(array_filter($buttonStyles))),
+            'label' => implode('; ', array_values(array_filter($labelStyles))),
+        ];
+    }
+
+    private function searchBorderDeclarations(array $border, string $property): array
+    {
+        $declarations = [];
+
+        foreach ([null, 'top', 'right', 'bottom', 'left'] as $side) {
+            $source = $side === null ? $border : (is_array($border[$side] ?? null) ? $border[$side] : []);
+            $value = $this->safeStyleValue($source[$property] ?? null);
+
+            if (! $value) {
+                continue;
+            }
+
+            $cssProperty = $side === null
+                ? 'border-'.$property
+                : 'border-'.$side.'-'.$property;
+
+            $declarations[] = $cssProperty.': '.$value;
+        }
+
+        return $declarations;
+    }
+
+    private function searchBorderRadiusDeclarations(mixed $radius): array
+    {
+        if (is_string($radius) || is_numeric($radius)) {
+            $value = $this->safeStyleValue(is_numeric($radius) ? $radius.'px' : $radius);
+
+            return $value ? ['border-radius: '.$value] : [];
+        }
+
+        if (! is_array($radius)) {
+            return [];
+        }
+
+        $map = [
+            'topLeft' => 'border-top-left-radius',
+            'top-left' => 'border-top-left-radius',
+            'topRight' => 'border-top-right-radius',
+            'top-right' => 'border-top-right-radius',
+            'bottomLeft' => 'border-bottom-left-radius',
+            'bottom-left' => 'border-bottom-left-radius',
+            'bottomRight' => 'border-bottom-right-radius',
+            'bottom-right' => 'border-bottom-right-radius',
+        ];
+        $declarations = [];
+
+        foreach ($map as $key => $property) {
+            $value = $this->safeStyleValue($radius[$key] ?? null);
+
+            if ($value) {
+                $declarations[$property] = $property.': '.$value;
+            }
+        }
+
+        return array_values($declarations);
+    }
+
+    private function searchTypographyDeclarations(array $typography): array
+    {
+        $map = [
+            'fontSize' => 'font-size',
+            'fontFamily' => 'font-family',
+            'letterSpacing' => 'letter-spacing',
+            'fontWeight' => 'font-weight',
+            'fontStyle' => 'font-style',
+            'lineHeight' => 'line-height',
+            'textTransform' => 'text-transform',
+        ];
+        $declarations = [];
+
+        foreach ($map as $key => $property) {
+            $value = $this->safeStyleValue($typography[$key] ?? null);
+
+            if ($value) {
+                $declarations[] = $property.': '.$value;
+            }
+        }
+
+        return $declarations;
+    }
+
+    private function searchColorClasses(Block $block): array
+    {
+        $style = $block->attribute('style', []);
+        $color = is_array($style) && is_array($style['color'] ?? null) ? $style['color'] : [];
+        $classes = [];
+
+        if ($textColor = $this->safeClassSlug($block->attribute('textColor'))) {
+            $classes[] = 'has-text-color';
+            $classes[] = 'has-'.$textColor.'-color';
+        } elseif ($this->safeStyleValue($color['text'] ?? null)) {
+            $classes[] = 'has-text-color';
+        }
+
+        if ($backgroundColor = $this->safeClassSlug($block->attribute('backgroundColor'))) {
+            $classes[] = 'has-background';
+            $classes[] = 'has-'.$backgroundColor.'-background-color';
+        } elseif ($this->safeStyleValue($color['background'] ?? null)) {
+            $classes[] = 'has-background';
+        }
+
+        if ($gradient = $this->safeClassSlug($block->attribute('gradient'))) {
+            $classes[] = 'has-background';
+            $classes[] = 'has-'.$gradient.'-gradient-background';
+        } elseif ($this->safeStyleValue($color['gradient'] ?? null)) {
+            $classes[] = 'has-background';
+        }
+
+        return array_values(array_unique($classes));
+    }
+
+    private function searchTypographyClasses(Block $block): array
+    {
+        $classes = [];
+
+        if ($fontSize = $this->safeClassSlug($block->attribute('fontSize'))) {
+            $classes[] = 'has-'.$fontSize.'-font-size';
+        }
+
+        if ($fontFamily = $this->safeClassSlug($block->attribute('fontFamily'))) {
+            $classes[] = 'has-'.$fontFamily.'-font-family';
+        }
+
+        return $classes;
+    }
+
+    private function searchBorderColorClasses(Block $block): array
+    {
+        $style = $block->attribute('style', []);
+        $border = is_array($style) && is_array($style['border'] ?? null) ? $style['border'] : [];
+        $classes = [];
+
+        if ($this->safeStyleValue($border['color'] ?? null)) {
+            $classes[] = 'has-border-color';
+        }
+
+        if ($borderColor = $this->safeClassSlug($block->attribute('borderColor'))) {
+            $classes[] = 'has-border-color';
+            $classes[] = 'has-'.$borderColor.'-border-color';
+        }
+
+        return array_values(array_unique($classes));
     }
 
     private function searchHiddenInputs(Block $block): string
@@ -435,15 +718,26 @@ class BlockRenderer
         return implode('', $inputs);
     }
 
-    private function searchButton(string $button, bool $useIcon): string
+    private function searchButton(Block $block, string $button, bool $useIcon, string $buttonPosition, string $style): string
     {
         $content = $useIcon
             ? $this->searchIcon().'<span class="sgb-screen-reader-text">'.e($button).'</span>'
             : e($button);
+        $classes = ['wp-block-search__button', 'wp-element-button'];
+        $classes = array_merge($classes, $this->searchColorClasses($block), $this->searchTypographyClasses($block));
+
+        if ($buttonPosition !== 'button-inside') {
+            $classes = array_merge($classes, $this->searchBorderColorClasses($block));
+        }
 
         return sprintf(
-            '<button class="wp-block-search__button wp-element-button" type="submit"%s>%s</button>',
-            $useIcon ? $this->renderAttributes(['aria-label' => $button]) : '',
+            '<button%s>%s</button>',
+            $this->renderAttributes([
+                'class' => implode(' ', array_values(array_unique(array_filter($classes)))),
+                'type' => 'submit',
+                'aria-label' => $useIcon ? $button : '',
+                'style' => $style,
+            ]),
             $content,
         );
     }

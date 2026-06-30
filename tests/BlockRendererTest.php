@@ -572,6 +572,30 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('>Hidden</button>', $rendered);
     }
 
+    public function test_it_targets_search_support_styles_to_wordpress_child_elements(): void
+    {
+        $html = implode('', [
+            '<!-- wp:search {"align":"wide","anchor":"search-one","className":"search-extra","label":"Find","buttonText":"Go","textColor":"red","backgroundColor":"blue","borderColor":"contrast","fontSize":"large","fontFamily":"system-sans","style":{"spacing":{"margin":{"top":"2rem"}},"color":{"text":"#111","background":"#eee"},"border":{"radius":"12px","width":"2px","style":"solid"},"typography":{"fontWeight":"700","textDecoration":"underline"}}} /-->',
+            '<!-- wp:search {"buttonPosition":"button-inside","borderColor":"contrast","style":{"border":{"radius":"8px","width":"1px","style":"dashed"}}} /-->',
+            '<!-- wp:search {"buttonPosition":"no-button","textColor":"red","backgroundColor":"blue","style":{"color":{"text":"#222","background":"#fafafa"}}} /-->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('id="search-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-search alignwide search-extra sgb-core-fallback-search wp-block-search__button-outside wp-block-search__text-button"', $rendered);
+        $this->assertStringContainsString('style="margin-top: 2rem"', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__label has-large-font-size has-system-sans-font-family"', $rendered);
+        $this->assertStringContainsString('style="font-weight: 700; text-decoration: underline"', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__input has-large-font-size has-system-sans-font-family has-border-color has-contrast-border-color"', $rendered);
+        $this->assertStringContainsString('border-width: 2px; border-style: solid; border-radius: 12px; font-weight: 700', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__button wp-element-button has-text-color has-red-color has-background has-blue-background-color has-large-font-size has-system-sans-font-family has-border-color has-contrast-border-color"', $rendered);
+        $this->assertStringContainsString('color: #111; background-color: #eee; font-weight: 700; text-decoration: underline', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__inside-wrapper has-border-color has-contrast-border-color" style="border-width: 1px; border-style: dashed; border-radius: calc(8px + 4px)"', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__input has-text-color has-red-color has-background has-blue-background-color"', $rendered);
+        $this->assertStringContainsString('style="color: #222; background-color: #fafafa"', $rendered);
+    }
+
     public function test_it_renders_synced_patterns_from_core_block_references(): void
     {
         $this->bindPatternRepository([
@@ -627,7 +651,8 @@ class BlockRendererTest extends TestCase
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
         $this->assertStringContainsString('id="search-one"', $rendered);
-        $this->assertStringContainsString('class="wp-block-search alignwide search-extra has-blue-background-color has-background sgb-core-fallback-search', $rendered);
+        $this->assertStringContainsString('class="wp-block-search alignwide search-extra sgb-core-fallback-search', $rendered);
+        $this->assertStringContainsString('class="wp-block-search__button wp-element-button has-background has-blue-background-color"', $rendered);
         $this->assertStringContainsString('style="margin-top: 2rem"', $rendered);
         $this->assertStringContainsString('id="title-one"', $rendered);
         $this->assertStringContainsString('class="wp-block-site-title aligncenter title-extra has-red-color has-text-color"', $rendered);
