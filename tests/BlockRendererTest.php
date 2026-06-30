@@ -103,13 +103,29 @@ class BlockRendererTest extends TestCase
 
     public function test_it_constructs_audio_blocks_from_attributes(): void
     {
-        $html = '<!-- wp:audio {"src":"/storage/podcast.mp3","caption":"Episode <script>alert(1)</script>","autoplay":true,"loop":true,"preload":"metadata"} /-->';
+        $html = '<!-- wp:audio {"src":"/storage/podcast.mp3","caption":"Episode <script>alert(1)</script>","autoplay":true,"loop":true,"preload":"metadata","align":"wide","anchor":"audio-one"} /-->';
 
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
-        $this->assertStringContainsString('class="wp-block-audio"', $rendered);
+        $this->assertStringContainsString('class="wp-block-audio alignwide"', $rendered);
+        $this->assertStringContainsString('id="audio-one"', $rendered);
         $this->assertStringContainsString('<audio controls="controls" src="/storage/podcast.mp3" autoplay="autoplay" loop="loop" preload="metadata"></audio>', $rendered);
         $this->assertStringContainsString('<figcaption class="wp-element-caption">Episode &lt;script&gt;alert(1)&lt;/script&gt;</figcaption>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+    }
+
+    public function test_it_constructs_video_blocks_from_attributes(): void
+    {
+        $html = '<!-- wp:video {"src":"/storage/movie.mp4","caption":"Video <script>alert(1)</script>","poster":"/storage/poster.jpg","autoplay":true,"loop":true,"muted":true,"playsInline":true,"preload":"auto","tracks":[{"src":"/storage/captions.vtt","kind":"captions","srcLang":"nl-NL","label":"Nederlands","default":true},{"src":"javascript:alert(1)","kind":"bad","srcLang":"bad lang","label":"Bad"}],"align":"wide","anchor":"video-one"} /-->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('class="wp-block-video alignwide"', $rendered);
+        $this->assertStringContainsString('id="video-one"', $rendered);
+        $this->assertStringContainsString('<video controls="controls" autoplay="autoplay" loop="loop" muted="muted" poster="/storage/poster.jpg" preload="auto" src="/storage/movie.mp4" playsinline="playsinline">', $rendered);
+        $this->assertStringContainsString('<track src="/storage/captions.vtt" kind="captions" srclang="nl-NL" label="Nederlands" default="default">', $rendered);
+        $this->assertStringContainsString('<figcaption class="wp-element-caption">Video &lt;script&gt;alert(1)&lt;/script&gt;</figcaption>', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
         $this->assertStringNotContainsString('<script>', $rendered);
     }
 

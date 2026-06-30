@@ -1166,7 +1166,26 @@ class BlockRenderer
             $src = $block->attribute('src');
 
             if (is_scalar($src) && trim((string) $src) !== '') {
-                $html = sprintf('<figure class="wp-block-video"><video src="%s"></video></figure>', e((string) $src));
+                $caption = trim((string) $block->attribute('caption', ''));
+                $tracks = $this->renderVideoTracks($block->attribute('tracks', []));
+                $html = sprintf(
+                    '<figure%s><video%s>%s</video>%s</figure>',
+                    $this->fallbackRootAttributes($block, [
+                        'class' => 'wp-block-video',
+                    ]),
+                    $this->renderAttributes([
+                        'controls' => $this->explicitlyFalse($block->attribute('controls')) ? '' : 'controls',
+                        'autoplay' => $this->truthy($block->attribute('autoplay', false)) ? 'autoplay' : '',
+                        'loop' => $this->truthy($block->attribute('loop', false)) ? 'loop' : '',
+                        'muted' => $this->truthy($block->attribute('muted', false)) ? 'muted' : '',
+                        'poster' => is_scalar($block->attribute('poster')) ? trim((string) $block->attribute('poster')) : '',
+                        'preload' => $this->safeMediaPreload($block->attribute('preload')),
+                        'src' => (string) $src,
+                        'playsinline' => $this->truthy($block->attribute('playsInline', false)) ? 'playsinline' : '',
+                    ]),
+                    $tracks,
+                    $caption !== '' ? '<figcaption class="wp-element-caption">'.e($caption).'</figcaption>' : ''
+                );
             }
         }
 
@@ -1209,13 +1228,16 @@ class BlockRenderer
             if (is_scalar($src) && trim((string) $src) !== '') {
                 $caption = trim((string) $block->attribute('caption', ''));
                 $html = sprintf(
-                    '<figure class="wp-block-audio"><audio%s></audio>%s</figure>',
+                    '<figure%s><audio%s></audio>%s</figure>',
+                    $this->fallbackRootAttributes($block, [
+                        'class' => 'wp-block-audio',
+                    ]),
                     $this->renderAttributes([
                         'controls' => 'controls',
                         'src' => (string) $src,
                         'autoplay' => $this->truthy($block->attribute('autoplay', false)) ? 'autoplay' : '',
                         'loop' => $this->truthy($block->attribute('loop', false)) ? 'loop' : '',
-                        'preload' => $this->safeAudioPreload($block->attribute('preload')),
+                        'preload' => $this->safeMediaPreload($block->attribute('preload')),
                     ]),
                     $caption !== '' ? '<figcaption class="wp-element-caption">'.e($caption).'</figcaption>' : ''
                 );
@@ -2111,6 +2133,61 @@ class BlockRenderer
         return $basename !== '' && $basename !== '.' ? $basename : 'Download file';
     }
 
+    private function renderVideoTracks(mixed $tracks): string
+    {
+        if (! is_array($tracks)) {
+            return '';
+        }
+
+        $html = '';
+
+        foreach ($tracks as $track) {
+            if (! is_array($track)) {
+                continue;
+            }
+
+            $src = $track['src'] ?? null;
+
+            if (! is_scalar($src) || trim((string) $src) === '') {
+                continue;
+            }
+
+            $kind = $this->safeTrackKind($track['kind'] ?? null);
+
+            $html .= '<track'.$this->renderAttributes([
+                'src' => trim((string) $src),
+                'kind' => $kind,
+                'srclang' => $this->safeLanguageTag($track['srcLang'] ?? $track['srclang'] ?? null),
+                'label' => is_scalar($track['label'] ?? null) ? trim((string) $track['label']) : '',
+                'default' => $this->truthy($track['default'] ?? false) ? 'default' : '',
+            ]).'>';
+        }
+
+        return $html;
+    }
+
+    private function safeTrackKind(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = strtolower(trim((string) $value));
+
+        return in_array($value, ['subtitles', 'captions', 'descriptions', 'chapters', 'metadata'], true) ? $value : '';
+    }
+
+    private function safeLanguageTag(mixed $value): string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return '';
+        }
+
+        $value = trim((string) $value);
+
+        return preg_match('/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/', $value) ? $value : '';
+    }
+
     private function truthy(mixed $value): bool
     {
         return $value === true || $value === 1 || $value === '1' || $value === 'true';
@@ -2133,7 +2210,7 @@ class BlockRenderer
         return in_array(strtolower(trim($value)), ['0', 'false', 'no', 'off'], true);
     }
 
-    private function safeAudioPreload(mixed $value): string
+    private function safeMediaPreload(mixed $value): string
     {
         if (! is_string($value) && ! is_numeric($value)) {
             return '';
