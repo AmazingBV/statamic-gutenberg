@@ -97,6 +97,14 @@ class ThemeJsonTest extends TestCase
                 ],
             ],
             'styles' => [
+                'background' => [
+                    'backgroundImage' => [
+                        'url' => 'file:./assets/images/background.jpg',
+                    ],
+                    'backgroundPosition' => 'center center',
+                    'backgroundRepeat' => 'no-repeat',
+                    'backgroundSize' => 'cover',
+                ],
                 'color' => [
                     'background' => 'var:preset|color|brand',
                     'text' => '#ffffff',
@@ -175,6 +183,10 @@ class ThemeJsonTest extends TestCase
         $this->assertStringContainsString('--wp--custom--radius--card: 12px', $frontendCss);
         $this->assertStringContainsString('.sgb-content .has-brand-color', $frontendCss);
         $this->assertStringContainsString('.sgb-content .has-natural-box-shadow', $frontendCss);
+        $this->assertStringContainsString('background-image: url(/vendor/statamic-gutenberg/theme/assets/images/background.jpg)', $frontendCss);
+        $this->assertStringContainsString('background-position: center center', $frontendCss);
+        $this->assertStringContainsString('background-repeat: no-repeat', $frontendCss);
+        $this->assertStringContainsString('background-size: cover', $frontendCss);
         $this->assertStringContainsString('background-color: var(--wp--preset--color--brand)', $frontendCss);
         $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $frontendCss);
         $this->assertStringContainsString('gap: var(--wp--preset--spacing--section)', $frontendCss);
@@ -201,6 +213,39 @@ class ThemeJsonTest extends TestCase
             'data-statamic-gutenberg-theme-json',
             (string) app(GutenbergManager::class)->frontendStyles()
         );
+    }
+
+    public function test_theme_json_ignores_unsafe_background_image_urls(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'styles' => [
+                'background' => [
+                    'backgroundImage' => [
+                        'url' => 'javascript:alert(1)',
+                    ],
+                    'backgroundSize' => 'cover',
+                ],
+                'blocks' => [
+                    'core/group' => [
+                        'background' => [
+                            'backgroundImage' => [
+                                'url' => 'data:image/svg+xml;base64,PHN2Zy8+',
+                            ],
+                            'backgroundRepeat' => 'no-repeat',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $frontendCss = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('background-size: cover', $frontendCss);
+        $this->assertStringContainsString('background-repeat: no-repeat', $frontendCss);
+        $this->assertStringNotContainsString('background-image', $frontendCss);
+        $this->assertStringNotContainsString('javascript:', $frontendCss);
+        $this->assertStringNotContainsString('data:image', $frontendCss);
     }
 
     public function test_editor_button_styles_do_not_target_gutenberg_toolbar_buttons(): void

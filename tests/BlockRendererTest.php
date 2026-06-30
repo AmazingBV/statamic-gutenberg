@@ -658,6 +658,27 @@ class BlockRendererTest extends TestCase
         $this->assertStringNotContainsString('class="wp-block-column wp-block-columns', $rendered);
     }
 
+    public function test_it_applies_background_image_supports_to_wrapper_blocks(): void
+    {
+        $html = implode('', [
+            '<!-- wp:group {"style":{"background":{"backgroundImage":{"url":"https://site.test/storage/bg.jpg"},"backgroundSize":"cover","backgroundPosition":"center center","backgroundRepeat":"no-repeat"}}} -->',
+            '<!-- wp:paragraph --><p>Safe</p><!-- /wp:paragraph -->',
+            '<!-- /wp:group -->',
+            '<!-- wp:group {"style":{"background":{"backgroundImage":{"url":"javascript:alert(1)"},"backgroundSize":"contain"}}} -->',
+            '<!-- wp:paragraph --><p>Unsafe</p><!-- /wp:paragraph -->',
+            '<!-- /wp:group -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('background-image: url(https://site.test/storage/bg.jpg)', $rendered);
+        $this->assertStringContainsString('background-size: cover', $rendered);
+        $this->assertStringContainsString('background-position: center center', $rendered);
+        $this->assertStringContainsString('background-repeat: no-repeat', $rendered);
+        $this->assertStringContainsString('background-size: contain', $rendered);
+        $this->assertStringNotContainsString('javascript:', $rendered);
+    }
+
     public function test_it_adds_frontend_fit_text_classes_to_headings(): void
     {
         $html = '<!-- wp:heading {"fitText":true} --><h2>Scale me</h2><!-- /wp:heading -->';

@@ -141,6 +141,7 @@ class BlockWrapperContext
         }
 
         return array_values(array_filter([
+            ...self::backgroundDeclarations($style['background'] ?? []),
             ...self::colorDeclarations($style['color'] ?? []),
             ...self::elementDeclarations($style['elements'] ?? []),
             ...self::blockGapDeclarations($style['spacing']['blockGap'] ?? null),
@@ -150,6 +151,23 @@ class BlockWrapperContext
             ...self::borderDeclarations($style['border'] ?? []),
             ...self::dimensionsDeclarations($style['dimensions'] ?? []),
             self::declaration('box-shadow', $style['shadow'] ?? null),
+        ]));
+    }
+
+    private static function backgroundDeclarations(mixed $background): array
+    {
+        if (! is_array($background)) {
+            return [];
+        }
+
+        $image = $background['backgroundImage'] ?? null;
+        $url = is_array($image) ? ($image['url'] ?? null) : $image;
+
+        return array_values(array_filter([
+            ($url = self::safeCssUrl($url)) ? 'background-image: url('.$url.')' : null,
+            self::declaration('background-position', $background['backgroundPosition'] ?? null),
+            self::declaration('background-repeat', $background['backgroundRepeat'] ?? null),
+            self::declaration('background-size', $background['backgroundSize'] ?? null),
         ]));
     }
 
@@ -281,6 +299,25 @@ class BlockWrapperContext
         }
 
         if (preg_match('/(?:expression|javascript:|vbscript:|data:|url\s*\()/i', $value)) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    private static function safeCssUrl(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if ($value === '' || preg_match('/(?:javascript:|vbscript:|data:|expression|[;"\'(){}<>\s])/i', $value)) {
+            return null;
+        }
+
+        if (preg_match('/^[a-z][a-z0-9+.-]*:/i', $value) && ! preg_match('/^https?:/i', $value)) {
             return null;
         }
 

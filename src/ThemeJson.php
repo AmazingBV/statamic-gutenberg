@@ -216,17 +216,24 @@ class ThemeJson
 
     private function fontFaceUrl(mixed $source): ?string
     {
-        if (! is_string($source)) {
+        $url = $this->cssUrl($source, true);
+
+        return $url ? 'url("'.$url.'")' : null;
+    }
+
+    private function cssUrl(mixed $source, bool $allowThemeFile = false): ?string
+    {
+        if (! is_string($source) && ! is_numeric($source)) {
             return null;
         }
 
-        $source = trim($source);
+        $source = trim((string) $source);
 
-        if ($source === '' || preg_match('/(?:javascript|expression|<|>|\{|\})/i', $source)) {
+        if ($source === '' || preg_match('/(?:javascript:|vbscript:|data:|expression|[;"\'(){}<>\s])/i', $source)) {
             return null;
         }
 
-        if (str_starts_with($source, 'file:')) {
+        if ($allowThemeFile && str_starts_with($source, 'file:')) {
             $source = preg_replace('/^file:\.?\//', '', $source) ?? '';
             $source = ltrim(str_replace('\\', '/', $source), '/');
 
@@ -234,11 +241,11 @@ class ThemeJson
                 return null;
             }
 
-            return 'url("/vendor/statamic-gutenberg/theme/'.str_replace('%2F', '/', rawurlencode($source)).'")';
+            return '/vendor/statamic-gutenberg/theme/'.str_replace('%2F', '/', rawurlencode($source));
         }
 
         if (preg_match('/^(https?:)?\/\//i', $source) || str_starts_with($source, '/')) {
-            return 'url("'.str_replace('"', '%22', $source).'")';
+            return $source;
         }
 
         return null;
@@ -468,6 +475,10 @@ class ThemeJson
     {
         $declarations = [];
 
+        if (is_array($styles['background'] ?? null)) {
+            $declarations = array_merge($declarations, $this->backgroundDeclarations($styles['background']));
+        }
+
         if (is_array($styles['color'] ?? null)) {
             $declarations = array_merge($declarations, $this->colorDeclarations($styles['color']));
         }
@@ -521,6 +532,23 @@ class ThemeJson
         }
 
         return $declarations;
+    }
+
+    private function backgroundDeclarations(array $background): array
+    {
+        $declarations = [];
+        $image = $background['backgroundImage'] ?? null;
+        $url = is_array($image) ? ($image['url'] ?? null) : $image;
+
+        if ($url = $this->cssUrl($url, true)) {
+            $declarations[] = 'background-image: url('.$url.')';
+        }
+
+        return array_merge($declarations, $this->propertyDeclarations($background, [
+            'backgroundPosition' => 'background-position',
+            'backgroundRepeat' => 'background-repeat',
+            'backgroundSize' => 'background-size',
+        ]));
     }
 
     private function importantDeclarations(array $declarations): array
