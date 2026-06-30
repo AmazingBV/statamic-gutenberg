@@ -174,6 +174,35 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('>Download file</a>', $rendered);
     }
 
+    public function test_it_constructs_media_text_blocks_from_attributes_and_inner_blocks(): void
+    {
+        $html = '<!-- wp:media-text {"mediaUrl":"https://site.test/storage/media.jpg","mediaType":"image","mediaAlt":"Media alt","mediaId":42,"mediaSizeSlug":"large","mediaPosition":"right","mediaWidth":35,"verticalAlignment":"center","isStackedOnMobile":true,"imageFill":true,"focalPoint":{"x":0.25,"y":0.75},"href":"https://site.test/media","linkTarget":"_blank","rel":"noreferrer noopener","linkClass":"media-link","align":"wide","anchor":"media-text-one"} --><!-- wp:paragraph --><p>Media text</p><!-- /wp:paragraph --><!-- /wp:media-text -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('id="media-text-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-media-text alignwide has-media-on-the-right is-stacked-on-mobile is-vertically-aligned-center is-image-fill-element"', $rendered);
+        $this->assertStringContainsString('style="grid-template-columns: auto 35%"', $rendered);
+        $this->assertStringContainsString('<div class="wp-block-media-text__content"><p>Media text</p></div>', $rendered);
+        $this->assertStringContainsString('<figure class="wp-block-media-text__media"><a class="media-link" href="https://site.test/media" target="_blank" rel="noreferrer noopener"><img src="https://site.test/storage/media.jpg" alt="Media alt" class="wp-image-42 size-large" style="object-position: 25% 75%"></a></figure>', $rendered);
+    }
+
+    public function test_it_constructs_details_blocks_from_attributes_and_inner_blocks(): void
+    {
+        $html = '<!-- wp:details {"summary":"More <strong>info</strong><script>alert(1)</script>","showContent":true,"name":"faq","align":"wide","anchor":"details-one"} --><!-- wp:paragraph --><p>Hidden answer</p><!-- /wp:paragraph --><!-- /wp:details -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<details', $rendered);
+        $this->assertStringContainsString('id="details-one"', $rendered);
+        $this->assertStringContainsString('class="wp-block-details alignwide"', $rendered);
+        $this->assertStringContainsString('name="faq"', $rendered);
+        $this->assertStringContainsString('open="open"', $rendered);
+        $this->assertStringContainsString('<summary>More <strong>info</strong></summary>', $rendered);
+        $this->assertStringContainsString('<p>Hidden answer</p>', $rendered);
+        $this->assertStringNotContainsString('<script>', $rendered);
+    }
+
     public function test_it_renders_duotone_filters_for_image_and_cover_blocks(): void
     {
         $imageDuotone = ['#000000', '#ffffff'];

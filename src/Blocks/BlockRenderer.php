@@ -170,10 +170,12 @@ class BlockRenderer
             'core/nextpage' => $this->renderNextPageMarker($block, $options),
             'core/embed' => $this->renderEmbed($block, $options),
             'core/file' => $this->renderFile($block, $options),
+            'core/details' => $this->renderDetails($block, $inner, $options),
             'core/heading' => $this->renderHeading($block, $options),
             'core/icon' => $this->renderIcon($block, $options),
             'core/image' => $this->renderImage($block, $options),
             'core/math' => $this->renderMath($block, $options),
+            'core/media-text' => $this->renderMediaText($block, $inner, $options),
             'core/video' => $this->renderVideo($block, $options),
             default => $this->renderStaticOrFallbackCoreBlock($block, $inner, $options),
         };
@@ -1327,6 +1329,164 @@ class BlockRenderer
         ]).'>'.$inner.'</div>', $options);
     }
 
+    private function renderDetails(Block $block, string $inner, array $options): string
+    {
+        $html = trim($this->sanitize($this->renderStaticBlockMarkup($block, $options), $options));
+
+        if ($this->firstElementHasClass($html, 'wp-block-details')) {
+            return $html;
+        }
+
+        $summary = trim((string) $block->attribute('summary', ''));
+        $summary = $summary !== '' ? $summary : 'Details';
+        $name = $block->attribute('name');
+        $attributes = [
+            'class' => 'wp-block-details',
+            'name' => is_scalar($name) ? trim((string) $name) : '',
+            'open' => $this->truthy($block->attribute('showContent', false)) ? 'open' : '',
+        ];
+
+        return $this->sanitize('<details'.$this->fallbackRootAttributes($block, $attributes).'><summary>'.$summary.'</summary>'.$inner.'</details>', $options);
+    }
+
+    private function renderMediaText(Block $block, string $inner, array $options): string
+    {
+        $html = trim($this->sanitize($this->renderStaticBlockMarkup($block, $options), $options));
+
+        if ($this->firstElementMatches($html, 'div', 'wp-block-media-text')) {
+            $html = $this->postProcessStaticInnerBlocks($block, $html, $inner);
+            $html = $this->applyStaticLayoutAttributes($block, $html);
+
+            return $html;
+        }
+
+        $media = $this->renderMediaTextMedia($block);
+
+        if ($media === '' && $inner === '') {
+            return '';
+        }
+
+        $classes = ['wp-block-media-text'];
+        $mediaPosition = (string) $block->attribute('mediaPosition', 'left');
+
+        if ($mediaPosition === 'right') {
+            $classes[] = 'has-media-on-the-right';
+        }
+
+        if (! $this->explicitlyFalse($block->attribute('isStackedOnMobile', true))) {
+            $classes[] = 'is-stacked-on-mobile';
+        }
+
+        $verticalAlignment = $this->safeClassSlug($block->attribute('verticalAlignment'));
+
+        if ($verticalAlignment) {
+            $classes[] = 'is-vertically-aligned-'.$verticalAlignment;
+        }
+
+        if ($this->truthy($block->attribute('imageFill', false))) {
+            $classes[] = 'is-image-fill-element';
+        }
+
+        $style = $this->mediaTextGridStyle($block);
+        $mediaFigure = '<figure class="wp-block-media-text__media">'.$media.'</figure>';
+        $content = '<div class="wp-block-media-text__content">'.$inner.'</div>';
+
+        if ($mediaPosition === 'right') {
+            $content = $content.$mediaFigure;
+        } else {
+            $content = $mediaFigure.$content;
+        }
+
+        return $this->sanitize('<div'.$this->fallbackRootAttributes($block, [
+            'class' => implode(' ', $classes),
+            'style' => $style,
+        ]).'>'.$content.'</div>', $options);
+    }
+
+    private function renderMediaTextMedia(Block $block): string
+    {
+        $url = $block->attribute('mediaUrl');
+
+        if (! is_scalar($url) || trim((string) $url) === '') {
+            return '';
+        }
+
+        $url = trim((string) $url);
+        $type = (string) $block->attribute('mediaType', 'image');
+
+        if ($type === 'video') {
+            return '<video controls="controls" src="'.e($url).'"></video>';
+        }
+
+        if ($type !== 'image') {
+            return '';
+        }
+
+        $classes = [];
+        $mediaId = $block->attribute('mediaId');
+
+        if ((is_int($mediaId) || ctype_digit((string) $mediaId)) && (int) $mediaId > 0) {
+            $classes[] = 'wp-image-'.(int) $mediaId;
+        }
+
+        $mediaSizeSlug = $this->safeClassSlug($block->attribute('mediaSizeSlug', 'full'));
+
+        if ($classes !== [] && $mediaSizeSlug) {
+            $classes[] = 'size-'.$mediaSizeSlug;
+        }
+
+        $image = '<img'.$this->renderAttributes([
+            'src' => $url,
+            'alt' => is_scalar($block->attribute('mediaAlt', '')) ? (string) $block->attribute('mediaAlt', '') : '',
+            'class' => implode(' ', $classes),
+            'style' => $this->truthy($block->attribute('imageFill', false)) ? $this->mediaTextImageFillStyle($block) : '',
+        ]).'>';
+
+        $href = $block->attribute('href');
+
+        if (! is_scalar($href) || trim((string) $href) === '') {
+            return $image;
+        }
+
+        return '<a'.$this->renderAttributes([
+            'class' => implode(' ', $this->safeClassList($block->attribute('linkClass'))),
+            'href' => trim((string) $href),
+            'target' => $this->safeLinkTarget($block->attribute('linkTarget')),
+            'rel' => is_scalar($block->attribute('rel')) ? trim((string) $block->attribute('rel')) : '',
+        ]).'>'.$image.'</a>';
+    }
+
+    private function mediaTextGridStyle(Block $block): string
+    {
+        $width = $block->attribute('mediaWidth', 50);
+
+        if (! is_numeric($width) || (float) $width === 50.0) {
+            return '';
+        }
+
+        $width = max(1, min(100, (float) $width));
+        $width = rtrim(rtrim(number_format($width, 2, '.', ''), '0'), '.');
+        $columns = (string) $block->attribute('mediaPosition', 'left') === 'right'
+            ? 'auto '.$width.'%'
+            : $width.'% auto';
+
+        return 'grid-template-columns: '.$columns;
+    }
+
+    private function mediaTextImageFillStyle(Block $block): string
+    {
+        $focalPoint = $block->attribute('focalPoint', []);
+        $x = 0.5;
+        $y = 0.5;
+
+        if (is_array($focalPoint)) {
+            $x = is_numeric($focalPoint['x'] ?? null) ? max(0, min(1, (float) $focalPoint['x'])) : $x;
+            $y = is_numeric($focalPoint['y'] ?? null) ? max(0, min(1, (float) $focalPoint['y'])) : $y;
+        }
+
+        return 'object-position: '.round($x * 100).'% '.round($y * 100).'%';
+    }
+
     private function renderIcon(Block $block, array $options): string
     {
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
@@ -1648,6 +1808,28 @@ class BlockRenderer
         }
 
         return null;
+    }
+
+    private function firstElementMatches(string $html, string $tagName, string $className): bool
+    {
+        $fragment = $this->firstElementFragment($html);
+
+        if (! $fragment || ($fragment['tag'] ?? '') !== $tagName) {
+            return false;
+        }
+
+        return in_array($className, preg_split('/\s+/', trim((string) (($fragment['attributes'] ?? [])['class'] ?? ''))) ?: [], true);
+    }
+
+    private function firstElementHasClass(string $html, string $className): bool
+    {
+        $fragment = $this->firstElementFragment($html);
+
+        if (! $fragment) {
+            return false;
+        }
+
+        return in_array($className, preg_split('/\s+/', trim((string) (($fragment['attributes'] ?? [])['class'] ?? ''))) ?: [], true);
     }
 
     private function addClassesToFirstElement(string $html, array $classes, array $allowedTags): string
