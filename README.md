@@ -450,6 +450,109 @@ The addon serves those files through:
 /vendor/statamic-gutenberg/theme/...
 ```
 
+## Block Styles
+
+Block styles are native Gutenberg style variations. They appear in the standard
+Gutenberg Styles UI for the selected block. When an editor chooses a style, the
+saved block receives WordPress' normal `is-style-{name}` class. The addon renders
+the matching CSS in both the editor and frontend, scoped to the Block Editor
+roots.
+
+The default project-local file path is:
+
+```text
+resources/vendor/statamic-gutenberg/block-styles.php
+```
+
+Create it in the host Statamic project:
+
+```bash
+cd /path/to/laravel-statamic-project
+mkdir -p resources/vendor/statamic-gutenberg
+$EDITOR resources/vendor/statamic-gutenberg/block-styles.php
+```
+
+Example file:
+
+```php
+<?php
+
+return [
+    'core/paragraph' => [
+        [
+            'name' => 'lead',
+            'label' => 'Lead',
+            'style' => [
+                'typography' => [
+                    'fontSize' => 'var:preset|font-size|large',
+                    'fontWeight' => '700',
+                ],
+            ],
+        ],
+    ],
+    [
+        'blocks' => ['core/heading', 'core/paragraph'],
+        'name' => 'eyebrow',
+        'label' => 'Eyebrow',
+        'style' => [
+            'typography' => [
+                'fontSize' => '0.875rem',
+                'fontWeight' => '700',
+                'textTransform' => 'uppercase',
+            ],
+        ],
+    ],
+];
+```
+
+You can also register styles directly in `config/statamic-gutenberg.php`:
+
+```php
+'block_styles' => [
+    'core/button' => [
+        [
+            'name' => 'brand-button',
+            'label' => 'Brand button',
+            'style' => [
+                'border' => [
+                    'color' => 'var:preset|color|brand',
+                ],
+            ],
+        ],
+    ],
+],
+```
+
+For dynamic registration from a Laravel service provider:
+
+```php
+use Gutenberg;
+
+Gutenberg::blockStyle('core/paragraph', [
+    'name' => 'lead',
+    'label' => 'Lead',
+    'style' => [
+        'typography' => [
+            'fontWeight' => '700',
+        ],
+    ],
+]);
+```
+
+Supported keys are:
+
+- `name`: required style slug. The saved class becomes `is-style-{name}`.
+- `label`: optional editor label. If omitted, the addon generates one from
+  `name`.
+- `isDefault` or `is_default`: optional boolean for Gutenberg's default style.
+- `style`: optional WordPress theme.json style object.
+
+The `style` object supports the same shape used in `theme.json`, including
+`color`, `typography`, `spacing`, `border`, `dimensions`, `shadow`, nested
+elements, pseudo selectors, and preset references such as
+`var:preset|color|brand`. Use `theme.json styles.css` or your own project CSS
+when a style needs raw custom CSS that does not fit that shape.
+
 ## Icons
 
 The Icon block reads icons from config and from a project-local PHP file.

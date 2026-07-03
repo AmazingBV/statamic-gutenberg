@@ -188,6 +188,17 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain("assignThemePreset(next, ['shadow', 'presets'], shadowPresets);");
     });
 
+    it('registers Statamic block styles with the native Gutenberg style registry', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+        const fieldtypeSource = fs.readFileSync('resources/js/components/fieldtypes/StatamicGutenberg.vue', 'utf8');
+
+        expect(source).toContain("import { registerStatamicBlockStyles } from './blockStyles'");
+        expect(source).toContain('const rawBlockStyles = Array.isArray(meta?.blockStyles)');
+        expect(source).toContain('registerStatamicBlockStyles(rawBlockStyles)');
+        expect(source).toContain('window.StatamicGutenbergBlockStyles = blockStyles');
+        expect(fieldtypeSource).toContain('window.StatamicGutenbergBlockStyles = meta.blockStyles');
+    });
+
     it('inserts selected Statamic gallery assets as nested image blocks', () => {
         const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
 

@@ -2,12 +2,18 @@
 
 namespace Amazingbv\StatamicGutenberg;
 
+use Amazingbv\StatamicGutenberg\BlockStyles\BlockStyleRepository;
 use Amazingbv\StatamicGutenberg\Support\Duotone;
 
 class ThemeJson
 {
     private ?array $data = null;
     private bool $loaded = false;
+
+    public function __construct(private BlockStyleRepository $blockStyles)
+    {
+        //
+    }
 
     public function path(): string
     {
@@ -34,14 +40,18 @@ class ThemeJson
 
     public function editorPayload(): ?array
     {
-        if (! $this->data()) {
+        $data = $this->data();
+        $css = $this->editorCss();
+        $svgs = $this->svgDefinitions();
+
+        if (! $data && $css === '' && $svgs === '') {
             return null;
         }
 
         return [
-            'settings' => $this->settings(),
-            'css' => $this->editorCss(),
-            'svgs' => $this->svgDefinitions(),
+            'settings' => $this->settings() ?: new \stdClass,
+            'css' => $css,
+            'svgs' => $svgs,
         ];
     }
 
@@ -59,14 +69,11 @@ class ThemeJson
 
     public function svgDefinitions(): string
     {
-        $data = $this->data();
-
-        if (! $data) {
-            return '';
-        }
+        $data = $this->data() ?? [];
 
         $settings = is_array($data['settings'] ?? null) ? $data['settings'] : [];
         $styles = is_array($data['styles'] ?? null) ? $data['styles'] : [];
+        $styles = $this->mergeBlockStyleVariations($styles);
 
         return trim(implode("\n", array_filter([
             Duotone::presetFilters($settings),
@@ -86,14 +93,11 @@ class ThemeJson
 
     private function cssForRoots(array $roots, ?array $rootDeclarationRoots = null): string
     {
-        $data = $this->data();
-
-        if (! $data) {
-            return '';
-        }
+        $data = $this->data() ?? [];
 
         $settings = is_array($data['settings'] ?? null) ? $data['settings'] : [];
         $styles = is_array($data['styles'] ?? null) ? $data['styles'] : [];
+        $styles = $this->mergeBlockStyleVariations($styles);
         $rules = $this->fontFaceRules($settings);
 
         $rootDeclarations = array_merge(
@@ -112,6 +116,36 @@ class ThemeJson
         }
 
         return trim(implode("\n", array_filter($rules)));
+    }
+
+    private function mergeBlockStyleVariations(array $styles): array
+    {
+        $blocks = $this->blockStyles->themeJsonBlocks();
+
+        if (! $blocks) {
+            return $styles;
+        }
+
+        if (! is_array($styles['blocks'] ?? null)) {
+            $styles['blocks'] = [];
+        }
+
+        foreach ($blocks as $blockName => $blockStyles) {
+            if (! is_array($styles['blocks'][$blockName] ?? null)) {
+                $styles['blocks'][$blockName] = [];
+            }
+
+            if (! is_array($styles['blocks'][$blockName]['variations'] ?? null)) {
+                $styles['blocks'][$blockName]['variations'] = [];
+            }
+
+            $styles['blocks'][$blockName]['variations'] = array_merge(
+                $styles['blocks'][$blockName]['variations'],
+                $blockStyles['variations'] ?? [],
+            );
+        }
+
+        return $styles;
     }
 
     private function presetVariables(array $settings): array

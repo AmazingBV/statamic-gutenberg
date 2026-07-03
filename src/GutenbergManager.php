@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg;
 use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
+use Amazingbv\StatamicGutenberg\BlockStyles\BlockStyleRepository;
 use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
 use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
@@ -17,6 +18,7 @@ class GutenbergManager
         private BlockParser $parser,
         private BlockRenderer $renderer,
         private ThemeJson $themeJson,
+        private BlockStyleRepository $blockStyles,
         private PatternRepository $patterns,
         private CustomBlockRepository $customBlocks,
         private BardBlockRepository $bardBlocks,
@@ -27,6 +29,13 @@ class GutenbergManager
     public function block(string $name, array|string|callable $definition): self
     {
         $this->registry->block($name, $definition);
+
+        return $this;
+    }
+
+    public function blockStyle(string|array $blocks, array $style): self
+    {
+        $this->blockStyles->register($blocks, $style);
 
         return $this;
     }
@@ -113,6 +122,11 @@ class GutenbergManager
     public function editorBardBlocks(): array
     {
         return $this->bardBlocks->editorPayload();
+    }
+
+    public function editorBlockStyles(?array $allowedBlocks = null): array
+    {
+        return $this->blockStyles->editorPayload($allowedBlocks);
     }
 
     private function frontendScriptAssets(): array

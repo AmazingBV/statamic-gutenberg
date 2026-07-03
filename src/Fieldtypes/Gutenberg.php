@@ -83,6 +83,7 @@ class Gutenberg extends Fieldtype
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
             'themeJson' => app(GutenbergManager::class)->editorTheme(),
             'patterns' => app(GutenbergManager::class)->editorPatterns($allowedBlocks),
+            'blockStyles' => app(GutenbergManager::class)->editorBlockStyles($allowedBlocks),
             'customBlocks' => app(GutenbergManager::class)->editorCustomBlocks(),
             'bardBlocks' => app(GutenbergManager::class)->editorBardBlocks(),
         ];

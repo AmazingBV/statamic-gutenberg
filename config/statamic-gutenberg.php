@@ -104,6 +104,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Block Styles
+    |--------------------------------------------------------------------------
+    |
+    | Register native Gutenberg block style variations from the host project.
+    | The editor shows these in Gutenberg's standard Styles UI and saved blocks
+    | receive the standard `is-style-{name}` class.
+    |
+    | Use `block_styles_path` for a project-local PHP file, or add definitions
+    | directly to `block_styles`. Runtime registration is also available through
+    | Gutenberg::blockStyle() from a Laravel service provider.
+    |
+    | Supported style keys are: name, label, isDefault/is_default, and style.
+    | The `style` value uses the same WordPress theme.json style shape that this
+    | addon already renders for the editor and frontend.
+    |
+    | Example file shape:
+    |
+    | return [
+    |     'core/paragraph' => [
+    |         [
+    |             'name' => 'lead',
+    |             'label' => 'Lead',
+    |             'style' => [
+    |                 'typography' => ['fontWeight' => '700'],
+    |             ],
+    |         ],
+    |     ],
+    | ];
+    |
+    */
+    'block_styles_path' => resource_path('vendor/statamic-gutenberg/block-styles.php'),
+    'block_styles' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Custom Blocks
     |--------------------------------------------------------------------------
     |

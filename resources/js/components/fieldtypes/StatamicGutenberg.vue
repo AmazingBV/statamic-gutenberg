@@ -74,6 +74,10 @@ function exposeEditorMeta(meta) {
     if (meta?.patterns) {
         window.StatamicGutenbergPatterns = meta.patterns;
     }
+
+    if (Array.isArray(meta?.blockStyles)) {
+        window.StatamicGutenbergBlockStyles = meta.blockStyles;
+    }
 }
 
 async function refreshEditorMeta() {

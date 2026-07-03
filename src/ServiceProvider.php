@@ -6,6 +6,7 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockParser;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRegistry;
 use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Amazingbv\StatamicGutenberg\Blocks\Sanitizer;
+use Amazingbv\StatamicGutenberg\BlockStyles\BlockStyleRepository;
 use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
 use Amazingbv\StatamicGutenberg\CustomBlocks\CustomBlockRepository;
 use Amazingbv\StatamicGutenberg\Http\Controllers\CustomBlockAssetController;
@@ -35,6 +36,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->app->singleton(BlockRegistry::class);
         $this->app->singleton(Sanitizer::class);
         $this->app->singleton(BlockRenderer::class);
+        $this->app->singleton(BlockStyleRepository::class);
         $this->app->singleton(BardBlockRepository::class);
         $this->app->singleton(CustomBlockRepository::class);
         $this->app->singleton(IconRepository::class);
