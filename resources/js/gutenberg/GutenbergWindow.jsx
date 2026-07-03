@@ -14,7 +14,11 @@ function readPayload(channel) {
 }
 
 function writePayload(channel, payload) {
-    localStorage.setItem(`statamic-gutenberg:${channel}`, JSON.stringify(payload));
+    try {
+        localStorage.setItem(`statamic-gutenberg:${channel}`, JSON.stringify(payload));
+    } catch (error) {
+        // Large embedded entries do not need storage handoff and can exceed browser quota.
+    }
 }
 
 export function GutenbergWindow({
@@ -112,12 +116,12 @@ export function GutenbergWindow({
         };
 
         setPayload(nextPayload);
-        writePayload(channel, nextPayload);
 
         if (embedded) {
             onChange?.(nextValue);
             setStatus('Edited in overlay');
         } else {
+            writePayload(channel, nextPayload);
             sendToOpener('change', nextValue);
             setStatus('Synced to Statamic form');
         }

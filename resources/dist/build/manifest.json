@@ -42,7 +42,7 @@
     ]
   },
   "resources/js/addon.js": {
-    "file": "assets/addon-BZr2H0kn.js",
+    "file": "assets/addon-D1aNT7JQ.js",
     "name": "addon",
     "src": "resources/js/addon.js",
     "isEntry": true,
@@ -54,7 +54,7 @@
     ]
   },
   "resources/js/editor-window.js": {
-    "file": "assets/editor-window-CrtGb__a.js",
+    "file": "assets/editor-window-Drb1bHKT.js",
     "name": "editor-window",
     "src": "resources/js/editor-window.js",
     "isEntry": true,
@@ -70,7 +70,7 @@
     "isEntry": true
   },
   "resources/js/gutenberg/mount.jsx": {
-    "file": "assets/mount-CS7s9i9b.js",
+    "file": "assets/mount-C4xJ4L-5.js",
     "name": "mount",
     "src": "resources/js/gutenberg/mount.jsx",
     "isDynamicEntry": true,

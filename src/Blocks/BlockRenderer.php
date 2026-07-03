@@ -20,6 +20,33 @@ use Throwable;
 
 class BlockRenderer
 {
+    private const STATIC_WRAPPER_SUPPORT_TAGS = [
+        'core/audio' => ['figure', 'audio'],
+        'core/button' => ['div'],
+        'core/code' => ['pre'],
+        'core/details' => ['details'],
+        'core/embed' => ['figure'],
+        'core/file' => ['div'],
+        'core/heading' => ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
+        'core/list' => ['ul', 'ol'],
+        'core/list-item' => ['li'],
+        'core/math' => ['div'],
+        'core/media-text' => ['div'],
+        'core/paragraph' => ['p'],
+        'core/preformatted' => ['pre'],
+        'core/pullquote' => ['figure'],
+        'core/quote' => ['blockquote'],
+        'core/separator' => ['hr', 'div'],
+        'core/spacer' => ['div'],
+        'core/table' => ['figure'],
+        'core/verse' => ['pre'],
+        'core/video' => ['figure', 'video'],
+    ];
+
+    private const BASE_CLASSLESS_STATIC_BLOCKS = [
+        'core/paragraph',
+    ];
+
     public function __construct(
         private BlockParser $parser,
         private BlockRegistry $registry,
@@ -282,6 +309,7 @@ class BlockRenderer
         if ($html !== '') {
             $html = $this->postProcessStaticInnerBlocks($block, $html, $inner);
             $html = $this->applyStaticLayoutAttributes($block, $html);
+            $html = $this->applyStaticWrapperSupportAttributes($block, $html);
 
             return $this->applyDuotone($block, $html);
         }
@@ -1080,17 +1108,17 @@ class BlockRenderer
         return ucwords(str_replace(['-', '_', '/'], ' ', $slug));
     }
 
-    private function fallbackRootAttributes(Block $block, array $attributes): string
+    private function fallbackRootAttributes(Block $block, array $attributes, bool $includeBaseClass = true): string
     {
         return BlockWrapperContext::withBlock(
             $block,
-            fn (): string => BlockWrapperContext::wrapperAttributes($attributes)
+            fn (): string => BlockWrapperContext::wrapperAttributes($attributes, $includeBaseClass)
         );
     }
 
-    private function fallbackRootAttributeArray(Block $block, array $attributes): array
+    private function fallbackRootAttributeArray(Block $block, array $attributes, bool $includeBaseClass = true): array
     {
-        return BlockWrapperContext::attributesForBlock($block, $attributes);
+        return BlockWrapperContext::attributesForBlock($block, $attributes, $includeBaseClass);
     }
 
     private function siteUrl(string $path = '/'): string
@@ -1240,6 +1268,27 @@ class BlockRenderer
             'core/cover' => $this->applyCoverLayoutAttributes($html, $layout),
             default => $html,
         };
+    }
+
+    private function applyStaticWrapperSupportAttributes(Block $block, string $html): string
+    {
+        $tags = self::STATIC_WRAPPER_SUPPORT_TAGS[$block->name()] ?? null;
+
+        if (! $tags) {
+            return $html;
+        }
+
+        $includeBaseClass = ! in_array($block->name(), self::BASE_CLASSLESS_STATIC_BLOCKS, true);
+
+        return $this->transformFirstElement($html, $tags, function (DOMDocument $document, DOMElement $element) use ($block, $includeBaseClass): void {
+            $attributes = $this->fallbackRootAttributeArray(
+                $block,
+                $this->elementAttributes($element),
+                $includeBaseClass
+            );
+
+            $this->replaceElementAttributes($element, $attributes);
+        });
     }
 
     private function applyCoverLayoutAttributes(string $html, array $layout): string
@@ -1470,11 +1519,13 @@ class BlockRenderer
             ), $options);
         }
 
-        return $this->addClassesToFirstElement(
+        $html = $this->addClassesToFirstElement(
             $this->sanitize($html, $options),
             $classes,
             ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
         );
+
+        return $this->applyStaticWrapperSupportAttributes($block, $html);
     }
 
     private function renderImage(Block $block, array $options): string
@@ -1536,7 +1587,7 @@ class BlockRenderer
 
         $html = $this->sanitize($html, $options);
 
-        return $this->transformFirstElement($html, ['figure', 'video'], function (DOMDocument $document, DOMElement $element) use ($block): void {
+        $html = $this->transformFirstElement($html, ['figure', 'video'], function (DOMDocument $document, DOMElement $element) use ($block): void {
             if (strtolower($element->tagName) === 'figure') {
                 $this->addClasses($element, ['wp-block-video']);
             }
@@ -1557,6 +1608,8 @@ class BlockRenderer
 
             $video->setAttribute('controls', 'controls');
         });
+
+        return $this->applyStaticWrapperSupportAttributes($block, $html);
     }
 
     private function renderAudio(Block $block, array $options): string
@@ -1591,7 +1644,7 @@ class BlockRenderer
 
         $html = $this->sanitize($html, $options);
 
-        return $this->transformFirstElement($html, ['figure', 'audio'], function (DOMDocument $document, DOMElement $element): void {
+        $html = $this->transformFirstElement($html, ['figure', 'audio'], function (DOMDocument $document, DOMElement $element): void {
             if (strtolower($element->tagName) === 'figure') {
                 $this->addClasses($element, ['wp-block-audio']);
             }
@@ -1604,6 +1657,8 @@ class BlockRenderer
                 $audio->setAttribute('controls', 'controls');
             }
         });
+
+        return $this->applyStaticWrapperSupportAttributes($block, $html);
     }
 
     private function renderSpacer(Block $block, array $options): string
@@ -1611,7 +1666,9 @@ class BlockRenderer
         $html = trim($block->renderableHtml());
 
         if ($html !== '') {
-            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-spacer'], ['div']);
+            $html = $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-spacer'], ['div']);
+
+            return $this->applyStaticWrapperSupportAttributes($block, $html);
         }
 
         $attributes = $block->attributes();
@@ -1638,7 +1695,9 @@ class BlockRenderer
         $html = trim($block->renderableHtml());
 
         if ($html !== '') {
-            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-separator'], ['hr', 'div']);
+            $html = $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-separator'], ['hr', 'div']);
+
+            return $this->applyStaticWrapperSupportAttributes($block, $html);
         }
 
         $tag = $this->safeTagName((string) $block->attribute('tagName', 'hr'), 'hr', ['hr', 'div']);
@@ -1707,7 +1766,9 @@ class BlockRenderer
             $html = '<div class="wp-block-math">'.$math.'</div>';
         }
 
-        return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-math'], ['div']);
+        $html = $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-math'], ['div']);
+
+        return $this->applyStaticWrapperSupportAttributes($block, $html);
     }
 
     private function renderFile(Block $block, array $options): string
@@ -1715,7 +1776,9 @@ class BlockRenderer
         $html = trim($block->renderableHtml());
 
         if ($html !== '') {
-            return $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-file'], ['div']);
+            $html = $this->addClassesToFirstElement($this->sanitize($html, $options), ['wp-block-file'], ['div']);
+
+            return $this->applyStaticWrapperSupportAttributes($block, $html);
         }
 
         $href = $block->attribute('href');
@@ -1774,7 +1837,7 @@ class BlockRenderer
         $html = trim($this->sanitize($this->renderStaticBlockMarkup($block, $options), $options));
 
         if ($this->firstElementHasClass($html, 'wp-block-details')) {
-            return $html;
+            return $this->applyStaticWrapperSupportAttributes($block, $html);
         }
 
         $summary = trim((string) $block->attribute('summary', ''));
@@ -1797,7 +1860,7 @@ class BlockRenderer
             $html = $this->postProcessStaticInnerBlocks($block, $html, $inner);
             $html = $this->applyStaticLayoutAttributes($block, $html);
 
-            return $html;
+            return $this->applyStaticWrapperSupportAttributes($block, $html);
         }
 
         $media = $this->renderMediaTextMedia($block);
@@ -1974,7 +2037,7 @@ class BlockRenderer
         $embedUrl = $this->youtubeEmbedUrl($url);
 
         if (! $embedUrl) {
-            return trim($this->sanitize($block->renderableHtml(), $options));
+            return $this->applyStaticWrapperSupportAttributes($block, trim($this->sanitize($block->renderableHtml(), $options)));
         }
 
         $classes = [
@@ -2414,6 +2477,46 @@ class BlockRenderer
         }
 
         return null;
+    }
+
+    private function elementAttributes(DOMElement $element): array
+    {
+        $attributes = [];
+
+        foreach ($element->attributes as $attribute) {
+            $attributes[$attribute->name] = $attribute->value;
+        }
+
+        return $attributes;
+    }
+
+    private function replaceElementAttributes(DOMElement $element, array $attributes): void
+    {
+        foreach (iterator_to_array($element->attributes) as $attribute) {
+            $element->removeAttribute($attribute->name);
+        }
+
+        foreach ($attributes as $name => $value) {
+            if ($value === null || $value === false || $value === '') {
+                continue;
+            }
+
+            if ($value === true) {
+                $value = $name;
+            }
+
+            if (is_array($value) || is_object($value)) {
+                continue;
+            }
+
+            $safeName = preg_replace('/[^a-zA-Z0-9_:\-]/', '', (string) $name);
+
+            if ($safeName === '') {
+                continue;
+            }
+
+            $element->setAttribute($safeName, (string) $value);
+        }
     }
 
     private function fragmentHasClass(array $fragment, string $className): bool

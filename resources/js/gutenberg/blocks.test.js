@@ -2,9 +2,14 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
     addTextAlignSaveProps,
+    CONTAINER_SUPPORT_BLOCKS,
+    MEDIA_SUPPORT_BLOCKS,
     STATAMIC_MEDIA_IDENTITY_BLOCKS,
+    STATAMIC_SUPPORT_BLOCKS,
     TEXT_ALIGNMENTS,
     TEXT_FORMATTING_BLOCKS,
+    TEXT_SUPPORT_BLOCKS,
+    UTILITY_SUPPORT_BLOCKS,
     WIDE_FULL_ALIGNMENTS,
     textAlignClassName,
     withStatamicMediaIdentitySupport,
@@ -55,9 +60,13 @@ describe('registerGutenbergBlocks', () => {
             type: 'string',
             enum: ['left', 'center', 'right', 'wide', 'full', ''],
         });
+
+        const disabled = withWideFullAlignSupport({ supports: { align: false }, attributes: {} });
+        expect(disabled.supports.align).toBe(false);
+        expect(disabled.attributes.align).toBeUndefined();
     });
 
-    it('adds paragraph and heading text alignment and color support', () => {
+    it('adds paragraph and heading text alignment and color support without overriding existing support values', () => {
         expect(TEXT_FORMATTING_BLOCKS).toEqual(['core/paragraph', 'core/heading']);
         expect(TEXT_ALIGNMENTS).toEqual(['left', 'center', 'right', 'justify']);
 
@@ -71,7 +80,7 @@ describe('registerGutenbergBlocks', () => {
 
         expect(settings.supports.typography).toMatchObject({
             fontSize: true,
-            textAlign: ['justify'],
+            textAlign: true,
             textColumns: true,
             textIndent: true,
         });
@@ -96,7 +105,7 @@ describe('registerGutenbergBlocks', () => {
         const settings = withStatamicBlockSupport({ supports: { align: ['wide'] }, attributes: {} }, 'core/heading');
 
         expect(settings.supports.align).toEqual(['wide', 'full']);
-        expect(settings.supports.typography.textAlign).toEqual(['justify']);
+        expect(settings.supports.typography.textAlign).toBe(true);
         expect(settings.supports.typography.textColumns).toBe(true);
         expect(settings.supports.typography.textIndent).toBe(true);
         expect(settings.supports.color.text).toBe(true);
@@ -121,6 +130,111 @@ describe('registerGutenbergBlocks', () => {
 
         expect(withStatamicBlockSupport({ supports: {}, attributes: {} }, 'core/image').attributes.statamicId)
             .toEqual({ type: 'string' });
+    });
+
+    it('adds a Gutenberg support matrix for allowed core block groups', () => {
+        expect(TEXT_SUPPORT_BLOCKS).toContain('core/list');
+        expect(CONTAINER_SUPPORT_BLOCKS).toContain('core/group');
+        expect(MEDIA_SUPPORT_BLOCKS).toContain('core/image');
+        expect(UTILITY_SUPPORT_BLOCKS).toContain('core/table');
+        expect(STATAMIC_SUPPORT_BLOCKS).toContain('core/spacer');
+
+        const group = withStatamicBlockSupport({ supports: {}, attributes: {} }, 'core/group');
+
+        expect(group.supports).toMatchObject({
+            align: ['wide', 'full'],
+            anchor: true,
+            className: true,
+            shadow: true,
+            layout: true,
+            allowedBlocks: true,
+            color: {
+                text: true,
+                background: true,
+                gradients: true,
+                link: true,
+            },
+            typography: {
+                fontSize: true,
+                lineHeight: true,
+                __experimentalFontFamily: true,
+                __experimentalTextDecoration: true,
+            },
+            spacing: {
+                margin: true,
+                padding: true,
+                blockGap: true,
+            },
+            __experimentalBorder: {
+                color: true,
+                radius: true,
+                style: true,
+                width: true,
+            },
+            dimensions: {
+                aspectRatio: true,
+                minHeight: true,
+                minWidth: true,
+                width: true,
+            },
+            background: {
+                backgroundImage: true,
+                backgroundSize: true,
+            },
+        });
+        expect(group.attributes).toMatchObject({
+            style: { type: 'object' },
+            align: { type: 'string' },
+            anchor: { type: 'string' },
+            className: { type: 'string' },
+            textColor: { type: 'string' },
+            backgroundColor: { type: 'string' },
+            gradient: { type: 'string' },
+            fontSize: { type: 'string' },
+            fontFamily: { type: 'string' },
+            borderColor: { type: 'string' },
+        });
+
+        const button = withStatamicBlockSupport({ supports: { align: false }, attributes: {} }, 'core/button');
+
+        expect(button.supports.align).toBe(false);
+        expect(button.attributes.align).toBeUndefined();
+    });
+
+    it('keeps custom block supports authoritative while adding support attributes', () => {
+        const custom = withStatamicBlockSupport({
+            attributes: {},
+            supports: {
+                align: false,
+                color: {
+                    text: true,
+                    background: false,
+                },
+                typography: {
+                    fontSize: true,
+                    fontFamily: false,
+                },
+            },
+        }, 'amazing/card');
+
+        expect(custom.supports.align).toBe(false);
+        expect(custom.supports.color).toEqual({
+            text: true,
+            background: false,
+        });
+        expect(custom.supports.typography).toEqual({
+            fontSize: true,
+            fontFamily: false,
+        });
+        expect(custom.attributes.align).toBeUndefined();
+        expect(custom.attributes.style).toEqual({ type: 'object' });
+        expect(custom.attributes.textColor).toEqual({ type: 'string' });
+        expect(custom.attributes.fontSize).toEqual({ type: 'string' });
+
+        const customWithoutSupports = withStatamicBlockSupport({ supports: {}, attributes: {} }, 'amazing/plain');
+
+        expect(customWithoutSupports.supports).toEqual({});
+        expect(customWithoutSupports.attributes).toEqual({});
     });
 
     it('adds editor wrapper styles for group flex and grid layouts', () => {
@@ -242,6 +356,8 @@ describe('registerGutenbergBlocks', () => {
         expect(windowSource).toContain('value !== lastAppliedValue');
         expect(windowSource).toContain('editorValid');
         expect(windowSource).toContain('Fix code editor syntax before applying');
+        expect(windowSource).toContain('try {');
+        expect(windowSource).toContain('Large embedded entries do not need storage handoff');
         expect(windowSource).not.toContain('Close the block editor without applying changes?');
     });
 });

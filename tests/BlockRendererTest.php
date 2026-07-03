@@ -463,12 +463,47 @@ class BlockRendererTest extends TestCase
 
         $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
 
-        $this->assertStringContainsString('class="has-text-align-justify has-blue-color has-text-color"', $rendered);
+        $this->assertStringContainsString('has-text-align-justify', $rendered);
+        $this->assertStringContainsString('has-blue-color', $rendered);
+        $this->assertStringContainsString('has-text-color', $rendered);
         $this->assertStringContainsString('style="text-align: justify"', $rendered);
         $this->assertStringContainsString('has-text-align-right', $rendered);
         $this->assertStringContainsString('has-red-color', $rendered);
         $this->assertStringContainsString('wp-block-heading', $rendered);
         $this->assertStringContainsString('style="text-align: right"', $rendered);
+    }
+
+    public function test_it_applies_support_attributes_to_static_core_markup(): void
+    {
+        $html = implode('', [
+            '<!-- wp:paragraph {"anchor":"intro","className":"lede","textColor":"blue","backgroundColor":"red","gradient":"blue-to-green","fontSize":"large","fontFamily":"system-sans","style":{"typography":{"textAlign":"justify","fontWeight":"700","lineHeight":"1.5","textDecoration":"underline","textIndent":"2em"},"spacing":{"margin":{"top":"1rem"},"padding":{"bottom":"2rem"}},"border":{"radius":"4px"},"dimensions":{"minHeight":"10rem"},"shadow":"var:preset|shadow|natural"}} --><p>Intro</p><!-- /wp:paragraph -->',
+            '<!-- wp:quote {"className":"is-style-plain quote-extra","style":{"spacing":{"padding":{"top":"1rem"}}}} --><blockquote class="wp-block-quote"><p>Quote</p></blockquote><!-- /wp:quote -->',
+            '<!-- wp:button {"className":"is-style-brand","style":{"spacing":{"margin":{"top":"1rem"}}}} --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Go</a></div><!-- /wp:button -->',
+            '<!-- wp:details {"anchor":"details-one","style":{"spacing":{"padding":{"top":"1rem"}}}} --><details class="wp-block-details"><summary>More</summary><p>Details</p></details><!-- /wp:details -->',
+        ]);
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('<p', $rendered);
+        $this->assertStringContainsString('id="intro"', $rendered);
+        $this->assertStringContainsString('class="lede has-blue-color has-text-color has-red-background-color has-background has-blue-to-green-gradient-background has-large-font-size has-system-sans-font-family has-text-align-justify has-natural-box-shadow"', $rendered);
+        $this->assertStringContainsString('margin-top: 1rem', $rendered);
+        $this->assertStringContainsString('padding-bottom: 2rem', $rendered);
+        $this->assertStringContainsString('font-weight: 700', $rendered);
+        $this->assertStringContainsString('line-height: 1.5', $rendered);
+        $this->assertStringContainsString('text-decoration: underline', $rendered);
+        $this->assertStringContainsString('text-indent: 2em', $rendered);
+        $this->assertStringContainsString('border-radius: 4px', $rendered);
+        $this->assertStringContainsString('min-height: 10rem', $rendered);
+        $this->assertStringContainsString('box-shadow: var(--wp--preset--shadow--natural)', $rendered);
+        $this->assertStringNotContainsString('wp-block-paragraph', $rendered);
+
+        $this->assertStringContainsString('class="wp-block-quote is-style-plain quote-extra"', $rendered);
+        $this->assertStringContainsString('padding-top: 1rem', $rendered);
+        $this->assertStringContainsString('class="wp-block-button is-style-brand"', $rendered);
+        $this->assertStringContainsString('margin-top: 1rem', $rendered);
+        $this->assertStringContainsString('class="wp-block-details"', $rendered);
+        $this->assertStringContainsString('id="details-one"', $rendered);
     }
 
     public function test_it_preserves_safe_grid_layout_styles(): void

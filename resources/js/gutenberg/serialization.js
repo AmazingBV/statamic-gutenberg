@@ -4,6 +4,8 @@ const TRANSIENT_MEDIA_URL_PATTERN = /blob:[^"'\\\s<>]+/gi;
 const MEDIA_REGISTRY_KEY = '__statamicGutenbergMediaPayloads';
 const FALLBACK_MEDIA_REGISTRY = new Map();
 const BLOCK_COMMENT_PATTERN = /<!--\s*(\/?)wp:([a-z0-9_/-]+)([\s\S]*?)-->/gi;
+const LEGACY_SPACER_BLOCK_PATTERN = /(<!--\s*wp:spacer\b([\s\S]*?)-->)([\s\S]*?)(<!--\s*\/wp:spacer\s*-->)/gi;
+const SPACER_CLASS_PATTERN = /\bclass=(?:"[^"]*\bwp-block-spacer\b[^"]*"|'[^']*\bwp-block-spacer\b[^']*')/i;
 
 function normalizeBlockName(name) {
     return name.includes('/') ? name : `core/${name}`;
@@ -104,7 +106,7 @@ export function parseSerializedWithValidation(value) {
     }
 
     try {
-        const content = stripTransientMediaUrls(value);
+        const content = normalizeLegacyCoreMarkup(stripTransientMediaUrls(value));
         hydratePersistedMediaPayloadsFromSerialized(content);
 
         const blocks = parse(content);
@@ -154,6 +156,20 @@ export function stripTransientMediaUrls(value) {
         .replace(/\s(?:src|href|poster)=["']blob:[^"']*["']/gi, '')
         .replace(/url\(\s*["']?blob:[^)]+?\)/gi, 'none')
         .replace(TRANSIENT_MEDIA_URL_PATTERN, '');
+}
+
+export function normalizeLegacyCoreMarkup(value) {
+    if (! value || typeof value !== 'string') {
+        return '';
+    }
+
+    return value.replace(LEGACY_SPACER_BLOCK_PATTERN, (match, open, rawAttributes, inner, close) => {
+        if (/"height"\s*:/.test(rawAttributes) || /\bstyle=/.test(inner) || ! SPACER_CLASS_PATTERN.test(inner)) {
+            return match;
+        }
+
+        return `${open}${inner.replace(/<div\b/i, '<div style="height:100px"')}${close}`;
+    });
 }
 
 export function normalizeAllowedBlocks(config = {}, meta = {}) {

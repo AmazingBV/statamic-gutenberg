@@ -305,6 +305,26 @@ Some internal child blocks are also listed where Gutenberg requires them, such
 as accordion item/panel blocks. You can remove blocks from the global config or
 override the allowlist per field.
 
+## Block Supports
+
+The bundled editor registers Gutenberg's native support controls for the default
+allowlisted blocks. Supported controls include wide/full alignment, anchors,
+custom classes, text/background/link colors, gradients, typography, spacing,
+borders, dimensions, shadows, background images, and layout controls where they
+make sense for that block type.
+
+The frontend renderer reads the same saved block attributes and applies matching
+classes/styles through the addon wrapper helpers. Static saved markup is also
+enriched from the block comment attributes when needed, so editor and frontend
+output stay aligned even when a block's saved HTML does not already contain all
+wrapper classes or inline styles.
+
+Project-local custom blocks should declare their own WordPress-compatible
+`supports` in `block.json`. The addon keeps those declarations authoritative and
+only adds the attributes required for Gutenberg to persist the selected support
+values, such as `style`, `align`, `textColor`, `backgroundColor`, `fontSize`,
+`fontFamily`, and `borderColor`.
+
 ## Media And Assets
 
 The editor uses Statamic Assets, not WordPress media endpoints.

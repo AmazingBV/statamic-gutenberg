@@ -7,6 +7,7 @@ import {
     createImageMedia,
     findRegisteredMediaPayload,
     isBlockAllowed,
+    normalizeLegacyCoreMarkup,
     normalizeAllowedBlocks,
     parseSerialized,
     parseSerializedWithValidation,
@@ -46,6 +47,25 @@ beforeAll(() => {
             save: ({ attributes }) => React.createElement('img', {
                 src: attributes.url,
                 alt: attributes.alt || '',
+            }),
+        });
+    }
+
+    if (! getBlockType('core/spacer')) {
+        registerBlockType('core/spacer', {
+            apiVersion: 3,
+            title: 'Spacer',
+            category: 'design',
+            attributes: {
+                height: {
+                    type: 'string',
+                    default: '100px',
+                },
+            },
+            save: ({ attributes }) => React.createElement('div', {
+                style: { height: attributes.height || '100px' },
+                'aria-hidden': 'true',
+                className: 'wp-block-spacer',
             }),
         });
     }
@@ -169,5 +189,16 @@ describe('Gutenberg serialization helpers', () => {
 
         expect(stripped).toContain('"url":""');
         expect(stripped).not.toContain('blob:');
+    });
+
+    it('normalizes legacy spacer markup without the default height style', () => {
+        const input = '<!-- wp:spacer {"style":{"layout":{}}} --><div aria-hidden="true" class="wp-block-spacer"></div><!-- /wp:spacer -->';
+        const normalized = normalizeLegacyCoreMarkup(input);
+
+        expect(normalized).toContain('<div style="height:100px" aria-hidden="true" class="wp-block-spacer">');
+        expect(serializeBlocks(parseSerialized(input))).toContain('style="height:100px"');
+
+        expect(normalizeLegacyCoreMarkup('<!-- wp:spacer {"height":"2rem"} --><div aria-hidden="true" class="wp-block-spacer"></div><!-- /wp:spacer -->'))
+            .not.toContain('height:100px');
     });
 });

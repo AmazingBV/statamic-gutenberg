@@ -20,23 +20,25 @@ class BlockWrapperContext
         }
     }
 
-    public static function wrapperAttributes(array $extraAttributes = []): string
+    public static function wrapperAttributes(array $extraAttributes = [], bool $includeBaseClass = true): string
     {
-        return self::renderAttributes(self::attributes(self::$block, $extraAttributes));
+        return self::renderAttributes(self::attributes(self::$block, $extraAttributes, $includeBaseClass));
     }
 
-    public static function attributesForBlock(Block $block, array $extraAttributes = []): array
+    public static function attributesForBlock(Block $block, array $extraAttributes = [], bool $includeBaseClass = true): array
     {
-        return self::attributes($block, $extraAttributes);
+        return self::attributes($block, $extraAttributes, $includeBaseClass);
     }
 
-    private static function attributes(?Block $block, array $extraAttributes): array
+    private static function attributes(?Block $block, array $extraAttributes, bool $includeBaseClass): array
     {
         $attributes = $extraAttributes;
         $classes = [];
 
         if ($block) {
-            $classes[] = self::baseClass($block->name());
+            if ($includeBaseClass) {
+                $classes[] = self::baseClass($block->name());
+            }
 
             $align = $block->attribute('align');
 
