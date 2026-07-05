@@ -106,6 +106,13 @@ describe('Gutenberg serialization helpers', () => {
         expect(isBlockAllowed('core/image', ['core/image'])).toBe(true);
     });
 
+    it('preserves an explicit empty allowed block list', () => {
+        expect(normalizeAllowedBlocks({ allowed_blocks: ['core/quote'] }, { allowedBlocks: [] }))
+            .toEqual([]);
+        expect(isBlockAllowed('core/image', [])).toBe(false);
+        expect(isBlockAllowed('core/image')).toBe(true);
+    });
+
     it('creates core image blocks from Statamic assets', () => {
         const block = createImageBlock({
             id: 'assets::hero.jpg',

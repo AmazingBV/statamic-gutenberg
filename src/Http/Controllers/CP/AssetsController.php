@@ -26,6 +26,8 @@ class AssetsController extends CpController
             return response()->json(['data' => [], 'folders' => []]);
         }
 
+        $this->authorize('view', $container);
+
         $type = $this->normalType((string) $request->query('type', 'image'));
         $filters = $this->assetFilters($request);
         $folder = $this->normalFolder((string) $request->query('folder', '/'));

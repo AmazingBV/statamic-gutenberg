@@ -36,7 +36,7 @@ class BlockRegistry
 
     public function allowedBlocks(?array $fieldAllowed = null): array
     {
-        $allowed = $fieldAllowed ?: config('statamic-gutenberg.allowed_blocks', []);
+        $allowed = $fieldAllowed ?? config('statamic-gutenberg.allowed_blocks', []);
         $allowed[] = 'core/block';
 
         return array_values(array_unique(array_filter([

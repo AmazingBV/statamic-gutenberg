@@ -40,6 +40,27 @@ class BlockRendererTest extends TestCase
         $this->assertSame(['core/paragraph', 'core/block'], $allowed);
     }
 
+    public function test_empty_field_allowed_blocks_does_not_fall_back_to_global_config(): void
+    {
+        config(['statamic-gutenberg.allowed_blocks' => ['core/paragraph']]);
+
+        $allowed = app(BlockRegistry::class)->allowedBlocks([]);
+
+        $this->assertSame(['core/block'], $allowed);
+    }
+
+    public function test_empty_allowed_blocks_strips_globally_allowed_blocks_when_rendering(): void
+    {
+        config(['statamic-gutenberg.allowed_blocks' => ['core/paragraph']]);
+
+        $html = '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->';
+        $rendered = (string) app(BlockRenderer::class)->render($html, [
+            'allowed_blocks' => [],
+        ]);
+
+        $this->assertSame('', trim($rendered));
+    }
+
     public function test_it_renders_allowed_core_blocks_and_sanitizes_html(): void
     {
         $html = '<!-- wp:paragraph --><p onclick="alert(1)">Hello<script>alert(1)</script></p><!-- /wp:paragraph -->';
@@ -71,6 +92,26 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-details"', $rendered);
         $this->assertStringContainsString('class="wp-block-video"', $rendered);
         $this->assertStringContainsString('controls="controls"', $rendered);
+    }
+
+    public function test_sanitizer_removes_srcset_when_any_candidate_url_is_unsafe(): void
+    {
+        $html = '<!-- wp:image --><figure class="wp-block-image"><img src="/storage/safe.jpg" srcset="/storage/safe.jpg 1x, data:text/html;base64,PHNjcmlwdD4= 2x" alt=""></figure><!-- /wp:image -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('src="/storage/safe.jpg"', $rendered);
+        $this->assertStringNotContainsString('srcset=', $rendered);
+        $this->assertStringNotContainsString('data:text/html', $rendered);
+    }
+
+    public function test_sanitizer_preserves_srcset_when_all_candidate_urls_are_safe(): void
+    {
+        $html = '<!-- wp:image --><figure class="wp-block-image"><img src="/storage/safe.jpg" srcset="/storage/safe.jpg 1x, /storage/safe-large.jpg 2x" alt=""></figure><!-- /wp:image -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('srcset="/storage/safe.jpg 1x, /storage/safe-large.jpg 2x"', $rendered);
     }
 
     public function test_it_respects_disabled_video_controls(): void

@@ -173,7 +173,9 @@ export function normalizeLegacyCoreMarkup(value) {
 }
 
 export function normalizeAllowedBlocks(config = {}, meta = {}) {
-    const allowed = meta.allowedBlocks || config.allowed_blocks || [];
+    const allowed = Object.prototype.hasOwnProperty.call(meta, 'allowedBlocks')
+        ? meta.allowedBlocks
+        : config.allowed_blocks;
 
     return Array.isArray(allowed)
         ? allowed.filter(Boolean)
@@ -181,7 +183,7 @@ export function normalizeAllowedBlocks(config = {}, meta = {}) {
 }
 
 export function isBlockAllowed(name, allowedBlocks) {
-    if (! Array.isArray(allowedBlocks) || allowedBlocks.length === 0) {
+    if (! Array.isArray(allowedBlocks)) {
         return true;
     }
 

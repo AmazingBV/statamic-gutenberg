@@ -3,11 +3,28 @@
 namespace Amazingbv\StatamicGutenberg\Tests;
 
 use Amazingbv\StatamicGutenberg\Http\Controllers\CP\AssetsController;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use ReflectionMethod;
+use Statamic\Facades\AssetContainer;
+use Statamic\Facades\User;
 
 class AssetsControllerTest extends TestCase
 {
+    public function test_asset_browser_requires_container_view_permission(): void
+    {
+        $container = AssetContainer::make('private');
+        AssetContainer::shouldReceive('find')->with('private')->andReturn($container);
+        AssetContainer::shouldReceive('all')->andReturn(collect([$container]));
+
+        $this->actingAs(User::make()->id('editor')->email('editor@example.com'));
+        $this->expectException(AuthorizationException::class);
+
+        $this->assetsController()->index(Request::create('/cp/assets', 'GET', [
+            'container' => 'private',
+        ]));
+    }
+
     public function test_asset_filters_normalize_exact_mime_types_and_extensions(): void
     {
         $controller = $this->assetsController();

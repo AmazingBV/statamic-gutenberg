@@ -209,7 +209,13 @@ class Sanitizer
                 continue;
             }
 
-            if (in_array($name, ['action', 'data', 'formaction', 'href', 'poster', 'src', 'xlink:href', 'srcset'], true) && $this->isDangerousUrl($value)) {
+            if ($name === 'srcset' && ! $this->srcsetIsSafe($value)) {
+                $element->removeAttributeNode($attribute);
+
+                continue;
+            }
+
+            if (in_array($name, ['action', 'data', 'formaction', 'href', 'poster', 'src', 'xlink:href'], true) && $this->isDangerousUrl($value)) {
                 $element->removeAttributeNode($attribute);
             }
         }
@@ -332,6 +338,29 @@ class Sanitizer
     private function stripCssUrls(string $value): string
     {
         return preg_replace('/url\(\s*(?:(["\'])(.*?)\1|([^\'")]*?))\s*\)/i', 'url()', $value) ?? $value;
+    }
+
+    private function srcsetIsSafe(string $value): bool
+    {
+        if ($value === '') {
+            return false;
+        }
+
+        foreach (explode(',', $value) as $candidate) {
+            $candidate = trim($candidate);
+
+            if ($candidate === '') {
+                return false;
+            }
+
+            [$url] = preg_split('/\s+/', $candidate, 2);
+
+            if ($this->isDangerousUrl($url)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isDangerousUrl(string $value): bool
