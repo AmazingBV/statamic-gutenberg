@@ -61,6 +61,29 @@ class CustomBlockRepository
             ->all());
     }
 
+    public function publicAssetFile(string $path): ?string
+    {
+        $base = realpath($this->path());
+
+        if (! $base) {
+            return null;
+        }
+
+        $relative = $this->publicAssetRelativePath($path);
+
+        if (! $relative) {
+            return null;
+        }
+
+        $file = realpath($base.'/'.$relative);
+
+        if (! $file || ! is_file($file) || ! str_starts_with($file, $base.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return in_array($file, $this->publicAssetFiles($base), true) ? $file : null;
+    }
+
     private function blocksByName(): array
     {
         if ($this->blocks !== null) {
@@ -390,6 +413,114 @@ class CustomBlockRepository
         $query = $version === null ? '' : '?ver='.rawurlencode($version);
 
         return '/vendor/statamic-gutenberg/blocks/'.str_replace('%2F', '/', rawurlencode($relative)).$query;
+    }
+
+    private function publicAssetRelativePath(string $path): ?string
+    {
+        $relative = ltrim(str_replace('\\', '/', rawurldecode($path)), '/');
+
+        return $relative === '' || str_contains($relative, '..') ? null : $relative;
+    }
+
+    private function publicAssetFiles(string $base): array
+    {
+        $files = [];
+
+        foreach ($this->all() as $block) {
+            $files = [
+                ...$files,
+                ...$this->publicAssetFilesFromAssets($base, $block['editorScripts'] ?? []),
+                ...$this->publicAssetFilesFromAssets($base, $block['frontendScripts'] ?? []),
+                ...$this->publicAssetFilesFromUrls($base, $block['editorStyles'] ?? []),
+                ...$this->publicAssetFilesFromUrls($base, $block['frontendStyles'] ?? []),
+            ];
+        }
+
+        return array_values(array_unique($files));
+    }
+
+    private function publicAssetFilesFromAssets(string $base, array $assets): array
+    {
+        return collect($assets)
+            ->pluck('src')
+            ->flatMap(fn ($url) => $this->publicAssetFilesFromUrls($base, is_string($url) ? [$url] : []))
+            ->values()
+            ->all();
+    }
+
+    private function publicAssetFilesFromUrls(string $base, array $urls): array
+    {
+        return collect($urls)
+            ->filter(fn ($url) => is_string($url))
+            ->flatMap(function (string $url) use ($base) {
+                $file = $this->fileFromPublicUrl($base, $url);
+
+                if (! $file) {
+                    return [];
+                }
+
+                return strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'css'
+                    ? [$file, ...$this->cssReferencedFiles($base, $file)]
+                    : [$file];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function fileFromPublicUrl(string $base, string $url): ?string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        $prefix = '/vendor/statamic-gutenberg/blocks/';
+
+        if (! is_string($path) || ! str_starts_with($path, $prefix)) {
+            return null;
+        }
+
+        $relative = $this->publicAssetRelativePath(substr($path, strlen($prefix)));
+
+        if (! $relative) {
+            return null;
+        }
+
+        $file = realpath($base.'/'.$relative);
+
+        return $file && is_file($file) && str_starts_with($file, $base.DIRECTORY_SEPARATOR)
+            ? $file
+            : null;
+    }
+
+    private function cssReferencedFiles(string $base, string $cssFile): array
+    {
+        $contents = file_get_contents($cssFile);
+
+        if (! is_string($contents)) {
+            return [];
+        }
+
+        preg_match_all('/url\(\s*(["\']?)([^"\')]+)\1\s*\)/i', $contents, $matches);
+
+        return collect($matches[2] ?? [])
+            ->map(fn (string $url) => trim($url))
+            ->reject(fn (string $url) => $url === '' || preg_match('/^(?:[a-z]+:|\/\/|\/|#)/i', $url))
+            ->map(function (string $url) use ($base, $cssFile) {
+                $path = parse_url($url, PHP_URL_PATH);
+                $relative = is_string($path)
+                    ? ltrim(str_replace('\\', '/', rawurldecode($path)), '/')
+                    : null;
+
+                if (! $relative || str_contains($relative, "\0")) {
+                    return null;
+                }
+
+                $file = realpath(dirname($cssFile).'/'.$relative);
+
+                return $file && is_file($file) && str_starts_with($file, $base.DIRECTORY_SEPARATOR)
+                    ? $file
+                    : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function assetValues(mixed $value): array

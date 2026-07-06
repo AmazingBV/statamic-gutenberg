@@ -346,7 +346,10 @@ PHP,
             'name' => 'amazing/card',
             'title' => 'Card',
         ], [
-            'block.css' => '.wp-block-amazing-card { color: red; }',
+            'block.css' => '.wp-block-amazing-card { background-image: url("./images/bg.png"); color: red; }',
+            'images/bg.png' => 'png-data',
+            'secret.css' => '.secret { display: none; }',
+            'block.js.map' => '{}',
             'block.php' => '<?php return "";',
         ]);
 
@@ -354,6 +357,19 @@ PHP,
             ->assertOk()
             ->assertHeader('cache-control', 'max-age=31536000, public')
             ->assertHeader('content-type', 'text/css; charset=utf-8');
+
+        $this->get('/vendor/statamic-gutenberg/blocks/custom-card/images/bg.png')
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+
+        $this->get('/vendor/statamic-gutenberg/blocks/custom-card/block.json')
+            ->assertNotFound();
+
+        $this->get('/vendor/statamic-gutenberg/blocks/custom-card/secret.css')
+            ->assertNotFound();
+
+        $this->get('/vendor/statamic-gutenberg/blocks/custom-card/block.js.map')
+            ->assertNotFound();
 
         $this->get('/vendor/statamic-gutenberg/blocks/custom-card/block.php')
             ->assertNotFound();

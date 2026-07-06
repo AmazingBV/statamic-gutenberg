@@ -322,8 +322,8 @@ class BlockRenderer
             'core/search' => $this->renderSearchFallback($block),
             'core/site-title' => $this->renderSiteTitleFallback($block),
             'core/site-tagline' => $this->renderSiteTaglineFallback($block),
-            'core/latest-posts' => $this->renderLatestPostsFallback($block),
-            'core/page-list', 'core/navigation' => $this->renderEntryListFallback($block),
+            'core/latest-posts' => $this->renderLatestPostsFallback($block, $options),
+            'core/page-list', 'core/navigation' => $this->renderEntryListFallback($block, $options),
             'core/calendar' => $this->renderCalendarFallback($block),
             'core/read-more' => $this->renderReadMoreFallback($block),
             'core/loginout' => $this->renderLoginoutFallback($block),
@@ -817,10 +817,10 @@ class BlockRenderer
         ]), e($tagline), $tag);
     }
 
-    private function renderLatestPostsFallback(Block $block): string
+    private function renderLatestPostsFallback(Block $block, array $options): string
     {
         $limit = max(1, min(20, (int) $block->attribute('postsToShow', 5)));
-        $entries = $this->latestEntries($limit);
+        $entries = $this->latestEntries($limit, $options['user'] ?? null);
 
         if ($entries === []) {
             return $this->renderCoreFallbackNotice($block);
@@ -839,9 +839,9 @@ class BlockRenderer
         ]), $items);
     }
 
-    private function renderEntryListFallback(Block $block): string
+    private function renderEntryListFallback(Block $block, array $options): string
     {
-        $entries = $this->latestEntries(12);
+        $entries = $this->latestEntries(12, $options['user'] ?? null);
 
         if ($entries === []) {
             return $this->renderCoreFallbackNotice($block);
@@ -1022,7 +1022,7 @@ class BlockRenderer
         );
     }
 
-    private function latestEntries(int $limit): array
+    private function latestEntries(int $limit, mixed $user = null): array
     {
         try {
             return collect(Entry::query()
@@ -1030,6 +1030,7 @@ class BlockRenderer
                 ->orderBy('date', 'desc')
                 ->limit($limit)
                 ->get())
+                ->filter(fn ($entry) => $this->entryVisibleToUser($entry, $user))
                 ->values()
                 ->all();
         } catch (Throwable) {
@@ -1038,12 +1039,28 @@ class BlockRenderer
 
         try {
             return Entry::all()
+                ->filter(fn ($entry) => $this->entryVisibleToUser($entry, $user))
                 ->sortByDesc(fn ($entry) => $this->entryTimestamp($entry))
                 ->take($limit)
                 ->values()
                 ->all();
         } catch (Throwable) {
             return [];
+        }
+    }
+
+    private function entryVisibleToUser(mixed $entry, mixed $user): bool
+    {
+        if (! $user) {
+            return true;
+        }
+
+        try {
+            return is_object($user) && method_exists($user, 'can')
+                ? (bool) $user->can('view', $entry)
+                : false;
+        } catch (Throwable) {
+            return false;
         }
     }
 

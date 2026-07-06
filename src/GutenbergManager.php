@@ -154,9 +154,9 @@ class GutenbergManager
         return $this->themeJson->editorPayload();
     }
 
-    public function editorPatterns(?array $allowedBlocks = null): array
+    public function editorPatterns(?array $allowedBlocks = null, mixed $user = null): array
     {
-        return $this->patterns->editorPayload($allowedBlocks);
+        return $this->patterns->editorPayload($allowedBlocks, $user);
     }
 
     private function assetUrls(string $entry, string $type): array

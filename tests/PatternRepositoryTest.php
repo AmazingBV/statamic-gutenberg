@@ -170,6 +170,50 @@ class PatternRepositoryTest extends TestCase
         $this->assertSame(['statamic/paragraph-pattern'], array_column($payload['restBlockPatterns'], 'name'));
     }
 
+    public function test_editor_payload_filters_patterns_against_entry_view_permissions(): void
+    {
+        Collection::make('gutenberg_patterns')->save();
+
+        Entry::make()
+            ->collection('gutenberg_patterns')
+            ->id('visible-pattern')
+            ->slug('visible-pattern')
+            ->published(true)
+            ->data([
+                'title' => 'Visible Pattern',
+                'content' => '<!-- wp:paragraph --><p>Allowed</p><!-- /wp:paragraph -->',
+                'sync_status' => 'unsynced',
+            ])
+            ->save();
+
+        Entry::make()
+            ->collection('gutenberg_patterns')
+            ->id('private-pattern')
+            ->slug('private-pattern')
+            ->published(true)
+            ->data([
+                'title' => 'Private Pattern',
+                'content' => '<!-- wp:paragraph --><p>Private</p><!-- /wp:paragraph -->',
+                'sync_status' => 'unsynced',
+            ])
+            ->save();
+
+        $user = new class
+        {
+            public function can(string $ability, mixed $entry): bool
+            {
+                return $ability === 'view' && $entry->id() === 'visible-pattern';
+            }
+        };
+
+        $payload = app(PatternRepository::class)->editorPayload(user: $user);
+
+        $this->assertSame(['visible-pattern'], array_column($payload['reusableBlocks'], 'slug'));
+        $this->assertSame(['visible-pattern'], array_column($payload['restReusableBlocks'], 'slug'));
+        $this->assertSame(['statamic/visible-pattern'], array_column($payload['blockPatterns'], 'name'));
+        $this->assertSame(['statamic/visible-pattern'], array_column($payload['restBlockPatterns'], 'name'));
+    }
+
     public function test_editor_payload_exposes_pattern_categories_to_category_tabs(): void
     {
         Collection::make('gutenberg_patterns')->save();

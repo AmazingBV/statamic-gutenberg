@@ -6,6 +6,7 @@ use Amazingbv\StatamicGutenberg\Blocks\BlockRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Statamic\Http\Controllers\CP\CpController;
+use Statamic\Facades\User;
 
 class BlockRendererController extends CpController
 {
@@ -37,6 +38,7 @@ class BlockRendererController extends CpController
         return response()->json([
             'rendered' => (string) $renderer->render($serialized, array_filter([
                 'allowed_blocks' => $allowedBlocks,
+                'user' => User::current(),
             ], fn ($value) => $value !== null)),
         ]);
     }

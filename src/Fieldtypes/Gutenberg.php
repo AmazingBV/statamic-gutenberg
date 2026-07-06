@@ -4,6 +4,7 @@ namespace Amazingbv\StatamicGutenberg\Fieldtypes;
 
 use Amazingbv\StatamicGutenberg\GutenbergManager;
 use Statamic\Facades\AssetContainer;
+use Statamic\Facades\User;
 use Statamic\Fields\Fieldtype;
 
 class Gutenberg extends Fieldtype
@@ -82,7 +83,7 @@ class Gutenberg extends Fieldtype
             'editorUrl' => cp_route('amazingbv.statamic-gutenberg.editor'),
             'hasAssetsContainer' => AssetContainer::find($container) !== null,
             'themeJson' => app(GutenbergManager::class)->editorTheme(),
-            'patterns' => app(GutenbergManager::class)->editorPatterns($allowedBlocks),
+            'patterns' => app(GutenbergManager::class)->editorPatterns($allowedBlocks, User::current()),
             'blockStyles' => app(GutenbergManager::class)->editorBlockStyles($allowedBlocks),
             'customBlocks' => app(GutenbergManager::class)->editorCustomBlocks(),
             'bardBlocks' => app(GutenbergManager::class)->editorBardBlocks(),

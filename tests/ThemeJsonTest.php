@@ -447,11 +447,18 @@ class ThemeJsonTest extends TestCase
             ],
         ], [
             'assets/fonts/inter.woff2' => 'font-data',
+            'assets/fonts/private.woff2' => 'private-font-data',
         ]);
 
         $this->get('/vendor/statamic-gutenberg/theme/assets/fonts/inter.woff2')
             ->assertOk()
             ->assertHeader('cache-control', 'max-age=31536000, public');
+
+        $this->get('/vendor/statamic-gutenberg/theme/assets/fonts/private.woff2')
+            ->assertNotFound();
+
+        $this->get('/vendor/statamic-gutenberg/theme/theme.json')
+            ->assertNotFound();
     }
 
     private function writeThemeJson(array $data, array $assets = []): void
@@ -461,7 +468,9 @@ class ThemeJsonTest extends TestCase
 
         foreach ($assets as $path => $contents) {
             $file = $this->themeJsonDirectory.'/'.ltrim($path, '/');
-            mkdir(dirname($file), 0777, true);
+            if (! is_dir(dirname($file))) {
+                mkdir(dirname($file), 0777, true);
+            }
             file_put_contents($file, $contents);
         }
 

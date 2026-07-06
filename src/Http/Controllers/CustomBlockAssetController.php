@@ -8,17 +8,9 @@ class CustomBlockAssetController
 {
     public function __invoke(CustomBlockRepository $blocks, string $path)
     {
-        $base = realpath($blocks->path());
+        $file = $blocks->publicAssetFile($path);
 
-        abort_unless($base, 404);
-
-        $relative = ltrim(str_replace('\\', '/', rawurldecode($path)), '/');
-
-        abort_if($relative === '' || str_contains($relative, '..'), 404);
-
-        $file = realpath($base.'/'.$relative);
-
-        abort_unless($file && str_starts_with($file, $base.DIRECTORY_SEPARATOR) && is_file($file), 404);
+        abort_unless($file, 404);
         abort_unless(in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), $this->allowedExtensions(), true), 404);
 
         return response()->file($file, [
@@ -33,8 +25,6 @@ class CustomBlockAssetController
             'css',
             'js',
             'mjs',
-            'json',
-            'map',
             'png',
             'jpg',
             'jpeg',
@@ -54,7 +44,6 @@ class CustomBlockAssetController
         return match (strtolower(pathinfo($file, PATHINFO_EXTENSION))) {
             'css' => 'text/css; charset=utf-8',
             'js', 'mjs' => 'application/javascript; charset=utf-8',
-            'json', 'map' => 'application/json; charset=utf-8',
             'svg' => 'image/svg+xml',
             'png' => 'image/png',
             'jpg', 'jpeg' => 'image/jpeg',

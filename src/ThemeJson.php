@@ -55,6 +55,29 @@ class ThemeJson
         ];
     }
 
+    public function publicAssetFile(string $path): ?string
+    {
+        $base = realpath(dirname($this->path()));
+
+        if (! $base) {
+            return null;
+        }
+
+        $relative = $this->themeFileRelativePath($path);
+
+        if (! $relative) {
+            return null;
+        }
+
+        $file = realpath($base.'/'.$relative);
+
+        if (! $file || ! is_file($file) || ! str_starts_with($file, $base.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return in_array($file, $this->themeJsonReferencedFiles($base), true) ? $file : null;
+    }
+
     public function settings(): array
     {
         $data = $this->data();
@@ -285,6 +308,56 @@ class ThemeJson
         }
 
         return null;
+    }
+
+    private function themeJsonReferencedFiles(string $base): array
+    {
+        return collect($this->themeJsonFileReferences($this->data() ?? []))
+            ->map(fn (string $source) => $this->themeFileFromReference($base, $source))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function themeJsonFileReferences(mixed $value): array
+    {
+        if (is_string($value) && str_starts_with(trim($value), 'file:')) {
+            return [trim($value)];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        return collect($value)
+            ->flatMap(fn ($item) => $this->themeJsonFileReferences($item))
+            ->values()
+            ->all();
+    }
+
+    private function themeFileFromReference(string $base, string $source): ?string
+    {
+        $relative = preg_replace('/^file:/', '', $source) ?? '';
+        $relative = preg_replace('/^\.\//', '', $relative) ?? '';
+        $relative = $this->themeFileRelativePath($relative);
+
+        if (! $relative) {
+            return null;
+        }
+
+        $file = realpath($base.'/'.$relative);
+
+        return $file && is_file($file) && str_starts_with($file, $base.DIRECTORY_SEPARATOR)
+            ? $file
+            : null;
+    }
+
+    private function themeFileRelativePath(string $path): ?string
+    {
+        $relative = ltrim(str_replace('\\', '/', rawurldecode($path)), '/');
+
+        return $relative === '' || str_contains($relative, '..') ? null : $relative;
     }
 
     private function presetUtilityRules(array $roots, array $settings): array

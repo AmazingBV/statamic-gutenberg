@@ -10,9 +10,14 @@ use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Statamic\Contracts\Assets\AssetRepository as AssetRepositoryContract;
 use Statamic\Facades\Asset as AssetFacade;
+use Statamic\Facades\Collection;
+use Statamic\Facades\Entry;
+use Statamic\Testing\Concerns\PreventsSavingStacheItemsToDisk;
 
 class BlockRendererTest extends TestCase
 {
+    use PreventsSavingStacheItemsToDisk;
+
     public function test_default_config_allows_only_the_home_block_profile(): void
     {
         $allowed = app(BlockRegistry::class)->allowedBlocks();
@@ -604,6 +609,43 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('class="wp-block-site-title"', $rendered);
         $this->assertStringContainsString('data-sgb-core-fallback="core/latest-posts"', $rendered);
         $this->assertStringContainsString('data-sgb-core-fallback="core/post-title"', $rendered);
+    }
+
+    public function test_entry_runtime_fallbacks_filter_entries_against_preview_user_permissions(): void
+    {
+        Collection::make('pages')->save();
+
+        Entry::make()
+            ->collection('pages')
+            ->id('visible-entry')
+            ->slug('visible-entry')
+            ->published(true)
+            ->data(['title' => 'Visible Entry'])
+            ->save();
+
+        Entry::make()
+            ->collection('pages')
+            ->id('private-entry')
+            ->slug('private-entry')
+            ->published(true)
+            ->data(['title' => 'Private Entry'])
+            ->save();
+
+        $user = new class
+        {
+            public function can(string $ability, mixed $entry): bool
+            {
+                return $ability === 'view' && $entry->id() === 'visible-entry';
+            }
+        };
+
+        $rendered = (string) app(BlockRenderer::class)->render('<!-- wp:latest-posts {"postsToShow":5} /-->', [
+            'allowed_blocks' => ['core/latest-posts'],
+            'user' => $user,
+        ]);
+
+        $this->assertStringContainsString('Visible Entry', $rendered);
+        $this->assertStringNotContainsString('Private Entry', $rendered);
     }
 
     public function test_it_renders_wordpress_compatible_search_fallback_variants(): void

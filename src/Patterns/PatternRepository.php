@@ -13,9 +13,10 @@ use Throwable;
 
 class PatternRepository
 {
-    public function editorPayload(?array $allowedBlocks = null): array
+    public function editorPayload(?array $allowedBlocks = null, mixed $user = null): array
     {
         $entries = $this->publishedEntries()
+            ->filter(fn ($entry) => $this->visibleToUser($entry, $user))
             ->filter(fn ($entry) => $this->allowedByBlockList($entry, $allowedBlocks))
             ->values();
         $inserterEntries = $entries
@@ -208,6 +209,21 @@ class PatternRepository
         }
 
         return true;
+    }
+
+    private function visibleToUser(mixed $entry, mixed $user): bool
+    {
+        if (! $user) {
+            return true;
+        }
+
+        try {
+            return is_object($user) && method_exists($user, 'can')
+                ? (bool) $user->can('view', $entry)
+                : false;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function blockNames(string $content): array
