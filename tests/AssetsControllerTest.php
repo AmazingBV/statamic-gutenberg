@@ -141,6 +141,87 @@ class AssetsControllerTest extends TestCase
         ]));
     }
 
+    public function test_folder_tree_payload_returns_nested_statamic_asset_folders(): void
+    {
+        $payload = $this->invokePrivate($this->assetsController(), 'folderTreePayload', [
+            new FakeFolderContainer([
+                '/' => [
+                    new FakeFolder('images', 'Images'),
+                    new FakeFolder('downloads', 'Downloads'),
+                ],
+                'images' => [
+                    new FakeFolder('images/home', 'Home'),
+                ],
+                'images/home' => [
+                    new FakeFolder('images/home/hero', 'Hero'),
+                ],
+            ]),
+        ]);
+
+        $this->assertSame([
+            [
+                'path' => 'images',
+                'title' => 'Images',
+                'basename' => 'images',
+                'parent' => '/',
+                'children' => [
+                    [
+                        'path' => 'images/home',
+                        'title' => 'Home',
+                        'basename' => 'home',
+                        'parent' => 'images',
+                        'children' => [
+                            [
+                                'path' => 'images/home/hero',
+                                'title' => 'Hero',
+                                'basename' => 'hero',
+                                'parent' => 'images/home',
+                                'children' => [],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'path' => 'downloads',
+                'title' => 'Downloads',
+                'basename' => 'downloads',
+                'parent' => '/',
+                'children' => [],
+            ],
+        ], $payload);
+    }
+
+    public function test_container_payloads_include_folder_tree_for_the_file_browser(): void
+    {
+        $container = new FakeAssetContainer('assets', 'Assets', [
+            '/' => [
+                new FakeFolder('images', 'Images'),
+            ],
+        ]);
+
+        AssetContainer::shouldReceive('all')->andReturn(collect([$container]));
+        Gate::shouldReceive('allows')->with('view', $container)->andReturn(true);
+
+        $payload = $this->invokePrivate($this->assetsController(), 'containerPayloads', []);
+
+        $this->assertSame([
+            [
+                'handle' => 'assets',
+                'title' => 'Assets',
+                'folder_tree' => [
+                    [
+                        'path' => 'images',
+                        'title' => 'Images',
+                        'basename' => 'images',
+                        'parent' => '/',
+                        'children' => [],
+                    ],
+                ],
+            ],
+        ], $payload);
+    }
+
     public function test_wildcard_mime_type_filters_match_matching_assets(): void
     {
         $controller = $this->assetsController();
@@ -164,6 +245,63 @@ class AssetsControllerTest extends TestCase
     private function assetsController(): AssetsController
     {
         return new AssetsController(Request::create('/cp'));
+    }
+}
+
+class FakeAssetContainer extends FakeFolderContainer
+{
+    public function __construct(
+        private string $handle,
+        private string $title,
+        array $foldersByParent,
+    ) {
+        parent::__construct($foldersByParent);
+    }
+
+    public function handle(): string
+    {
+        return $this->handle;
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+}
+
+class FakeFolderContainer
+{
+    public function __construct(private array $foldersByParent)
+    {
+    }
+
+    public function assetFolders(string $parent, bool $recursive)
+    {
+        return collect($this->foldersByParent[$parent] ?? []);
+    }
+}
+
+class FakeFolder
+{
+    public function __construct(
+        private string $path,
+        private string $title,
+    ) {
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+
+    public function basename(): string
+    {
+        return basename($this->path);
     }
 }
 

@@ -12,7 +12,7 @@ import {
     __experimentalListView as ListView,
     store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { Button, DropdownMenu, MenuGroup, MenuItem, Popover, SelectControl, SlotFillProvider, Spinner, TextareaControl, TextControl } from '@wordpress/components';
+import { Button, DropdownMenu, MenuGroup, MenuItem, Popover, SlotFillProvider, Spinner, TextareaControl, TextControl } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 import {
@@ -23,7 +23,6 @@ import {
     plus,
     redo as redoIcon,
     undo as undoIcon,
-    update as refreshIcon,
     upload as uploadIcon,
 } from '@wordpress/icons';
 import { prepareBardBlockRegistry } from './bardBlocks';
@@ -579,6 +578,32 @@ function assetKey(asset) {
     return String(asset?.id || asset?.path || asset?.url || asset?.filename || '');
 }
 
+function containerTreeKey(handle) {
+    return `container:${handle}`;
+}
+
+function folderTreeKey(containerHandle, path) {
+    return `folder:${containerHandle}:${path || '/'}`;
+}
+
+function collectFolderTreeKeys(folders = [], containerHandle = '') {
+    return folders.flatMap((folder) => [
+        folderTreeKey(containerHandle, folder.path),
+        ...collectFolderTreeKeys(Array.isArray(folder.children) ? folder.children : [], containerHandle),
+    ]).filter(Boolean);
+}
+
+function collectAssetTreeKeys(containers = []) {
+    return containers.flatMap((container) => {
+        const handle = container.handle || '';
+
+        return [
+            containerTreeKey(handle),
+            ...collectFolderTreeKeys(Array.isArray(container.folder_tree) ? container.folder_tree : [], handle),
+        ];
+    });
+}
+
 function normalizeAllowedTypeValues(allowedTypes = []) {
     return Array.isArray(allowedTypes)
         ? allowedTypes.map((type) => String(type).replace(/^mime:/, '').toLowerCase())
@@ -648,17 +673,6 @@ function acceptForAssetPicker(picker) {
 
 function supportedTypeForBlock(blockName) {
     return BLOCK_ASSET_TYPES[blockName] || null;
-}
-
-function parentFolder(path) {
-    if (! path || path === '/') {
-        return '/';
-    }
-
-    const parts = path.split('/').filter(Boolean);
-    parts.pop();
-
-    return parts.length ? parts.join('/') : '/';
 }
 
 function StatamicMediaUpload({ render, value, ...options }) {
@@ -774,9 +788,10 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const [isListViewOpen, setListViewOpen] = useState(() => variant === 'fullscreen');
     const [assetQuery, setAssetQuery] = useState('');
     const [assets, setAssets] = useState([]);
-    const [assetFolders, setAssetFolders] = useState([]);
+    const [assetFolderTree, setAssetFolderTree] = useState([]);
+    const [expandedAssetFolders, setExpandedAssetFolders] = useState(() => new Set());
     const [assetContainers, setAssetContainers] = useState([]);
-    const [assetContainer, setAssetContainer] = useState('*');
+    const [assetContainer, setAssetContainer] = useState('');
     const [assetFolder, setAssetFolder] = useState('/');
     const [assetPicker, setAssetPicker] = useState(null);
     const [selectedAssets, setSelectedAssets] = useState([]);
@@ -1006,9 +1021,12 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     }, [redoEdit, undoEdit]);
 
     useEffect(() => {
-        setAssetFolder('/');
         setSelectedAssets([]);
         setFocusedAsset(null);
+
+        if (assetContainer) {
+            setExpandedAssetFolders((current) => new Set([...current, containerTreeKey(assetContainer)]));
+        }
     }, [assetContainer]);
 
     useEffect(() => {
@@ -1027,7 +1045,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const fetchAssets = useCallback(async () => {
         if (! meta.assetsUrl || ! assetPicker) {
             setAssets([]);
-            setAssetFolders([]);
+            setAssetFolderTree([]);
             return;
         }
 
@@ -1053,13 +1071,29 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                 },
             });
             const json = await response.json();
+            const nextContainers = Array.isArray(json.containers) ? json.containers : [];
+            const firstContainer = nextContainers[0]?.handle || '';
+            const selectedContainerIsAvailable = Boolean(
+                assetContainer && nextContainers.some((container) => container.handle === assetContainer),
+            );
+
+            setAssetContainers(nextContainers);
+
+            if (! selectedContainerIsAvailable && firstContainer) {
+                setAssets([]);
+                setAssetFolderTree([]);
+                setAssetFolder('/');
+                setExpandedAssetFolders((current) => new Set([...current, containerTreeKey(firstContainer)]));
+                setAssetContainer(firstContainer);
+                return;
+            }
+
             setAssets(Array.isArray(json.data) ? json.data : []);
-            setAssetFolders(Array.isArray(json.folders) ? json.folders : []);
-            setAssetContainers(Array.isArray(json.containers) ? json.containers : []);
+            setAssetFolderTree(Array.isArray(json.folder_tree) ? json.folder_tree : []);
         } catch (error) {
             console.warn('Unable to load Statamic assets.', error);
             setAssets([]);
-            setAssetFolders([]);
+            setAssetFolderTree([]);
         } finally {
             setAssetsLoading(false);
         }
@@ -1095,12 +1129,14 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             : null;
 
         setAssets([]);
-        setAssetFolders([]);
+        setAssetFolderTree([]);
+        setAssetContainers([]);
+        setExpandedAssetFolders(new Set());
         setSelectedAssets([]);
         setFocusedAsset(null);
         setAssetQuery('');
         setAssetFolder('/');
-        setAssetContainer('*');
+        setAssetContainer('');
         setAssetPicker({
             type,
             accept: filter.accept,
@@ -1432,16 +1468,112 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         [selectedAssets],
     );
     const isMultipleAssetPicker = Boolean(mediaPickerCallbackRef.current?.multiple || assetPicker?.multiple);
-    const assetContainerOptions = useMemo(() => [
-        { label: 'All containers', value: '*' },
-        ...assetContainers.map((container) => ({
-            label: container.title || container.handle,
-            value: container.handle,
-        })),
-    ], [assetContainers]);
-    const uploadTarget = assetContainer && assetContainer !== '*'
-        ? assetContainer
-        : (meta.assetsContainer || 'assets');
+    const selectedContainer = assetContainers.find((container) => container.handle === assetContainer);
+    const uploadTarget = selectedContainer?.handle || meta.assetsContainer || 'assets';
+    const allTreeKeys = useMemo(() => collectAssetTreeKeys(assetContainers), [assetContainers]);
+    const isFolderExpanded = useCallback((path) => expandedAssetFolders.has(path), [expandedAssetFolders]);
+    const toggleFolderExpanded = useCallback((path) => {
+        setExpandedAssetFolders((current) => {
+            const next = new Set(current);
+
+            if (next.has(path)) {
+                next.delete(path);
+            } else {
+                next.add(path);
+            }
+
+            return next;
+        });
+    }, []);
+    const expandAllFolders = useCallback(() => {
+        setExpandedAssetFolders(new Set(allTreeKeys));
+    }, [allTreeKeys]);
+    const collapseAllFolders = useCallback(() => {
+        setExpandedAssetFolders(new Set());
+    }, []);
+    const renderFolderTree = useCallback((folders, containerHandle, level = 1) => folders.map((folder) => {
+        const children = Array.isArray(folder.children) ? folder.children : [];
+        const hasChildren = children.length > 0;
+        const treeKey = folderTreeKey(containerHandle, folder.path);
+        const expanded = isFolderExpanded(treeKey);
+        const active = assetContainer === containerHandle && assetFolder === folder.path;
+        const label = folder.basename || folder.title;
+
+        return (
+            <div className="sgb-assets__tree-node" key={folder.path}>
+                <div
+                    className={`sgb-assets__tree-row${active ? ' is-active' : ''}`}
+                    style={{ '--sgb-folder-level': level }}
+                >
+                    <button
+                        type="button"
+                        className="sgb-assets__tree-toggle"
+                        aria-label={hasChildren ? `${expanded ? 'Collapse' : 'Expand'} ${label}` : undefined}
+                        aria-hidden={hasChildren ? undefined : true}
+                        disabled={! hasChildren}
+                        onClick={() => hasChildren && toggleFolderExpanded(treeKey)}
+                    >
+                        {hasChildren ? (expanded ? '⊖' : '⊕') : ''}
+                    </button>
+                    <span className="sgb-assets__tree-icon sgb-assets__tree-icon--folder" aria-hidden="true" />
+                    <button
+                        type="button"
+                        className="sgb-assets__tree-label"
+                        onClick={() => {
+                            setAssetContainer(containerHandle);
+                            setAssetFolder(folder.path);
+                        }}
+                    >
+                        {label}
+                    </button>
+                </div>
+                {hasChildren && expanded ? renderFolderTree(children, containerHandle, level + 1) : null}
+            </div>
+        );
+    }), [assetContainer, assetFolder, isFolderExpanded, toggleFolderExpanded]);
+
+    const renderContainerTree = useCallback(() => assetContainers.map((container) => {
+        const handle = container.handle || '';
+        const label = container.title || handle;
+        const folders = Array.isArray(container.folder_tree) ? container.folder_tree : [];
+        const treeKey = containerTreeKey(handle);
+        const hasChildren = folders.length > 0;
+        const expanded = isFolderExpanded(treeKey);
+        const active = assetContainer === handle && assetFolder === '/';
+
+        return (
+            <div className="sgb-assets__tree-node" key={handle}>
+                <div
+                    className={`sgb-assets__tree-row${active ? ' is-active' : ''}`}
+                    style={{ '--sgb-folder-level': 0 }}
+                >
+                    <button
+                        type="button"
+                        className="sgb-assets__tree-toggle"
+                        aria-label={hasChildren ? `${expanded ? 'Collapse' : 'Expand'} ${label}` : undefined}
+                        aria-hidden={hasChildren ? undefined : true}
+                        disabled={! hasChildren}
+                        onClick={() => hasChildren && toggleFolderExpanded(treeKey)}
+                    >
+                        {hasChildren ? (expanded ? '⊖' : '⊕') : ''}
+                    </button>
+                    <span className="sgb-assets__tree-icon sgb-assets__tree-icon--container" aria-hidden="true" />
+                    <button
+                        type="button"
+                        className="sgb-assets__tree-label"
+                        onClick={() => {
+                            setAssetContainer(handle);
+                            setAssetFolder('/');
+                            setExpandedAssetFolders((current) => new Set([...current, treeKey]));
+                        }}
+                    >
+                        {label}
+                    </button>
+                </div>
+                {hasChildren && expanded ? renderFolderTree(folders, handle, 1) : null}
+            </div>
+        );
+    }), [assetContainer, assetContainers, assetFolder, isFolderExpanded, renderFolderTree, toggleFolderExpanded]);
 
     const assetBrowser = assetPicker ? (
         <div className="sgb-assets-modal" role="dialog" aria-modal="true" aria-label="Media Library browser">
@@ -1462,14 +1594,6 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                 </div>
                 <div className="sgb-assets__bar">
                     <div className="sgb-assets__filters">
-                        <SelectControl
-                            label="Container"
-                            hideLabelFromVision
-                            value={assetContainer}
-                            options={assetContainerOptions}
-                            __next40pxDefaultSize
-                            onChange={setAssetContainer}
-                        />
                         <TextControl
                             label="Search"
                             hideLabelFromVision
@@ -1501,41 +1625,21 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                         >
                             Upload
                         </Button>
-                        <Button icon={refreshIcon} label="Refresh assets" onClick={fetchAssets}>
-                            Refresh
-                        </Button>
                     </div>
                 </div>
                 <div className="sgb-assets__browser">
                     <aside className="sgb-assets__folders" aria-label="Asset folders">
-                        {assetContainer === '*' ? (
-                            <p>Choose a container to browse folders. Search runs across all visible containers.</p>
-                        ) : (
-                            <>
-                                <button
-                                    type="button"
-                                    className={assetFolder === '/' ? 'is-active' : ''}
-                                    onClick={() => setAssetFolder('/')}
-                                >
-                                    Assets
-                                </button>
-                                {assetFolder !== '/' ? (
-                                    <button type="button" onClick={() => setAssetFolder(parentFolder(assetFolder))}>
-                                        Up one folder
-                                    </button>
-                                ) : null}
-                                {assetFolders.map((folder) => (
-                                    <button
-                                        type="button"
-                                        key={folder.path}
-                                        className={assetFolder === folder.path ? 'is-active' : ''}
-                                        onClick={() => setAssetFolder(folder.path)}
-                                    >
-                                        {folder.basename || folder.title}
-                                    </button>
-                                ))}
-                            </>
-                        )}
+                        <div className="sgb-assets__tree-shell">
+                            <div className="sgb-assets__tree">
+                                {assetContainers.length ? renderContainerTree() : (
+                                    <p className="sgb-assets__tree-empty">No asset containers available.</p>
+                                )}
+                            </div>
+                            <div className="sgb-assets__tree-actions">
+                                <button type="button" onClick={expandAllFolders}>⊕ Expand all</button>
+                                <button type="button" onClick={collapseAllFolders}>⊖ Collapse all</button>
+                            </div>
+                        </div>
                     </aside>
                     <section className="sgb-assets__content">
                         {assetsUploading ? (

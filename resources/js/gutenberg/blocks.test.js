@@ -334,10 +334,17 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('window.StatamicGutenbergUploadUrl = meta.uploadUrl');
         expect(source).toContain('window.StatamicGutenbergMediaUrl = meta.mediaUrl');
         expect(source).toContain('window.StatamicGutenbergAssetsContainer = meta.assetsContainer');
-        expect(source).toContain('SelectControl');
         expect(source).toContain('TextareaControl');
-        expect(source).toContain('assetContainerOptions');
+        expect(source).toContain('collectAssetTreeKeys(assetContainers)');
+        expect(source).toContain('sgb-assets__tree-icon--container');
+        expect(source).toContain('sgb-assets__tree-icon--folder');
+        expect(source).toContain("'⊕'");
+        expect(source).toContain("'⊖'");
         expect(source).toContain('setAssetContainer');
+        expect(source).toContain('setAssetFolderTree(Array.isArray(json.folder_tree) ? json.folder_tree : [])');
+        expect(source).toContain('toggleFolderExpanded');
+        expect(source).toContain('⊕ Expand all');
+        expect(source).toContain('⊖ Collapse all');
         expect(source).toContain('updateFocusedAssetMetadata');
         expect(source).toContain('Save details');
         expect(source).toContain('onDoubleClick={() => insertSelectedAssets([asset])}');
@@ -347,6 +354,10 @@ describe('registerGutenbergBlocks', () => {
         expect(apiFetchSource).toContain('uploadStatamicMedia');
         expect(fieldtypeSource).toContain("'mediaUrl' => cp_route('amazingbv.statamic-gutenberg.assets.show')");
         expect(css).toContain('.sgb-assets__filters');
+        expect(css).toContain('.sgb-assets__tree-icon--container');
+        expect(css).toContain('.sgb-assets__tree-icon--folder');
+        expect(css).toContain('.sgb-assets__tree-shell');
+        expect(css).toContain('.sgb-assets__tree-actions');
         expect(css).toContain('.sgb-assets__details');
     });
 

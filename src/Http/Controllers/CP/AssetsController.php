@@ -59,10 +59,14 @@ class AssetsController extends CpController
                 ->map(fn ($folder) => $this->folderPayload($folder))
                 ->all()
             : [];
+        $folderTree = count($containers) === 1
+            ? $this->folderTreePayload($containers[0])
+            : [];
 
         return response()->json([
             'data' => $assets,
             'folders' => $folders,
+            'folder_tree' => $folderTree,
             'containers' => $this->containerPayloads(),
             'folder' => $folder,
             'meta' => [
@@ -193,6 +197,7 @@ class AssetsController extends CpController
             ->map(fn ($container) => [
                 'handle' => $container->handle(),
                 'title' => $container->title() ?: $container->handle(),
+                'folder_tree' => $this->folderTreePayload($container),
             ])
             ->values()
             ->all();
@@ -323,6 +328,19 @@ class AssetsController extends CpController
             'basename' => $folder->basename(),
             'parent' => $parent,
         ];
+    }
+
+    private function folderTreePayload($container, string $parent = '/'): array
+    {
+        return $container->assetFolders($parent, false)
+            ->values()
+            ->map(function ($folder) use ($container) {
+                $payload = $this->folderPayload($folder);
+                $payload['children'] = $this->folderTreePayload($container, $payload['path']);
+
+                return $payload;
+            })
+            ->all();
     }
 
     private function assetPayload($asset, Request $request): array
