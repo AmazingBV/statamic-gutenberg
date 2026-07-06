@@ -9,7 +9,9 @@ class EditorCssParityTest extends TestCase
         $css = file_get_contents(__DIR__.'/../resources/css/addon.css');
 
         $this->assertStringContainsString('grid-template-columns:', $css);
-        $this->assertStringContainsString('[content-start] minmax(0, var(--wp--style--global--content-size))', $css);
+        $this->assertStringContainsString('--sgb-editor-content-track-size: min(var(--wp--style--global--content-size), 100%)', $css);
+        $this->assertStringContainsString('--sgb-editor-wide-track-side-size: max(0px, calc((min(var(--wp--style--global--wide-size), 100%) - var(--sgb-editor-content-track-size)) / 2))', $css);
+        $this->assertStringContainsString('[content-start] minmax(0, var(--sgb-editor-content-track-size))', $css);
         $this->assertStringContainsString('font-size: clamp(2rem, 4vw, 3rem)', $css);
         $this->assertStringContainsString('font-weight: 700', $css);
         $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-heading.block-editor-rich-text__editable', $css);
@@ -120,6 +122,14 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('flex: 0 0 auto', $css);
         $this->assertStringContainsString('flex: 1 1 auto', $css);
         $this->assertStringContainsString('padding: 0', $css);
+        $this->assertStringContainsString('overflow: clip', $css);
+        $this->assertStringContainsString('--sgb-editor-canvas-inline-padding: 16px', $css);
+        $this->assertStringContainsString('padding-block: 32px', $css);
+        $this->assertStringContainsString('padding-inline: var(--sgb-editor-canvas-inline-padding)', $css);
+        $this->assertStringContainsString('overflow-x: hidden', $css);
+        $this->assertStringContainsString('overflow-y: auto', $css);
+        $this->assertStringContainsString('.sgb-overlay-host .components-popover:has(.block-editor-block-contextual-toolbar)', $css);
+        $this->assertStringContainsString('z-index: 2 !important', $css);
         $this->assertStringContainsString('box-sizing: border-box', $css);
         $this->assertStringContainsString('max-width: none', $css);
         $this->assertStringContainsString('border: 0', $css);
@@ -132,6 +142,8 @@ class EditorCssParityTest extends TestCase
             '.sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > .wp-block.alignfull',
             $css
         );
+        $this->assertStringContainsString('width: calc(100% + var(--sgb-editor-canvas-inline-padding) + var(--sgb-editor-canvas-inline-padding))', $css);
+        $this->assertStringContainsString('margin-inline: calc(0px - var(--sgb-editor-canvas-inline-padding))', $css);
         $this->assertStringContainsString(
             '.sgb-editor .sgb-page-frame :where(.wp-block-list, .wp-block-details, .wp-block-math, .wp-block-accordion, .wp-block-columns, .wp-block-group)',
             $css

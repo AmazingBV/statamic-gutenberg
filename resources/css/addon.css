@@ -94,6 +94,7 @@
     left: var(--sgb-overlay-left, 192px);
     z-index: 2147482000;
     min-width: 0;
+    overflow: clip;
 }
 
 .sgb-overlay-root {
@@ -123,6 +124,7 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
+    overflow-x: clip;
     background: #eef1f5;
     color: #1f2328;
 }
@@ -132,13 +134,20 @@
 }
 
 .sgb-window__header {
+    position: relative;
+    z-index: 6;
     display: flex;
     gap: 20px;
     align-items: center;
     justify-content: space-between;
+    min-width: 0;
     padding: 16px 22px;
     border-bottom: 1px solid #d8dee4;
     background: #ffffff;
+}
+
+.sgb-window__header > * {
+    min-width: 0;
 }
 
 .sgb-window__header h1 {
@@ -150,10 +159,12 @@
 
 .sgb-window__actions {
     display: flex;
+    flex: 1 1 auto;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
     justify-content: flex-end;
+    min-width: 0;
 }
 
 .sgb-window__status {
@@ -219,6 +230,15 @@
 
 .sgb-overlay-host .components-modal__frame {
     z-index: 10000001;
+}
+
+.sgb-overlay-host :where(
+    .components-popover.block-editor-block-list__block-popover,
+    .components-popover.block-editor-block-popover
+),
+.sgb-overlay-host .components-popover:has(.block-editor-block-contextual-toolbar),
+.sgb-overlay-host .components-popover:has(.block-editor-block-toolbar) {
+    z-index: 2 !important;
 }
 
 .sgb-toolbar {
@@ -876,6 +896,7 @@
     flex: 1 1 auto;
     grid-template-columns: minmax(0, 1fr) 360px;
     min-height: 0;
+    overflow-x: clip;
 }
 
 .sgb-editor--fullscreen .sgb-editor__workspace--list-open {
@@ -898,7 +919,8 @@
 }
 
 .sgb-editor--fullscreen .sgb-editor__stage {
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 0;
 }
 
@@ -1062,8 +1084,10 @@
 }
 
 .sgb-editor--fullscreen .sgb-canvas {
+    --sgb-editor-canvas-inline-padding: 16px;
     min-height: 540px;
-    padding: 0;
+    padding-block: 32px;
+    padding-inline: var(--sgb-editor-canvas-inline-padding);
 }
 
 .sgb-canvas .block-editor-block-list__layout {
@@ -1076,12 +1100,14 @@
 }
 
 .sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout {
+    --sgb-editor-content-track-size: min(var(--wp--style--global--content-size), 100%);
+    --sgb-editor-wide-track-side-size: max(0px, calc((min(var(--wp--style--global--wide-size), 100%) - var(--sgb-editor-content-track-size)) / 2));
     display: grid;
     grid-template-columns:
         [full-start] minmax(0, 1fr)
-        [wide-start] minmax(0, calc((var(--wp--style--global--wide-size) - var(--wp--style--global--content-size)) / 2))
-        [content-start] minmax(0, var(--wp--style--global--content-size))
-        [content-end] minmax(0, calc((var(--wp--style--global--wide-size) - var(--wp--style--global--content-size)) / 2))
+        [wide-start] minmax(0, var(--sgb-editor-wide-track-side-size))
+        [content-start] minmax(0, var(--sgb-editor-content-track-size))
+        [content-end] minmax(0, var(--sgb-editor-wide-track-side-size))
         [wide-end] minmax(0, 1fr)
         [full-end];
     font-size: 18px;
@@ -1105,6 +1131,9 @@
 
 .sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > .wp-block.alignfull {
     grid-column: full;
+    width: calc(100% + var(--sgb-editor-canvas-inline-padding) + var(--sgb-editor-canvas-inline-padding));
+    max-width: calc(100% + var(--sgb-editor-canvas-inline-padding) + var(--sgb-editor-canvas-inline-padding));
+    margin-inline: calc(0px - var(--sgb-editor-canvas-inline-padding));
 }
 
 .sgb-editor--fullscreen .sgb-canvas > .block-editor-block-list__layout > :is(.wp-block-columns, .wp-block-group) {
