@@ -75,6 +75,7 @@ class Gutenberg extends Fieldtype
             'assetsContainer' => $container,
             'assetsUrl' => cp_route('amazingbv.statamic-gutenberg.assets.index', ['container' => $container]),
             'uploadUrl' => cp_route('amazingbv.statamic-gutenberg.assets.upload', ['container' => $container]),
+            'mediaUrl' => cp_route('amazingbv.statamic-gutenberg.assets.show'),
             'iconsUrl' => cp_route('amazingbv.statamic-gutenberg.icons.index'),
             'patternsUrl' => cp_route('amazingbv.statamic-gutenberg.patterns.index'),
             'blockRendererUrl' => cp_route('amazingbv.statamic-gutenberg.block-renderer'),

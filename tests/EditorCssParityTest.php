@@ -169,14 +169,16 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString("'core/gallery': 'image'", $editor);
         $this->assertStringContainsString('const [selectedAssets, setSelectedAssets] = useState([])', $editor);
         $this->assertStringContainsString('const toggleSelectedAsset = useCallback((asset) => {', $editor);
-        $this->assertStringContainsString('const insertSelectedAssets = useCallback(() => {', $editor);
-        $this->assertStringContainsString('callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)))', $editor);
-        $this->assertStringContainsString('callback.multiple', $editor);
-        $this->assertStringContainsString('Insert selected ({selectedAssets.length})', $editor);
+        $this->assertStringContainsString('const insertSelectedAssets = useCallback((assetsToInsert = selectedAssets) => {', $editor);
+        $this->assertStringContainsString('callback.onSelect(selected.map((asset) => createMediaPayload(asset)))', $editor);
+        $this->assertStringContainsString('callback?.multiple', $editor);
+        $this->assertStringContainsString('Insert selected (${selectedAssets.length})', $editor);
         $this->assertStringContainsString('aria-pressed={isMultipleAssetPicker ? isSelected : undefined}', $editor);
         $this->assertStringContainsString("className={`sgb-asset\${isSelected ? ' is-selected' : ''}`}", $editor);
+        $this->assertStringContainsString('onDoubleClick={() => insertSelectedAssets([asset])}', $editor);
         $this->assertStringContainsString('.sgb-asset.is-selected', $css);
         $this->assertStringContainsString('.sgb-assets-modal', $css);
+        $this->assertStringContainsString('.sgb-assets__details', $css);
         $this->assertStringContainsString('z-index: 2147482003', $css);
     }
 }

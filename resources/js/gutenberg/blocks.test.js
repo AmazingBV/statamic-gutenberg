@@ -319,9 +319,35 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain('createImageBlock');
         expect(source).toContain("selectedBlock?.name === 'core/gallery'");
         expect(source).toContain('multiple: Boolean(options.multiple || isSelectedGallery)');
-        expect(source).toContain('selectedAssets.map((selectedAsset) => createImageBlock(selectedAsset))');
+        expect(source).toContain('selected.map((selectedAsset) => createImageBlock(selectedAsset))');
         expect(source).toContain('uploaded.map((asset) => createImageBlock(asset))');
         expect(source).toContain('assetPicker?.multiple');
+    });
+
+    it('exposes a Statamic-backed media library flow to Gutenberg', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/GutenbergEditor.jsx', 'utf8');
+        const apiFetchSource = fs.readFileSync('resources/js/gutenberg/apiFetchFallbacks.js', 'utf8');
+        const fieldtypeSource = fs.readFileSync('src/Fieldtypes/Gutenberg.php', 'utf8');
+        const css = fs.readFileSync('resources/css/addon.css', 'utf8');
+
+        expect(source).toContain('window.StatamicGutenbergAssetsUrl = meta.assetsUrl');
+        expect(source).toContain('window.StatamicGutenbergUploadUrl = meta.uploadUrl');
+        expect(source).toContain('window.StatamicGutenbergMediaUrl = meta.mediaUrl');
+        expect(source).toContain('window.StatamicGutenbergAssetsContainer = meta.assetsContainer');
+        expect(source).toContain('SelectControl');
+        expect(source).toContain('TextareaControl');
+        expect(source).toContain('assetContainerOptions');
+        expect(source).toContain('setAssetContainer');
+        expect(source).toContain('updateFocusedAssetMetadata');
+        expect(source).toContain('Save details');
+        expect(source).toContain('onDoubleClick={() => insertSelectedAssets([asset])}');
+        expect(apiFetchSource).toContain('fetchStatamicMediaList');
+        expect(apiFetchSource).toContain("url.searchParams.set('container', wpUrl.searchParams.get('statamic_container') || '*')");
+        expect(apiFetchSource).toContain('updateStatamicMedia');
+        expect(apiFetchSource).toContain('uploadStatamicMedia');
+        expect(fieldtypeSource).toContain("'mediaUrl' => cp_route('amazingbv.statamic-gutenberg.assets.show')");
+        expect(css).toContain('.sgb-assets__filters');
+        expect(css).toContain('.sgb-assets__details');
     });
 
     it('adds native-style editor controls for history, list view and code mode', () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     installStatamicApiFetchFallbacks,
     resolveStatamicApiFetchFallback,
@@ -6,10 +6,20 @@ import {
 import { createMediaPayload, parseSerialized } from './serialization';
 
 describe('Statamic Gutenberg apiFetch fallbacks', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        delete window.StatamicGutenbergAssetsUrl;
+        delete window.StatamicGutenbergUploadUrl;
+        delete window.StatamicGutenbergMediaUrl;
+        delete window.StatamicGutenbergAssetsContainer;
+        delete window.StatamicGutenbergBlockRendererUrl;
+        delete window.StatamicGutenbergAllowedBlocks;
+        delete window.StatamicGutenbergPatterns;
+    });
+
     it('returns standalone responses for read-only WordPress REST endpoints', () => {
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/types?context=view' })).toHaveProperty('wp_block.rest_base', 'blocks');
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/taxonomies?context=view' })).toHaveProperty('wp_pattern_category.rest_base', 'wp_pattern_category');
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media?per_page=20' })).toEqual([]);
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/users/me?context=edit' })).toMatchObject({
             id: 0,
             name: 'Statamic',
@@ -21,7 +31,66 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media', method: 'POST' })).toBeUndefined();
     });
 
-    it('serves registered Statamic media through WordPress media records', () => {
+    it('proxies WordPress media list requests to Statamic assets', async () => {
+        window.StatamicGutenbergAssetsUrl = '/cp/amazingbv/statamic-gutenberg/assets';
+        const fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                data: [
+                    {
+                        id: 'assets::hero.jpg',
+                        wpId: 123,
+                        url: '/storage/assets/hero.jpg',
+                        title: 'Hero',
+                        alt: 'Hero alt',
+                        type: 'image',
+                        mime_type: 'image/jpeg',
+                        container: 'assets',
+                    },
+                ],
+                meta: {
+                    total: 1,
+                    total_pages: 1,
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetch);
+
+        const use = vi.fn();
+        const apiFetch = { use };
+        installStatamicApiFetchFallbacks(apiFetch);
+        const middleware = use.mock.calls[0][0];
+
+        const result = await middleware({ path: '/wp/v2/media?search=hero&media_type=image&per_page=20' }, vi.fn());
+
+        expect(fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/cp/amazingbv/statamic-gutenberg/assets'),
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    Accept: 'application/json',
+                }),
+            }),
+        );
+        expect(fetch.mock.calls[0][0]).toContain('container=*');
+        expect(fetch.mock.calls[0][0]).toContain('q=hero');
+        expect(result).toHaveLength(1);
+        expect(result[0]).toMatchObject({
+            id: 123,
+            statamicId: 'assets::hero.jpg',
+            source_url: '/storage/assets/hero.jpg',
+            alt_text: 'Hero alt',
+            title: { raw: 'Hero', rendered: 'Hero' },
+            media_type: 'image',
+            type: 'attachment',
+        });
+
+        const response = await middleware({ path: '/wp/v2/media?per_page=20', parse: false }, vi.fn());
+
+        expect(response.headers.get('x-wp-total')).toBe('1');
+        expect(response.headers.get('x-wp-totalpages')).toBe('1');
+    });
+
+    it('serves registered Statamic media through WordPress media records', async () => {
         const media = createMediaPayload({
             id: 'assets::video.mp4',
             url: '/storage/assets/video.mp4',
@@ -31,7 +100,7 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
             mime_type: 'video/mp4',
         });
 
-        expect(resolveStatamicApiFetchFallback({ path: `/wp/v2/media/${media.id}?context=edit` })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: `/wp/v2/media/${media.id}?context=edit` })).resolves.toMatchObject({
             id: media.id,
             statamicId: 'assets::video.mp4',
             source_url: '/storage/assets/video.mp4',
@@ -43,7 +112,7 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         });
     });
 
-    it('hydrates persisted Statamic media identities when serialized content is reopened', () => {
+    it('hydrates persisted Statamic media identities when serialized content is reopened', async () => {
         parseSerialized([
             '<!-- wp:image {"id":12345,"statamicId":"assets::hero.jpg","url":"/storage/assets/hero.jpg","alt":"Hero"} --><figure class="wp-block-image"><img src="/storage/assets/hero.jpg" alt="Hero"></figure><!-- /wp:image -->',
             '<!-- wp:cover {"id":12346,"statamicId":"assets::cover.jpg","url":"/storage/assets/cover.jpg","alt":"Cover"} /-->',
@@ -53,42 +122,42 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
             '<!-- wp:video {"id":12350,"statamicId":"assets::movie.mp4","src":"/storage/assets/movie.mp4","caption":"Movie"} /-->',
         ].join(''));
 
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12345?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12345?context=edit' })).resolves.toMatchObject({
             id: 12345,
             statamicId: 'assets::hero.jpg',
             source_url: '/storage/assets/hero.jpg',
             alt_text: 'Hero',
             media_type: 'image',
         });
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12346?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12346?context=edit' })).resolves.toMatchObject({
             id: 12346,
             statamicId: 'assets::cover.jpg',
             source_url: '/storage/assets/cover.jpg',
             alt_text: 'Cover',
             media_type: 'image',
         });
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12347?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12347?context=edit' })).resolves.toMatchObject({
             id: 12347,
             statamicId: 'assets::podcast.mp3',
             source_url: '/storage/assets/podcast.mp3',
             caption: { raw: 'Episode', rendered: 'Episode' },
             media_type: 'audio',
         });
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12348?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12348?context=edit' })).resolves.toMatchObject({
             id: 12348,
             statamicId: 'assets::brochure.pdf',
             source_url: '/storage/assets/brochure.pdf',
             title: { raw: 'Brochure.pdf', rendered: 'Brochure.pdf' },
             media_type: 'file',
         });
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12349?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12349?context=edit' })).resolves.toMatchObject({
             id: 12349,
             statamicId: 'assets::media.jpg',
             source_url: '/storage/assets/media.jpg',
             alt_text: 'Media',
             media_type: 'image',
         });
-        expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12350?context=edit' })).toMatchObject({
+        await expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media/12350?context=edit' })).resolves.toMatchObject({
             id: 12350,
             statamicId: 'assets::movie.mp4',
             source_url: '/storage/assets/movie.mp4',
@@ -143,6 +212,99 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         vi.unstubAllGlobals();
         delete window.StatamicGutenbergBlockRendererUrl;
         delete window.StatamicGutenbergAllowedBlocks;
+    });
+
+    it('proxies WordPress media metadata updates to Statamic assets', async () => {
+        const media = createMediaPayload({
+            id: 'assets::hero.jpg',
+            url: '/storage/assets/hero.jpg',
+            title: 'Hero',
+            type: 'image',
+        });
+        window.StatamicGutenbergMediaUrl = '/cp/amazingbv/statamic-gutenberg/assets/media';
+        const fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                data: {
+                    id: 'assets::hero.jpg',
+                    wpId: media.id,
+                    url: '/storage/assets/hero.jpg',
+                    title: 'Updated title',
+                    alt_text: 'Updated alt',
+                    caption: 'Updated caption',
+                    type: 'image',
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetch);
+
+        const result = await resolveStatamicApiFetchFallback({
+            path: `/wp/v2/media/${media.id}`,
+            method: 'POST',
+            data: {
+                alt_text: 'Updated alt',
+                title: { raw: 'Updated title' },
+                caption: { raw: 'Updated caption' },
+            },
+        });
+
+        expect(fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/cp/amazingbv/statamic-gutenberg/assets/media'),
+            expect.objectContaining({
+                method: 'PATCH',
+                body: JSON.stringify({
+                    id: 'assets::hero.jpg',
+                    alt_text: 'Updated alt',
+                    title: { raw: 'Updated title' },
+                    caption: { raw: 'Updated caption' },
+                }),
+            }),
+        );
+        expect(result).toMatchObject({
+            id: media.id,
+            statamicId: 'assets::hero.jpg',
+            alt_text: 'Updated alt',
+            title: { raw: 'Updated title', rendered: 'Updated title' },
+            caption: { raw: 'Updated caption', rendered: 'Updated caption' },
+        });
+    });
+
+    it('proxies WordPress media uploads to the Statamic upload endpoint', async () => {
+        window.StatamicGutenbergUploadUrl = '/cp/amazingbv/statamic-gutenberg/assets';
+        window.StatamicGutenbergAssetsContainer = 'assets';
+        const fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                data: {
+                    id: 'assets::upload.jpg',
+                    wpId: 456,
+                    url: '/storage/assets/upload.jpg',
+                    title: 'Upload',
+                    type: 'image',
+                },
+            }),
+        });
+        vi.stubGlobal('fetch', fetch);
+
+        const result = await resolveStatamicApiFetchFallback({
+            path: '/wp/v2/media',
+            method: 'POST',
+            body: new FormData(),
+        });
+
+        expect(fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/cp/amazingbv/statamic-gutenberg/assets'),
+            expect.objectContaining({
+                method: 'POST',
+                body: expect.any(FormData),
+            }),
+        );
+        expect(result).toMatchObject({
+            id: 456,
+            statamicId: 'assets::upload.jpg',
+            source_url: '/storage/assets/upload.jpg',
+            media_type: 'image',
+        });
     });
 
     it('serves Statamic patterns through WordPress-compatible endpoints', async () => {
@@ -201,8 +363,6 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
             name: 'statamic/synced',
             content: '<!-- wp:block {"ref":123} /-->',
         });
-
-        delete window.StatamicGutenbergPatterns;
     });
 
     it('returns a response-like object for core-data parse false requests', async () => {

@@ -280,6 +280,14 @@ function scalarString(value) {
     return typeof value === 'string' ? value : '';
 }
 
+function rawMediaString(value) {
+    if (value && typeof value === 'object' && ! Array.isArray(value)) {
+        return scalarString(value.raw ?? value.rendered ?? '');
+    }
+
+    return scalarString(value);
+}
+
 function mediaAssetFromPersistedBlock(block = {}) {
     const name = block.name || '';
     const attributes = block.attributes || {};
@@ -405,7 +413,8 @@ function hydratePersistedMediaPayloadsFromSerialized(content) {
 export function createMediaPayload(asset = {}) {
     const mediaType = mediaTypeForAsset(asset);
     const url = asset.url || asset.source_url || '';
-    const title = asset.title || asset.filename || '';
+    const title = rawMediaString(asset.title) || asset.filename || '';
+    const caption = rawMediaString(asset.caption);
     const statamicId = asset.statamicId || asset.id || asset.path || url || title || '';
     const id = numericMediaId(asset.wpId || asset.wordpressId || asset.id)
         || stableNumericMediaId(statamicId);
@@ -428,15 +437,23 @@ export function createMediaPayload(asset = {}) {
         source_url: url,
         link: asset.link || url,
         statamicId,
-        alt: asset.alt || '',
+        container: asset.container || asset.container_handle || '',
+        container_handle: asset.container_handle || asset.container || '',
+        path: asset.path || '',
+        folder: asset.folder || '',
+        alt: asset.alt || asset.alt_text || '',
         alt_text: asset.alt_text || asset.alt || '',
         title,
-        caption: asset.caption || '',
+        caption,
         filename: asset.filename || title,
         mime: asset.mime || asset.mime_type || '',
         mime_type: asset.mime_type || asset.mime || '',
         type: mediaType,
         media_type: mediaType,
+        width: asset.width || asset.media_details?.width || null,
+        height: asset.height || asset.media_details?.height || null,
+        filesize: asset.filesize || asset.media_details?.filesize || null,
+        thumbnail: asset.thumbnail || '',
         sizes: imageSizes,
         media_details: {
             ...(asset.media_details || {}),

@@ -14,6 +14,8 @@ Route::prefix('amazingbv/statamic-gutenberg')
         Route::get('editor', EditorController::class)->name('editor');
         Route::get('assets', [AssetsController::class, 'index'])->name('assets.index');
         Route::post('assets', [AssetsController::class, 'upload'])->name('assets.upload');
+        Route::get('assets/media', [AssetsController::class, 'show'])->name('assets.show');
+        Route::patch('assets/media', [AssetsController::class, 'update'])->name('assets.update');
         Route::post('bard-preview', BardPreviewController::class)->name('bard-preview');
         Route::post('block-renderer', BlockRendererController::class)->name('block-renderer');
         Route::get('icons', [IconsController::class, 'index'])->name('icons.index');

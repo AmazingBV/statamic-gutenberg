@@ -5,6 +5,7 @@ namespace Amazingbv\StatamicGutenberg\Tests;
 use Amazingbv\StatamicGutenberg\Http\Controllers\CP\AssetsController;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use ReflectionMethod;
 use Statamic\Facades\AssetContainer;
 use Statamic\Facades\User;
@@ -23,6 +24,59 @@ class AssetsControllerTest extends TestCase
         $this->assetsController()->index(Request::create('/cp/assets', 'GET', [
             'container' => 'private',
         ]));
+    }
+
+    public function test_all_container_requests_use_view_authorized_containers(): void
+    {
+        $container = AssetContainer::make('assets');
+        AssetContainer::shouldReceive('all')->andReturn(collect([$container]));
+        Gate::shouldReceive('allows')->with('view', $container)->andReturn(true);
+
+        $containers = $this->invokePrivate($this->assetsController(), 'containersForRequest', [
+            Request::create('/cp/assets', 'GET', [
+                'container' => '*',
+            ]),
+        ]);
+
+        $this->assertSame([$container], $containers);
+    }
+
+    public function test_asset_payload_contains_wordpress_compatible_media_metadata(): void
+    {
+        $asset = new FakeAsset(
+            'image/jpeg',
+            'jpg',
+            isImage: true,
+            id: 'assets::hero.jpg',
+            basename: 'hero.jpg',
+            url: 'https://example.test/storage/assets/hero.jpg',
+            data: [
+                'alt' => 'Hero alt',
+                'title' => 'Hero title',
+                'caption' => 'Hero caption',
+            ],
+            width: 1200,
+            height: 800,
+            size: 123456,
+        );
+
+        $payload = $this->invokePrivate($this->assetsController(), 'assetPayload', [
+            $asset,
+            Request::create('https://example.test/cp/assets'),
+        ]);
+
+        $this->assertSame('assets::hero.jpg', $payload['id']);
+        $this->assertIsInt($payload['wpId']);
+        $this->assertSame('assets::hero.jpg', $payload['statamicId']);
+        $this->assertSame('assets', $payload['container']);
+        $this->assertSame('Hero alt', $payload['alt_text']);
+        $this->assertSame('Hero title', $payload['title']);
+        $this->assertSame('Hero caption', $payload['caption']);
+        $this->assertSame('image', $payload['media_type']);
+        $this->assertSame(1200, $payload['media_details']['width']);
+        $this->assertSame(800, $payload['media_details']['height']);
+        $this->assertSame(123456, $payload['media_details']['filesize']);
+        $this->assertSame('https://example.test/storage/assets/hero.jpg', $payload['media_details']['sizes']['full']['source_url']);
     }
 
     public function test_asset_filters_normalize_exact_mime_types_and_extensions(): void
@@ -122,7 +176,56 @@ class FakeAsset
         private bool $isSvg = false,
         private bool $isAudio = false,
         private bool $isVideo = false,
+        private string $id = 'assets::file.txt',
+        private string $basename = 'file.txt',
+        private string $url = '/storage/assets/file.txt',
+        private array $data = [],
+        private ?int $width = null,
+        private ?int $height = null,
+        private ?int $size = null,
     ) {
+    }
+
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    public function url(): string
+    {
+        return $this->url;
+    }
+
+    public function thumbnailUrl(string $preset): string
+    {
+        return $this->url.'?preset='.$preset;
+    }
+
+    public function get(string $key, mixed $fallback = null): mixed
+    {
+        return $this->data[$key] ?? $fallback;
+    }
+
+    public function basename(): string
+    {
+        return $this->basename;
+    }
+
+    public function containerHandle(): string
+    {
+        return explode('::', $this->id, 2)[0] ?: 'assets';
+    }
+
+    public function path(): string
+    {
+        return explode('::', $this->id, 2)[1] ?? $this->basename;
+    }
+
+    public function folder(): string
+    {
+        $folder = dirname($this->path());
+
+        return $folder === '.' ? '/' : $folder;
     }
 
     public function mimeType(): string
@@ -153,5 +256,20 @@ class FakeAsset
     public function isVideo(): bool
     {
         return $this->isVideo;
+    }
+
+    public function width(): ?int
+    {
+        return $this->width;
+    }
+
+    public function height(): ?int
+    {
+        return $this->height;
+    }
+
+    public function size(): ?int
+    {
+        return $this->size;
     }
 }

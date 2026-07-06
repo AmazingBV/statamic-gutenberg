@@ -24,7 +24,7 @@
     "src": "node_modules/dashicons/fonts/dashicons.ttf"
   },
   "resources/css/addon.css": {
-    "file": "assets/addon-BAQozN_Z.css",
+    "file": "assets/addon-CN1ejcqU.css",
     "src": "resources/css/addon.css",
     "isEntry": true,
     "name": "addon",
@@ -42,7 +42,7 @@
     ]
   },
   "resources/js/addon.js": {
-    "file": "assets/addon-CKOzoiYL.js",
+    "file": "assets/addon-Cttxv01z.js",
     "name": "addon",
     "src": "resources/js/addon.js",
     "isEntry": true,
@@ -54,7 +54,7 @@
     ]
   },
   "resources/js/editor-window.js": {
-    "file": "assets/editor-window-C3EgrRgp.js",
+    "file": "assets/editor-window-qLlKGAEC.js",
     "name": "editor-window",
     "src": "resources/js/editor-window.js",
     "isEntry": true,
@@ -70,7 +70,7 @@
     "isEntry": true
   },
   "resources/js/gutenberg/mount.jsx": {
-    "file": "assets/mount-r-U7qWlC.js",
+    "file": "assets/mount-Do5d2Y9u.js",
     "name": "mount",
     "src": "resources/js/gutenberg/mount.jsx",
     "isDynamicEntry": true,

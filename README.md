@@ -327,11 +327,22 @@ values, such as `style`, `align`, `textColor`, `backgroundColor`, `fontSize`,
 
 ## Media And Assets
 
-The editor uses Statamic Assets, not WordPress media endpoints.
+The editor uses Statamic Assets, not WordPress media storage. The addon exposes
+a small WordPress-compatible media adapter internally so Gutenberg components
+that request `/wp/v2/media` can list, search, upload, read, and update Statamic
+assets without requiring a real WordPress media library.
 
 The media picker is opened from supported media blocks and shows a file browser
-for the configured asset container. Uploads go through Statamic authorization,
-container validation rules, safe filenames, and type checks.
+for Statamic asset containers the current Control Panel user may view. Search
+can run across all visible containers. Uploads default to the field's configured
+asset container, or to the container currently selected in the picker, and go
+through Statamic authorization, container validation rules, safe filenames, and
+type checks.
+
+The detail panel writes attachment metadata changes for alt text, title, and
+caption back to the Statamic asset metadata. Existing block attributes still
+store a `statamicId` alongside Gutenberg's numeric attachment id, so saved
+content can be reopened without losing the Statamic asset identity.
 
 Block type filters:
 
@@ -340,6 +351,10 @@ Block type filters:
 - Audio blocks show audio.
 - Video blocks show video.
 - File blocks allow files.
+
+The v1 media adapter intentionally does not implement destructive WordPress
+media operations or image editing features such as crop, rotate, and replace
+original. Use Statamic's normal Assets screen for those workflows.
 
 Configure the default container:
 

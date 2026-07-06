@@ -160,6 +160,48 @@ describe('Gutenberg serialization helpers', () => {
         });
     });
 
+    it('preserves Statamic media metadata from WordPress-compatible asset payloads', () => {
+        const media = createImageMedia({
+            id: 'assets::nested/hero.jpg',
+            wpId: 987,
+            url: '/storage/assets/nested/hero.jpg',
+            alt_text: 'Hero alt',
+            title: { raw: 'Hero title' },
+            caption: { raw: 'Hero caption' },
+            type: 'image',
+            mime_type: 'image/jpeg',
+            container: 'assets',
+            folder: 'nested',
+            width: 1200,
+            height: 800,
+            filesize: 123456,
+            media_details: {
+                sizes: {
+                    full: {
+                        source_url: '/storage/assets/nested/hero.jpg',
+                        width: 1200,
+                        height: 800,
+                    },
+                },
+            },
+        });
+
+        expect(media).toMatchObject({
+            id: 987,
+            statamicId: 'assets::nested/hero.jpg',
+            container: 'assets',
+            folder: 'nested',
+            alt_text: 'Hero alt',
+            title: 'Hero title',
+            caption: 'Hero caption',
+            mime_type: 'image/jpeg',
+            width: 1200,
+            height: 800,
+            filesize: 123456,
+        });
+        expect(findRegisteredMediaPayload(987)).toEqual(media);
+    });
+
     it('adds core media ids to direct asset block attributes', () => {
         const asset = {
             id: 'assets::hero.jpg',

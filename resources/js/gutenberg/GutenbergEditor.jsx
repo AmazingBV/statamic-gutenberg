@@ -12,11 +12,12 @@ import {
     __experimentalListView as ListView,
     store as blockEditorStore,
 } from '@wordpress/block-editor';
-import { Button, DropdownMenu, MenuGroup, MenuItem, Popover, SlotFillProvider, Spinner, TextControl } from '@wordpress/components';
+import { Button, DropdownMenu, MenuGroup, MenuItem, Popover, SelectControl, SlotFillProvider, Spinner, TextareaControl, TextControl } from '@wordpress/components';
 import { useDispatch, useSelect } from '@wordpress/data';
 import { addFilter } from '@wordpress/hooks';
 import {
     code as codeIcon,
+    close as closeIcon,
     listView as listViewIcon,
     moreVertical,
     plus,
@@ -712,6 +713,22 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             window.StatamicGutenbergBlockRendererUrl = meta.blockRendererUrl;
         }
 
+        if (meta?.assetsUrl) {
+            window.StatamicGutenbergAssetsUrl = meta.assetsUrl;
+        }
+
+        if (meta?.uploadUrl) {
+            window.StatamicGutenbergUploadUrl = meta.uploadUrl;
+        }
+
+        if (meta?.mediaUrl) {
+            window.StatamicGutenbergMediaUrl = meta.mediaUrl;
+        }
+
+        if (meta?.assetsContainer) {
+            window.StatamicGutenbergAssetsContainer = meta.assetsContainer;
+        }
+
         window.StatamicGutenbergAllowedBlocks = allowedBlockTypes;
     }
 
@@ -758,11 +775,16 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const [assetQuery, setAssetQuery] = useState('');
     const [assets, setAssets] = useState([]);
     const [assetFolders, setAssetFolders] = useState([]);
+    const [assetContainers, setAssetContainers] = useState([]);
+    const [assetContainer, setAssetContainer] = useState('*');
     const [assetFolder, setAssetFolder] = useState('/');
     const [assetPicker, setAssetPicker] = useState(null);
     const [selectedAssets, setSelectedAssets] = useState([]);
+    const [focusedAsset, setFocusedAsset] = useState(null);
+    const [assetMetadata, setAssetMetadata] = useState({ alt: '', title: '', caption: '' });
     const [assetsLoading, setAssetsLoading] = useState(false);
     const [assetsUploading, setAssetsUploading] = useState(false);
+    const [assetUpdating, setAssetUpdating] = useState(false);
     const [customBlocksReady, setCustomBlocksReady] = useState(() => customBlocks.length === 0);
     const mediaPickerCallbackRef = useRef(null);
     const uploadInputRef = useRef(null);
@@ -983,6 +1005,25 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         }
     }, [redoEdit, undoEdit]);
 
+    useEffect(() => {
+        setAssetFolder('/');
+        setSelectedAssets([]);
+        setFocusedAsset(null);
+    }, [assetContainer]);
+
+    useEffect(() => {
+        if (! focusedAsset) {
+            setAssetMetadata({ alt: '', title: '', caption: '' });
+            return;
+        }
+
+        setAssetMetadata({
+            alt: focusedAsset.alt_text || focusedAsset.alt || '',
+            title: typeof focusedAsset.title === 'string' ? focusedAsset.title : (focusedAsset.filename || ''),
+            caption: typeof focusedAsset.caption === 'string' ? focusedAsset.caption : '',
+        });
+    }, [focusedAsset]);
+
     const fetchAssets = useCallback(async () => {
         if (! meta.assetsUrl || ! assetPicker) {
             setAssets([]);
@@ -994,6 +1035,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
 
         try {
             const url = sameOriginUrl(meta.assetsUrl);
+            url.searchParams.set('container', assetContainer || '*');
             url.searchParams.set('q', assetQuery);
             url.searchParams.set('type', assetPicker.type);
             url.searchParams.set('folder', assetFolder);
@@ -1013,6 +1055,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             const json = await response.json();
             setAssets(Array.isArray(json.data) ? json.data : []);
             setAssetFolders(Array.isArray(json.folders) ? json.folders : []);
+            setAssetContainers(Array.isArray(json.containers) ? json.containers : []);
         } catch (error) {
             console.warn('Unable to load Statamic assets.', error);
             setAssets([]);
@@ -1020,7 +1063,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         } finally {
             setAssetsLoading(false);
         }
-    }, [assetFolder, assetPicker, assetQuery, meta.assetsUrl]);
+    }, [assetContainer, assetFolder, assetPicker, assetQuery, meta.assetsUrl]);
 
     useEffect(() => {
         if (assetPicker) {
@@ -1031,6 +1074,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const closeAssetPicker = useCallback(() => {
         mediaPickerCallbackRef.current = null;
         setSelectedAssets([]);
+        setFocusedAsset(null);
         setAssetPicker(null);
     }, []);
 
@@ -1053,6 +1097,10 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         setAssets([]);
         setAssetFolders([]);
         setSelectedAssets([]);
+        setFocusedAsset(null);
+        setAssetQuery('');
+        setAssetFolder('/');
+        setAssetContainer('*');
         setAssetPicker({
             type,
             accept: filter.accept,
@@ -1084,6 +1132,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
             return;
         }
 
+        setFocusedAsset(asset);
         setSelectedAssets((current) => (
             current.some((selected) => assetKey(selected) === key)
                 ? current.filter((selected) => assetKey(selected) !== key)
@@ -1091,75 +1140,62 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         ));
     }, []);
 
-    const insertSelectedAssets = useCallback(() => {
+    const insertSelectedAssets = useCallback((assetsToInsert = selectedAssets) => {
         const callback = mediaPickerCallbackRef.current;
+        const selected = assetsToInsert.filter(Boolean);
 
-        if (! selectedAssets.length) {
+        if (! selected.length) {
             return;
         }
 
         if (callback?.multiple) {
-            callback.onSelect(selectedAssets.map((asset) => createMediaPayload(asset)));
+            callback.onSelect(selected.map((asset) => createMediaPayload(asset)));
+        } else if (callback) {
+            callback.onSelect(createMediaPayload(selected[0]));
         } else if (selectedBlock?.name === 'core/gallery') {
             insertBlocks(
-                selectedAssets.map((selectedAsset) => createImageBlock(selectedAsset)),
+                selected.map((selectedAsset) => createImageBlock(selectedAsset)),
                 undefined,
                 selectedBlock.clientId,
             );
+        } else if (selectedBlock && supportedTypeForBlock(selectedBlock.name)) {
+            updateBlockAttributes(
+                selectedBlock.clientId,
+                attributesForAssetBlock(selectedBlock.name, selected[0]),
+            );
         } else {
-            return;
+            insertBlocks(createAssetBlock(selected[0]));
         }
 
         closeAssetPicker();
-    }, [closeAssetPicker, insertBlocks, selectedAssets, selectedBlock]);
+    }, [closeAssetPicker, insertBlocks, selectedAssets, selectedBlock, updateBlockAttributes]);
 
     const selectAsset = useCallback((asset) => {
-        const callback = mediaPickerCallbackRef.current;
-
-        if (callback) {
-            if (callback.multiple) {
-                toggleSelectedAsset(asset);
-
-                return;
-            }
-
-            const media = createMediaPayload(asset);
-            callback.onSelect(media);
-            closeAssetPicker();
-
-            return;
-        }
-
-        if (selectedBlock?.name === 'core/gallery') {
+        if (mediaPickerCallbackRef.current?.multiple || selectedBlock?.name === 'core/gallery') {
             toggleSelectedAsset(asset);
 
             return;
         }
 
-        if (selectedBlock && supportedTypeForBlock(selectedBlock.name)) {
-            updateBlockAttributes(
-                selectedBlock.clientId,
-                attributesForAssetBlock(selectedBlock.name, asset),
-            );
-        } else {
-            insertBlocks(createAssetBlock(asset));
-        }
+        setFocusedAsset(asset);
+        setSelectedAssets([asset]);
+    }, [selectedBlock?.name, toggleSelectedAsset]);
 
-        closeAssetPicker();
-    }, [closeAssetPicker, insertBlocks, selectedBlock, toggleSelectedAsset, updateBlockAttributes]);
-
-    const uploadFiles = useCallback(async (filesList, type = 'image', folder = '/', filter = {}) => {
+    const uploadFiles = useCallback(async (filesList, type = 'image', folder = '/', filter = {}, container = null) => {
         if (! meta.uploadUrl) {
             throw new Error('No Statamic upload endpoint configured.');
         }
 
         const files = Array.from(filesList || []).filter(Boolean);
         const uploaded = [];
+        const uploadContainer = container && container !== '*'
+            ? container
+            : (meta.assetsContainer || 'assets');
 
         for (const file of files) {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('container', meta.assetsContainer || 'assets');
+            formData.append('container', uploadContainer);
             formData.append('type', type);
             formData.append('folder', folder);
             (filter.mimeTypes || []).forEach((mimeType) => {
@@ -1202,7 +1238,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         setAssetsUploading(true);
 
         try {
-            const uploaded = await uploadFiles(filesList, assetPicker?.type || 'image', assetFolder, assetPicker || {});
+            const uploaded = await uploadFiles(filesList, assetPicker?.type || 'image', assetFolder, assetPicker || {}, assetContainer);
 
             if (uploaded.length) {
                 setAssets((current) => [...uploaded, ...current]);
@@ -1234,7 +1270,52 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         } finally {
             setAssetsUploading(false);
         }
-    }, [assetFolder, assetPicker?.type, closeAssetPicker, insertBlocks, selectAsset, selectedBlock, uploadFiles]);
+    }, [assetContainer, assetFolder, assetPicker?.type, closeAssetPicker, insertBlocks, selectAsset, selectedBlock, uploadFiles]);
+
+    const updateFocusedAssetMetadata = useCallback(async () => {
+        if (! meta.mediaUrl || ! focusedAsset?.statamicId) {
+            return;
+        }
+
+        setAssetUpdating(true);
+
+        try {
+            const response = await fetch(sameOriginUrl(meta.mediaUrl).toString(), {
+                method: 'PATCH',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify({
+                    id: focusedAsset.statamicId,
+                    alt_text: assetMetadata.alt,
+                    title: assetMetadata.title,
+                    caption: assetMetadata.caption,
+                }),
+            });
+            const json = await response.json().catch(() => ({}));
+
+            if (! response.ok) {
+                throw new Error(json?.message || 'Unable to update Statamic asset metadata.');
+            }
+
+            const updated = json.data || focusedAsset;
+            createMediaPayload(updated);
+            setFocusedAsset(updated);
+            setAssets((current) => current.map((asset) => (
+                assetKey(asset) === assetKey(updated) ? updated : asset
+            )));
+            setSelectedAssets((current) => current.map((asset) => (
+                assetKey(asset) === assetKey(updated) ? updated : asset
+            )));
+        } catch (error) {
+            console.warn('Unable to update Statamic asset metadata.', error);
+        } finally {
+            setAssetUpdating(false);
+        }
+    }, [assetMetadata, focusedAsset, meta.mediaUrl]);
 
     const isFullscreen = variant === 'fullscreen';
 
@@ -1252,6 +1333,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                     typeFromAllowedTypes(allowedTypes) || 'file',
                     assetFolder,
                     filter,
+                    assetContainer,
                 );
                 onFileChange?.(uploaded.map((asset) => createMediaPayload(asset)));
                 setAssets((current) => [...uploaded, ...current]);
@@ -1260,7 +1342,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                 onError?.(error.message);
             }
         },
-    }, meta.themeJson), patternSettings), [allowedBlockTypes, assetFolder, uploadFiles, meta.themeJson, patternSettings]);
+    }, meta.themeJson), patternSettings), [allowedBlockTypes, assetContainer, assetFolder, uploadFiles, meta.themeJson, patternSettings]);
 
     const rootBlockLayout = useMemo(() => ({
         ...ROOT_BLOCK_LAYOUT,
@@ -1350,38 +1432,55 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
         [selectedAssets],
     );
     const isMultipleAssetPicker = Boolean(mediaPickerCallbackRef.current?.multiple || assetPicker?.multiple);
+    const assetContainerOptions = useMemo(() => [
+        { label: 'All containers', value: '*' },
+        ...assetContainers.map((container) => ({
+            label: container.title || container.handle,
+            value: container.handle,
+        })),
+    ], [assetContainers]);
+    const uploadTarget = assetContainer && assetContainer !== '*'
+        ? assetContainer
+        : (meta.assetsContainer || 'assets');
 
     const assetBrowser = assetPicker ? (
-        <div className="sgb-assets-modal" role="dialog" aria-modal="true" aria-label="Statamic assets">
+        <div className="sgb-assets-modal" role="dialog" aria-modal="true" aria-label="Media Library browser">
             <div className="sgb-assets-modal__panel">
                 <div className="sgb-assets-modal__header">
                     <div>
-                        <strong>Statamic assets</strong>
+                        <strong>Media Library browser</strong>
                         <span>{assetPicker.title}</span>
                     </div>
-                    <Button onClick={closeAssetPicker} variant="secondary">
+                    <Button
+                        className="sgb-assets-modal__close"
+                        icon={closeIcon}
+                        onClick={closeAssetPicker}
+                        variant="tertiary"
+                    >
                         Close
                     </Button>
                 </div>
                 <div className="sgb-assets__bar">
-                    <TextControl
-                        label="Search assets"
-                        hideLabelFromVision
-                        placeholder="Search assets"
-                        value={assetQuery}
-                        __next40pxDefaultSize
-                        onChange={setAssetQuery}
-                    />
+                    <div className="sgb-assets__filters">
+                        <SelectControl
+                            label="Container"
+                            hideLabelFromVision
+                            value={assetContainer}
+                            options={assetContainerOptions}
+                            __next40pxDefaultSize
+                            onChange={setAssetContainer}
+                        />
+                        <TextControl
+                            label="Search"
+                            hideLabelFromVision
+                            placeholder="Search assets"
+                            type="search"
+                            value={assetQuery}
+                            __next40pxDefaultSize
+                            onChange={setAssetQuery}
+                        />
+                    </div>
                     <div className="sgb-assets__actions">
-                        {isMultipleAssetPicker ? (
-                            <Button
-                                disabled={! selectedAssets.length}
-                                onClick={insertSelectedAssets}
-                                variant="primary"
-                            >
-                                Insert selected ({selectedAssets.length})
-                            </Button>
-                        ) : null}
                         <input
                             ref={uploadInputRef}
                             type="file"
@@ -1395,38 +1494,48 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                         />
                         <Button
                             icon={uploadIcon}
-                            label="Upload asset"
+                            label={`Upload to ${uploadTarget}`}
                             disabled={assetsUploading}
                             onClick={() => uploadInputRef.current?.click()}
-                            variant="primary"
-                        />
-                        <Button icon={refreshIcon} label="Refresh assets" onClick={fetchAssets} />
+                            variant="secondary"
+                        >
+                            Upload
+                        </Button>
+                        <Button icon={refreshIcon} label="Refresh assets" onClick={fetchAssets}>
+                            Refresh
+                        </Button>
                     </div>
                 </div>
                 <div className="sgb-assets__browser">
                     <aside className="sgb-assets__folders" aria-label="Asset folders">
-                        <button
-                            type="button"
-                            className={assetFolder === '/' ? 'is-active' : ''}
-                            onClick={() => setAssetFolder('/')}
-                        >
-                            Assets
-                        </button>
-                        {assetFolder !== '/' ? (
-                            <button type="button" onClick={() => setAssetFolder(parentFolder(assetFolder))}>
-                                Up one folder
-                            </button>
-                        ) : null}
-                        {assetFolders.map((folder) => (
-                            <button
-                                type="button"
-                                key={folder.path}
-                                className={assetFolder === folder.path ? 'is-active' : ''}
-                                onClick={() => setAssetFolder(folder.path)}
-                            >
-                                {folder.basename || folder.title}
-                            </button>
-                        ))}
+                        {assetContainer === '*' ? (
+                            <p>Choose a container to browse folders. Search runs across all visible containers.</p>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    className={assetFolder === '/' ? 'is-active' : ''}
+                                    onClick={() => setAssetFolder('/')}
+                                >
+                                    Assets
+                                </button>
+                                {assetFolder !== '/' ? (
+                                    <button type="button" onClick={() => setAssetFolder(parentFolder(assetFolder))}>
+                                        Up one folder
+                                    </button>
+                                ) : null}
+                                {assetFolders.map((folder) => (
+                                    <button
+                                        type="button"
+                                        key={folder.path}
+                                        className={assetFolder === folder.path ? 'is-active' : ''}
+                                        onClick={() => setAssetFolder(folder.path)}
+                                    >
+                                        {folder.basename || folder.title}
+                                    </button>
+                                ))}
+                            </>
+                        )}
                     </aside>
                     <section className="sgb-assets__content">
                         {assetsUploading ? (
@@ -1446,6 +1555,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                                             className={`sgb-asset${isSelected ? ' is-selected' : ''}`}
                                             key={key || `asset-${index}`}
                                             onClick={() => selectAsset(asset)}
+                                            onDoubleClick={() => insertSelectedAssets([asset])}
                                         >
                                             {asset.media_type === 'image' ? (
                                                 <img src={asset.thumbnail || asset.url} alt={asset.alt || asset.filename} />
@@ -1461,6 +1571,65 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                             <div className="sgb-assets__empty">No matching assets found.</div>
                         )}
                     </section>
+                    <aside className="sgb-assets__details" aria-label="Asset details">
+                        {focusedAsset ? (
+                            <>
+                                <div className="sgb-assets__preview">
+                                    {focusedAsset.media_type === 'image' ? (
+                                        <img src={focusedAsset.thumbnail || focusedAsset.url} alt={assetMetadata.alt || focusedAsset.filename} />
+                                    ) : (
+                                        <span className="sgb-asset__file">{focusedAsset.extension || focusedAsset.media_type}</span>
+                                    )}
+                                </div>
+                                <div className="sgb-assets__details-body">
+                                    <dl>
+                                        <dt>Filename</dt>
+                                        <dd>{focusedAsset.filename}</dd>
+                                        <dt>Container</dt>
+                                        <dd>{focusedAsset.container || focusedAsset.container_handle}</dd>
+                                        <dt>Type</dt>
+                                        <dd>{focusedAsset.mime_type || focusedAsset.mime || focusedAsset.media_type}</dd>
+                                    </dl>
+                                    <TextControl
+                                        label="Alt text"
+                                        value={assetMetadata.alt}
+                                        __next40pxDefaultSize
+                                        onChange={(alt) => setAssetMetadata((current) => ({ ...current, alt }))}
+                                    />
+                                    <TextControl
+                                        label="Title"
+                                        value={assetMetadata.title}
+                                        __next40pxDefaultSize
+                                        onChange={(title) => setAssetMetadata((current) => ({ ...current, title }))}
+                                    />
+                                    <TextareaControl
+                                        label="Caption"
+                                        value={assetMetadata.caption}
+                                        __nextHasNoMarginBottom
+                                        onChange={(caption) => setAssetMetadata((current) => ({ ...current, caption }))}
+                                    />
+                                    <div className="sgb-assets__detail-actions">
+                                        <Button
+                                            disabled={! selectedAssets.length}
+                                            onClick={() => insertSelectedAssets()}
+                                            variant="primary"
+                                        >
+                                            {isMultipleAssetPicker ? `Insert selected (${selectedAssets.length})` : 'Insert asset'}
+                                        </Button>
+                                        <Button
+                                            variant="secondary"
+                                            disabled={assetUpdating}
+                                            onClick={updateFocusedAssetMetadata}
+                                        >
+                                            Save details
+                                        </Button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="sgb-assets__empty">Select an asset to view details.</div>
+                        )}
+                    </aside>
                 </div>
             </div>
         </div>
