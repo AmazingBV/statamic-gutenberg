@@ -287,6 +287,71 @@ class BlockRendererTest extends TestCase
         $this->assertStringContainsString('<figcaption>Saved caption</figcaption>', $rendered);
     }
 
+    public function test_it_renders_supported_video_and_audio_embed_providers(): void
+    {
+        $cases = [
+            [
+                'url' => 'https://vimeo.com/123456789',
+                'slug' => 'vimeo',
+                'type' => 'video',
+                'src' => 'https://player.vimeo.com/video/123456789',
+                'caption' => 'Vimeo caption',
+            ],
+            [
+                'url' => 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl',
+                'slug' => 'spotify',
+                'type' => 'rich',
+                'src' => 'https://open.spotify.com/embed/track/11dFghVXANMlKmJXsNCbNl',
+                'caption' => 'Spotify caption',
+            ],
+            [
+                'url' => 'https://soundcloud.com/forss/flickermood',
+                'slug' => 'soundcloud',
+                'type' => 'rich',
+                'src' => 'https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fforss%2Fflickermood',
+                'caption' => 'SoundCloud caption',
+            ],
+        ];
+
+        foreach ($cases as $case) {
+            $html = sprintf(
+                '<!-- wp:embed {"url":"%s","type":"%s","providerNameSlug":"%s","responsive":true,"align":"wide","className":"audit-embed"} --><figure class="wp-block-embed"><div class="wp-block-embed__wrapper">%s</div><figcaption>%s</figcaption></figure><!-- /wp:embed -->',
+                $case['url'],
+                $case['type'],
+                $case['slug'],
+                $case['url'],
+                $case['caption'],
+            );
+
+            $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+            $this->assertStringContainsString('is-provider-'.$case['slug'], $rendered);
+            $this->assertStringContainsString('wp-block-embed-'.$case['slug'], $rendered);
+            $this->assertStringContainsString('is-type-'.$case['type'], $rendered);
+            $this->assertStringContainsString('alignwide', $rendered);
+            $this->assertStringContainsString('audit-embed', $rendered);
+            $this->assertStringContainsString('src="'.$case['src'], $rendered);
+            $this->assertStringContainsString('<figcaption>'.$case['caption'].'</figcaption>', $rendered);
+
+            if ($case['type'] === 'video') {
+                $this->assertStringContainsString('wp-embed-aspect-16-9', $rendered);
+                $this->assertStringContainsString('wp-has-aspect-ratio', $rendered);
+            } else {
+                $this->assertStringNotContainsString('wp-embed-aspect-16-9', $rendered);
+            }
+        }
+    }
+
+    public function test_it_does_not_construct_iframes_for_unsupported_embeds(): void
+    {
+        $html = '<!-- wp:embed {"url":"https://twitter.com/amazing/status/123","type":"rich","providerNameSlug":"twitter"} --><figure class="wp-block-embed is-provider-twitter"><div class="wp-block-embed__wrapper">https://twitter.com/amazing/status/123</div></figure><!-- /wp:embed -->';
+
+        $rendered = (string) app(BlockRenderer::class)->render($html, $this->allCoreAllowedOptions());
+
+        $this->assertStringContainsString('https://twitter.com/amazing/status/123', $rendered);
+        $this->assertStringNotContainsString('<iframe', $rendered);
+    }
+
     public function test_it_applies_constrained_layout_attributes_to_cover_inner_blocks(): void
     {
         $html = '<!-- wp:cover {"align":"full","layout":{"type":"constrained","contentSize":"640px","wideSize":"980px"}} --><div class="wp-block-cover alignfull"><div class="wp-block-cover__inner-container"><!-- wp:paragraph --><p>Cover title</p><!-- /wp:paragraph --></div></div><!-- /wp:cover -->';

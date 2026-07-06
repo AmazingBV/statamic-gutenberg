@@ -17,6 +17,10 @@ import {
     withTextFormattingSupport,
     withWideFullAlignSupport,
 } from './blockSupport';
+import {
+    SUPPORTED_EMBED_PROVIDER_SLUGS,
+    unregisterUnsupportedEmbedVariations,
+} from './embedProviders';
 
 describe('registerGutenbergBlocks', () => {
     it('enables experimental and form core blocks before registering block-library blocks', () => {
@@ -46,6 +50,30 @@ describe('registerGutenbergBlocks', () => {
         expect(source).toContain("'blocks.getSaveContent.extraProps'");
         expect(source).toContain('addTextAlignSaveProps');
         expect(filterCallIndex).toBeLessThan(registerIndex);
+    });
+
+    it('keeps only supported core embed variations in the inserter', () => {
+        const source = fs.readFileSync('resources/js/gutenberg/blocks.jsx', 'utf8');
+        const removed = [];
+
+        unregisterUnsupportedEmbedVariations({
+            getBlockVariations: () => [
+                { name: 'youtube' },
+                { name: 'vimeo' },
+                { name: 'spotify' },
+                { name: 'soundcloud' },
+                { name: 'twitter' },
+                { name: 'reddit' },
+            ],
+            unregisterBlockVariation: (blockName, variationName) => removed.push([blockName, variationName]),
+        });
+
+        expect(SUPPORTED_EMBED_PROVIDER_SLUGS).toEqual(['youtube', 'vimeo', 'spotify', 'soundcloud']);
+        expect(source).toContain('unregisterUnsupportedEmbedVariations');
+        expect(removed).toEqual([
+            ['core/embed', 'twitter'],
+            ['core/embed', 'reddit'],
+        ]);
     });
 
     it('merges wide and full align support into block settings', () => {

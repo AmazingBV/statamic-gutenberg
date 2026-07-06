@@ -305,6 +305,29 @@ Some internal child blocks are also listed where Gutenberg requires them, such
 as accordion item/panel blocks. You can remove blocks from the global config or
 override the allowlist per field.
 
+## Embed Providers
+
+`core/embed` is available for URL embeds, but the add-on intentionally supports
+only iframe-based video/audio providers that can be rendered safely without
+loading external provider scripts:
+
+- YouTube
+- Vimeo
+- Spotify
+- SoundCloud
+
+The editor and frontend both use the same iframe-based provider handling.
+YouTube and Vimeo are rendered as responsive video embeds. Spotify and
+SoundCloud are rendered as rich/audio embeds with explicit preview heights, so
+they stay visible in Gutenberg's sandboxed editor preview as well as on the
+frontend.
+
+Other Gutenberg oEmbed variations, such as X/Twitter, Facebook, Instagram,
+Reddit, Pinterest, document providers, Maps, and generic rich/social embeds are
+hidden from the inserter. If an unsupported URL is pasted into `core/embed`,
+the editor uses Gutenberg's normal failed-embed flow and the frontend falls back
+to the sanitized saved URL/HTML instead of rendering a custom iframe.
+
 ## Block Supports
 
 The bundled editor registers Gutenberg's native support controls for the default

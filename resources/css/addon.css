@@ -1688,8 +1688,20 @@
 .sgb-editor .sgb-page-frame .wp-block-embed iframe {
     display: block;
     width: 100%;
-    height: 100%;
+    max-width: 100%;
     border: 0;
+}
+
+.sgb-editor .sgb-page-frame .wp-block-embed.is-type-video iframe {
+    height: 100%;
+}
+
+.sgb-editor .sgb-page-frame .wp-block-embed-spotify iframe {
+    min-height: 352px;
+}
+
+.sgb-editor .sgb-page-frame .wp-block-embed-soundcloud iframe {
+    min-height: 166px;
 }
 
 .sgb-editor .sgb-page-frame .wp-block-icon svg {

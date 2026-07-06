@@ -31,6 +31,43 @@ describe('Statamic Gutenberg apiFetch fallbacks', () => {
         expect(resolveStatamicApiFetchFallback({ path: '/wp/v2/media', method: 'POST' })).toBeUndefined();
     });
 
+    it('returns WordPress-compatible oEmbed previews for supported providers', () => {
+        expect(resolveStatamicApiFetchFallback({ path: '/oembed/1.0/proxy?url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DtCDvOQI3pco' })).toMatchObject({
+            type: 'video',
+            provider_name: 'YouTube',
+            provider_url: 'https://www.youtube.com/',
+            html: expect.stringContaining('src="https://www.youtube.com/embed/tCDvOQI3pco"'),
+            width: 560,
+            height: 315,
+        });
+
+        expect(resolveStatamicApiFetchFallback({ path: '/oembed/1.0/proxy?url=https%3A%2F%2Fvimeo.com%2F123456789' })).toMatchObject({
+            type: 'video',
+            provider_name: 'Vimeo',
+            html: expect.stringContaining('src="https://player.vimeo.com/video/123456789"'),
+        });
+
+        expect(resolveStatamicApiFetchFallback({ path: '/oembed/1.0/proxy?url=https%3A%2F%2Fopen.spotify.com%2Ftrack%2F11dFghVXANMlKmJXsNCbNl' })).toMatchObject({
+            type: 'rich',
+            provider_name: 'Spotify',
+            html: expect.stringContaining('src="https://open.spotify.com/embed/track/11dFghVXANMlKmJXsNCbNl"'),
+            height: 352,
+        });
+
+        expect(resolveStatamicApiFetchFallback({ path: '/oembed/1.0/proxy?url=https%3A%2F%2Fsoundcloud.com%2Fforss%2Fflickermood' })).toMatchObject({
+            type: 'rich',
+            provider_name: 'SoundCloud',
+            html: expect.stringContaining('src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fsoundcloud.com%2Fforss%2Fflickermood'),
+            height: 166,
+        });
+    });
+
+    it('returns a failed oEmbed preview for unsupported providers', () => {
+        expect(resolveStatamicApiFetchFallback({ path: '/oembed/1.0/proxy?url=https%3A%2F%2Ftwitter.com%2Famazing%2Fstatus%2F123' })).toEqual({
+            html: false,
+        });
+    });
+
     it('proxies WordPress media list requests to Statamic assets', async () => {
         window.StatamicGutenbergAssetsUrl = '/cp/amazingbv/statamic-gutenberg/assets';
         const fetch = vi.fn().mockResolvedValue({

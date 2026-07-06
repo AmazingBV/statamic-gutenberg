@@ -3,6 +3,7 @@
 namespace Amazingbv\StatamicGutenberg\Blocks;
 
 use Amazingbv\StatamicGutenberg\Bard\BardBlockRepository;
+use Amazingbv\StatamicGutenberg\Embeds\EmbedProviders;
 use Amazingbv\StatamicGutenberg\Icons\IconRepository;
 use Amazingbv\StatamicGutenberg\Patterns\PatternRepository;
 use Amazingbv\StatamicGutenberg\Support\Duotone;
@@ -2051,28 +2052,25 @@ class BlockRenderer
             $url = $this->extractFirstUrl($block->renderableHtml());
         }
 
-        $embedUrl = $this->youtubeEmbedUrl($url);
+        $embed = EmbedProviders::resolve($url);
 
-        if (! $embedUrl) {
+        if (! $embed) {
             return $this->applyStaticWrapperSupportAttributes($block, trim($this->sanitize($block->renderableHtml(), $options)));
         }
 
         $classes = [
             'wp-block-embed',
-            'is-type-video',
-            'is-provider-youtube',
-            'wp-block-embed-youtube',
+            'is-type-'.$embed['type'],
+            'is-provider-'.$embed['slug'],
+            'wp-block-embed-'.$embed['slug'],
         ];
 
-        if ($this->truthy($block->attribute('responsive', true))) {
+        if ($embed['type'] === 'video' && $this->truthy($block->attribute('responsive', true))) {
             $classes[] = 'wp-embed-aspect-16-9';
             $classes[] = 'wp-has-aspect-ratio';
         }
 
-        $iframe = sprintf(
-            '<iframe src="%s" title="YouTube video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>',
-            e($embedUrl)
-        );
+        $iframe = $this->embedIframeHtml($embed);
         $wrapperAttributes = BlockWrapperContext::withBlock($block, fn (): string => BlockWrapperContext::wrapperAttributes(['class' => implode(' ', $classes)]));
         $saved = trim($this->sanitize($block->renderableHtml(), $options));
 
@@ -2089,6 +2087,30 @@ class BlockRenderer
             $wrapperAttributes,
             $iframe
         );
+    }
+
+    private function embedIframeHtml(array $embed): string
+    {
+        $attributes = array_filter([
+            'src' => $embed['embedUrl'] ?? '',
+            'title' => $embed['title'] ?? '',
+            'width' => $embed['width'] ?? '',
+            'height' => $embed['height'] ?? '',
+            'frameborder' => '0',
+            'allow' => $embed['allow'] ?? '',
+            'scrolling' => $embed['scrolling'] ?? '',
+        ], fn ($value): bool => $value !== null && $value !== '');
+
+        $rendered = collect($attributes)
+            ->map(fn ($value, string $name): string => sprintf('%s="%s"', $name, e((string) $value)))
+            ->values()
+            ->all();
+
+        if (($embed['allowFullscreen'] ?? false) === true) {
+            $rendered[] = 'allowfullscreen';
+        }
+
+        return '<iframe '.implode(' ', $rendered).'></iframe>';
     }
 
     private function replaceEmbedWrapperWithIframe(string $html, string $wrapperAttributes, string $iframe): ?string
@@ -2166,36 +2188,6 @@ class BlockRenderer
         }
 
         return '';
-    }
-
-    private function youtubeEmbedUrl(string $rawUrl): ?string
-    {
-        $host = parse_url($rawUrl, PHP_URL_HOST);
-        $path = parse_url($rawUrl, PHP_URL_PATH) ?: '';
-        $query = [];
-
-        parse_str(parse_url($rawUrl, PHP_URL_QUERY) ?: '', $query);
-
-        $host = strtolower(preg_replace('/^www\./', '', (string) $host));
-        $id = '';
-
-        if ($host === 'youtu.be') {
-            $id = trim($path, '/');
-        } elseif (in_array($host, ['youtube.com', 'youtube-nocookie.com'], true)) {
-            if (str_starts_with($path, '/embed/')) {
-                $id = explode('/', trim($path, '/'))[1] ?? '';
-            } elseif ($path === '/watch') {
-                $id = (string) ($query['v'] ?? '');
-            } elseif (str_starts_with($path, '/shorts/')) {
-                $id = explode('/', trim($path, '/'))[1] ?? '';
-            }
-        }
-
-        if (! preg_match('/^[A-Za-z0-9_-]{6,}$/', $id)) {
-            return null;
-        }
-
-        return 'https://www.youtube.com/embed/'.$id;
     }
 
     private function enableImageLightbox(string $html): string

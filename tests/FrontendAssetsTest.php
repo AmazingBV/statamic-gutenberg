@@ -27,6 +27,10 @@ class FrontendAssetsTest extends TestCase
         $this->assertStringContainsString('.sgb-content > :where(.wp-block-columns.alignfull, .wp-block-group.alignfull)', $css);
         $this->assertStringContainsString('.sgb-content .wp-block-media-text.is-image-fill-element > .wp-block-media-text__media img', $css);
         $this->assertStringContainsString('object-fit: cover', $css);
+        $this->assertStringContainsString('.sgb-content :where(.wp-block-embed iframe)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.wp-block-embed.is-type-video iframe)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.wp-block-embed-spotify iframe)', $css);
+        $this->assertStringContainsString('.sgb-content :where(.wp-block-embed-soundcloud iframe)', $css);
         $this->assertStringContainsString('grid-column: 1 / -1', $css);
         $this->assertStringContainsString('width: 100vw', $css);
         $this->assertStringContainsString('max-width: none', $css);

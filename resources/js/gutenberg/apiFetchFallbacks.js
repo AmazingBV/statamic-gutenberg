@@ -1,3 +1,4 @@
+import { oEmbedResponseForUrl } from './embedProviders';
 import { createMediaPayload, findRegisteredMediaPayload } from './serialization';
 
 const INSTALLED_KEY = '__statamicGutenbergApiFetchFallbacksInstalled';
@@ -237,55 +238,19 @@ async function resolveStatamicIconsRequest(path) {
     return icons.find((icon) => icon.name === name) || {};
 }
 
-function youtubeEmbedUrl(rawUrl) {
-    if (! rawUrl) {
-        return null;
-    }
-
-    try {
-        const url = new URL(rawUrl);
-        const host = url.hostname.replace(/^www\./, '');
-        let id = '';
-
-        if (host === 'youtu.be') {
-            id = url.pathname.split('/').filter(Boolean)[0] || '';
-        } else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
-            if (url.pathname.startsWith('/embed/')) {
-                id = url.pathname.split('/').filter(Boolean)[1] || '';
-            } else if (url.pathname === '/watch') {
-                id = url.searchParams.get('v') || '';
-            } else if (url.pathname.startsWith('/shorts/')) {
-                id = url.pathname.split('/').filter(Boolean)[1] || '';
-            }
-        }
-
-        return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
-    } catch {
-        return null;
-    }
-}
-
 function fallbackForOembedProxy(path) {
     if (! /^\/oembed\/1\.0\/proxy(?:\?|$)/.test(path)) {
         return undefined;
     }
 
     const url = new URL(path, currentOrigin());
-    const embed = youtubeEmbedUrl(url.searchParams.get('url'));
+    const embed = oEmbedResponseForUrl(url.searchParams.get('url'));
 
     if (! embed) {
-        return {};
+        return { html: false };
     }
 
-    return {
-        type: 'video',
-        provider_name: 'YouTube',
-        provider_url: 'https://www.youtube.com/',
-        title: 'YouTube video',
-        html: `<iframe src="${embed}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`,
-        width: 560,
-        height: 315,
-    };
+    return embed;
 }
 
 function isPlainObject(value) {

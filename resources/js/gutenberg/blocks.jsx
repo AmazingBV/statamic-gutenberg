@@ -1,6 +1,7 @@
 import React from 'react';
 import { registerCoreBlocks } from '@wordpress/block-library';
 import { AlignmentControl, BlockControls } from '@wordpress/block-editor';
+import { getBlockVariations, unregisterBlockVariation } from '@wordpress/blocks';
 import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import { alignCenter, alignJustify, alignLeft, alignRight } from '@wordpress/icons';
@@ -11,6 +12,7 @@ import {
     withStatamicBlockSupport,
     textAlignClassName,
 } from './blockSupport';
+import { unregisterUnsupportedEmbedVariations } from './embedProviders';
 
 let registered = false;
 let filtersRegistered = false;
@@ -51,6 +53,7 @@ export function registerGutenbergBlocks() {
     }
 
     registerCoreBlocks();
+    unregisterUnsupportedEmbedVariations({ getBlockVariations, unregisterBlockVariation });
     registered = true;
 }
 
