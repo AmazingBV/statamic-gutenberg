@@ -1,7 +1,7 @@
-# Statamic Block Editor
+# Block Editor for Statamic
 
-Private Statamic addon for editing and rendering Gutenberg/WordPress block
-editor content inside a Laravel + Statamic installation.
+A Statamic addon for editing and rendering WordPress-compatible block content
+inside a Laravel + Statamic installation.
 
 The addon adds a `gutenberg` fieldtype to the Statamic Control Panel. Editors
 open a full-size Block Editor overlay from an entry, edit Gutenberg blocks, use
@@ -46,40 +46,19 @@ assets are handled by Laravel and Statamic.
 
 - Laravel + Statamic 6 project.
 - PHP and Composer compatible with the host Statamic project.
-- Node.js/npm for building the addon CP assets.
 - A Statamic asset container, by default `assets`.
-- For internal development: access to
-  `git@bitbucket.org:AmazingNL/statamicgutenberg.git`.
 
 ## Installation In A Statamic Project
 
-Clone the addon into the Statamic project's local addon directory. The path is
-important because the Composer path repository below points to it.
+Install the addon from the root of your Laravel + Statamic project:
 
 ```bash
 cd /path/to/laravel-statamic-project
-mkdir -p addons/amazingbv
-git clone git@bitbucket.org:AmazingNL/statamicgutenberg.git addons/amazingbv/statamic-gutenberg
+composer require amazingbv/statamic-gutenberg
 ```
 
-Install and build the addon dependencies:
-
-```bash
-cd /path/to/laravel-statamic-project/addons/amazingbv/statamic-gutenberg
-composer install
-npm install
-npm run build
-```
-
-Register the addon as a local Composer path repository from the project root:
-
-```bash
-cd /path/to/laravel-statamic-project
-composer config repositories.statamic-gutenberg path addons/amazingbv/statamic-gutenberg
-composer require amazingbv/statamic-gutenberg:"*@dev"
-```
-
-Publish the addon config and built Control Panel assets:
+Publish the addon config and Control Panel assets, then clear the application
+cache:
 
 ```bash
 php artisan vendor:publish --tag=statamic-gutenberg --force
@@ -87,20 +66,13 @@ php artisan optimize:clear
 ```
 
 The addon should now appear in Statamic as the `gutenberg` fieldtype.
+The distributed package already contains the built editor and frontend assets,
+so Node.js is not required to install or use the addon.
 
 ## Updating The Addon In A Project
 
-When the addon repository changes:
-
-```bash
-cd /path/to/laravel-statamic-project/addons/amazingbv/statamic-gutenberg
-git pull
-composer install
-npm install
-npm run build
-```
-
-Then refresh the package and published assets from the Statamic project root:
+Update the package and refresh the published assets from the Statamic project
+root:
 
 ```bash
 cd /path/to/laravel-statamic-project
@@ -108,10 +80,6 @@ composer update amazingbv/statamic-gutenberg
 php artisan vendor:publish --tag=statamic-gutenberg --force
 php artisan optimize:clear
 ```
-
-If only PHP/config changed, `npm install` and `npm run build` are usually not
-needed. If anything in `resources/js`, `resources/css`, or `resources/dist`
-changed, rebuild and publish assets.
 
 ## Basic Field Usage
 
@@ -862,10 +830,12 @@ content and known block sources.
 
 ## Development Commands
 
-Run from the addon directory:
+Contributors can clone the public repository and install its PHP and JavaScript
+dependencies:
 
 ```bash
-cd /path/to/laravel-statamic-project/addons/amazingbv/statamic-gutenberg
+git clone https://github.com/AmazingBV/statamic-gutenberg.git
+cd statamic-gutenberg
 composer install
 npm install
 ```
@@ -909,13 +879,11 @@ php artisan optimize:clear
 
 ### The editor opens but styles or scripts are old
 
-Rebuild and republish assets:
+Update the addon and republish its assets:
 
 ```bash
-cd addons/amazingbv/statamic-gutenberg
-npm run build
-
 cd /path/to/laravel-statamic-project
+composer update amazingbv/statamic-gutenberg
 php artisan vendor:publish --tag=statamic-gutenberg --force
 php artisan optimize:clear
 ```
@@ -983,12 +951,6 @@ them together with the addon as part of one package.
 The addon does not include a Statamic CMS license. You still need a valid
 Statamic license for each Statamic project where Statamic requires one.
 
-The addon includes and builds on WordPress/Gutenberg packages and Dashicons.
+The addon includes and builds on WordPress Block Editor packages and Dashicons.
 Those dependencies require the distributed addon package to use `GPL-2.0-only`
 as its license.
-
-## Internal Repository
-
-```text
-git@bitbucket.org:AmazingNL/statamicgutenberg.git
-```
