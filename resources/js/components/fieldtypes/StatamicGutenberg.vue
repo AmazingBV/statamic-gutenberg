@@ -1,6 +1,19 @@
 <script setup>
 import { Fieldtype } from '@statamic/cms';
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { resolveOverlayLayout } from './overlayLayout';
+
+const editorOpeners = window.StatamicGutenbergEditorOpeners ||= new Map();
+
+if (! window.StatamicGutenbergDelegatedOpenInstalled) {
+    document.addEventListener('click', (event) => {
+        const button = event.target?.closest?.('[data-sgb-open-editor]');
+        const opener = button ? editorOpeners.get(button.getAttribute('data-sgb-open-editor')) : null;
+
+        opener?.(button);
+    }, true);
+    window.StatamicGutenbergDelegatedOpenInstalled = true;
+}
 
 const emit = defineEmits(Fieldtype.emits);
 const props = defineProps(Fieldtype.props);
@@ -13,10 +26,14 @@ const editorLoading = ref(false);
 const editorError = ref('');
 const lastSyncedAt = ref(null);
 const editorMeta = ref(null);
+const fieldRoot = ref(null);
 let overlayHost = null;
 let overlayRoot = null;
 let unmountEditor = null;
 let mountGutenbergWindow = null;
+let activeOverlayLayout = null;
+let overlayResizeObserver = null;
+let overlayConnectionObserver = null;
 
 const value = computed(() => (typeof props.value === 'string' ? props.value : ''));
 const blockCount = computed(() => (value.value.match(/<!--\s+wp:/g) || []).length);
@@ -136,26 +153,53 @@ function positionOverlay() {
         return;
     }
 
+    if (activeOverlayLayout?.mode === 'live-preview') {
+        return;
+    }
+
     const offset = chromeOffset();
     overlayHost.style.setProperty('--sgb-overlay-top', `${offset.top}px`);
     overlayHost.style.setProperty('--sgb-overlay-left', `${offset.left}px`);
 }
 
-function ensureOverlayRoot() {
+function ensureOverlayRoot(origin = fieldRoot.value) {
     if (overlayRoot) {
         return overlayRoot;
     }
 
+    activeOverlayLayout = resolveOverlayLayout(document, window, origin);
     overlayHost = document.createElement('div');
-    overlayHost.className = 'sgb-overlay-host';
+    overlayHost.className = [
+        'sgb-overlay-host',
+        activeOverlayLayout.mode === 'live-preview' ? 'sgb-overlay-host--live-preview' : '',
+    ].filter(Boolean).join(' ');
     overlayHost.setAttribute('data-sgb-overlay', 'true');
     overlayRoot = document.createElement('div');
     overlayRoot.className = 'sgb-overlay-root';
     overlayHost.appendChild(overlayRoot);
-    document.body.appendChild(overlayHost);
+    activeOverlayLayout.parent.appendChild(overlayHost);
     document.body.classList.add('sgb-overlay-open');
     positionOverlay();
     window.addEventListener('resize', positionOverlay);
+
+    if (activeOverlayLayout.mode === 'live-preview' && typeof ResizeObserver === 'function') {
+        overlayResizeObserver = new ResizeObserver(() => {
+            window.dispatchEvent(new CustomEvent('sgb:overlay-resize'));
+        });
+        overlayResizeObserver.observe(activeOverlayLayout.parent);
+    }
+
+    if (activeOverlayLayout.mode === 'live-preview' && typeof MutationObserver === 'function') {
+        overlayConnectionObserver = new MutationObserver(() => {
+            if (! activeOverlayLayout?.parent?.isConnected || ! overlayHost?.isConnected) {
+                closeEditor();
+            }
+        });
+        overlayConnectionObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+    }
 
     return overlayRoot;
 }
@@ -186,20 +230,22 @@ function renderEditor() {
         onApply: applyValue,
         onClose: closeEditor,
         onSave: applyAndSave,
+        layoutMode: activeOverlayLayout?.mode || 'entry',
     });
 }
 
-async function openEditor() {
+async function openEditor(trigger = null) {
     if (isOpen.value || editorLoading.value) {
         return;
     }
 
+    const origin = trigger?.currentTarget || trigger || fieldRoot.value;
     editorError.value = '';
     editorLoading.value = true;
     isOpen.value = true;
 
     try {
-        ensureOverlayRoot();
+        ensureOverlayRoot(origin);
         await loadEditorMount();
         editorMeta.value = await refreshEditorMeta();
         renderEditor();
@@ -224,8 +270,26 @@ function closeEditor() {
     overlayRoot = null;
     isOpen.value = false;
     editorMeta.value = null;
+    overlayResizeObserver?.disconnect();
+    overlayResizeObserver = null;
+    overlayConnectionObserver?.disconnect();
+    overlayConnectionObserver = null;
+    activeOverlayLayout?.restore();
+    activeOverlayLayout = null;
     window.removeEventListener('resize', positionOverlay);
     document.body.classList.remove('sgb-overlay-open');
+    cleanupDetachedEditorOpener();
+}
+
+function cleanupDetachedEditorOpener() {
+    setTimeout(() => {
+        const channelStillExists = Array.from(document.querySelectorAll('[data-sgb-open-editor]'))
+            .some((button) => button.getAttribute('data-sgb-open-editor') === channel);
+
+        if (! channelStillExists) {
+            editorOpeners.delete(channel);
+        }
+    });
 }
 
 async function applyValue(nextValue = '') {
@@ -275,7 +339,19 @@ async function applyAndSave(nextValue = '') {
 }
 
 onBeforeUnmount(() => {
+    if (
+        isOpen.value
+        && activeOverlayLayout?.mode === 'live-preview'
+        && overlayHost?.isConnected
+    ) {
+        return;
+    }
+
     closeEditor();
+});
+
+onMounted(() => {
+    editorOpeners.set(channel, openEditor);
 });
 
 watch(value, () => {
@@ -284,7 +360,7 @@ watch(value, () => {
 </script>
 
 <template>
-    <div class="sgb-fieldtype">
+    <div ref="fieldRoot" class="sgb-fieldtype">
         <div class="sgb-fieldtype__panel">
             <div class="sgb-fieldtype__summary">
                 <div>
@@ -300,6 +376,7 @@ watch(value, () => {
                 <button
                     type="button"
                     class="sgb-fieldtype__button"
+                    :data-sgb-open-editor="channel"
                     :disabled="editorLoading"
                     @click="openEditor"
                 >

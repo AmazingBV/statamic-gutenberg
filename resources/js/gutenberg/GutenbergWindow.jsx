@@ -30,6 +30,7 @@ export function GutenbergWindow({
     onClose,
     onSave,
     title,
+    layoutMode = 'entry',
 }) {
     const storedPayload = useMemo(() => readPayload(channel), [channel]);
     const startingPayload = initialPayload || storedPayload;
@@ -229,7 +230,11 @@ export function GutenbergWindow({
     }
 
     return (
-        <div className={`sgb-window${embedded ? ' sgb-window--embedded' : ''}`}>
+        <div className={[
+            'sgb-window',
+            embedded ? 'sgb-window--embedded' : '',
+            layoutMode === 'live-preview' ? 'sgb-window--live-preview' : '',
+        ].filter(Boolean).join(' ')}>
             <header className="sgb-window__header">
                 <div>
                     <div className="sgb-window__eyebrow">{payload.fieldLabel || 'Content'}</div>
@@ -264,6 +269,7 @@ export function GutenbergWindow({
                 onChange={handleChange}
                 onValidityChange={handleValidityChange}
                 variant="fullscreen"
+                layoutMode={layoutMode}
             />
         </div>
     );

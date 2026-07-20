@@ -42,6 +42,58 @@ The addon is not a full WordPress runtime. It uses WordPress block editor
 packages in the Control Panel, but media, patterns, rendering, and custom block
 assets are handled by Laravel and Statamic.
 
+## Content Field, Not An Entry Editor
+
+Block Editor for Statamic is a body-content fieldtype. It does not replace the
+Statamic entry editor or move entry metadata into the Block Editor. Keep the
+title, slug, publication status, date, taxonomies, SEO fields, revisions, and
+separate cover fields in Statamic.
+
+A practical blueprint keeps the title and body content in the **Main** tab and
+places supporting metadata in Statamic's **Sidebar** or dedicated SEO tabs:
+
+```yaml
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+          -
+            handle: content
+            field:
+              type: gutenberg
+              display: Body content
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: topics
+            field:
+              type: terms
+              taxonomies:
+                - topics
+          -
+            handle: cover_image
+            field:
+              type: assets
+              container: assets
+              max_files: 1
+```
+
+Statamic continues to provide slug, date, status, revisions, permissions, and
+publishing controls around that blueprint. Render the entry title in the
+Statamic template, or add a Heading block when the title should be part of the
+body content. The addon does not automatically add an entry title above the
+Block Editor canvas.
+
 ## Requirements
 
 - Laravel + Statamic 6 project.
@@ -362,6 +414,22 @@ content:
   assets_container: downloads
 ```
 
+## Editor And Live Preview Workflow
+
+From a normal entry form, the field opens as a full-size body-content editor
+while Statamic's top bar and navigation stay available.
+
+When opened inside Statamic Live Preview, the addon uses an integrated split
+view. The Block Editor stays inside the resizable editor pane and the preview
+iframe remains visible beside it. List View starts closed, and compact panes
+show List View and Block settings as temporary drawers.
+
+- **Apply and save** applies the block content and requests an entry save.
+- **Apply and close** applies the content and closes the editor.
+- **Apply** applies the content and refreshes Live Preview without saving the
+  entry.
+- **Close** discards unapplied changes after confirmation.
+
 ## Theme JSON
 
 Place an optional `theme.json` in the host Statamic project:
@@ -469,6 +537,53 @@ Reference them with WordPress-style `file:./...` URLs:
     }
 }
 ```
+
+Variable fonts split across Unicode subset files can use multiple `fontFace`
+records with the same family, style, and weight range:
+
+```json
+{
+    "version": 3,
+    "settings": {
+        "typography": {
+            "fontFamilies": [
+                {
+                    "name": "Project Mono",
+                    "slug": "project-mono",
+                    "fontFamily": "\"Project Mono\", monospace",
+                    "fontFace": [
+                        {
+                            "fontFamily": "\"Project Mono\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "fontDisplay": "swap",
+                            "unicodeRange": "U+0000-00FF",
+                            "src": [
+                                "file:./assets/fonts/project-mono-latin.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "\"Project Mono\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "fontDisplay": "swap",
+                            "unicodeRange": "U+0100-024F, U+1E00-1EFF",
+                            "src": [
+                                "file:./assets/fonts/project-mono-extended.woff2"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+```
+
+Supported `fontFace` descriptors are `ascentOverride`, `descentOverride`,
+`fontDisplay`, `fontFamily`, `fontFeatureSettings`, `fontStyle`, `fontStretch`,
+`fontVariationSettings`, `fontWeight`, `lineGapOverride`, `sizeAdjust`, `src`,
+and `unicodeRange`.
 
 The addon serves those files through:
 
@@ -916,6 +1031,29 @@ Check:
 - The editor page was reloaded after changing the file.
 - The CSS is scoped to `.sgb-editor .sgb-canvas`; toolbar UI should not inherit
   content styles.
+
+### A theme font does not load
+
+Check that every `file:./...` source exists relative to `theme.json`, uses a
+safe path inside the theme directory, and is readable by Laravel. For subset
+fonts, every `unicodeRange` value must be a comma-separated list of valid
+`U+...` values, ranges, or wildcards. Reload the Control Panel after changing
+font files or `theme.json`.
+
+### A font-size preset looks different than expected
+
+Define the preset under `settings.typography.fontSizes` and apply it through the
+native Typography control. Preset classes such as `has-small-font-size` use the
+matching `--wp--preset--font-size--small` value in both editor and frontend.
+Check project CSS for a more specific selector when an explicit preset is still
+overridden.
+
+### A border appears unexpectedly
+
+The addon does not create a visible border from only a border color or radius.
+A visible theme border requires an explicit border width or style. If a border
+is still visible, inspect project CSS, a block style variation, or the block's
+saved `style.border.width` and `style.border.style` attributes.
 
 ### A custom block shows "Custom block"
 

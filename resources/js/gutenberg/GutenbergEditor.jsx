@@ -22,6 +22,7 @@ import {
     moreVertical,
     plus,
     redo as redoIcon,
+    settings as settingsIcon,
     undo as undoIcon,
     upload as uploadIcon,
 } from '@wordpress/icons';
@@ -712,7 +713,15 @@ function registerStatamicMediaUploadFilter() {
 
 registerStatamicMediaUploadFilter();
 
-export function GutenbergEditor({ value, config, meta = {}, onChange, onValidityChange, variant = 'field' }) {
+export function GutenbergEditor({
+    value,
+    config,
+    meta = {},
+    onChange,
+    onValidityChange,
+    variant = 'field',
+    layoutMode = 'entry',
+}) {
     if (typeof window !== 'undefined' && meta?.iconsUrl) {
         window.StatamicGutenbergIconsUrl = meta.iconsUrl;
     }
@@ -785,7 +794,10 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const [codeError, setCodeError] = useState('');
     const [editorMode, setEditorMode] = useState('visual');
     const [historyDepths, setHistoryDepths] = useState({ undo: 0, redo: 0 });
-    const [isListViewOpen, setListViewOpen] = useState(() => variant === 'fullscreen');
+    const isLivePreview = layoutMode === 'live-preview';
+    const [isListViewOpen, setListViewOpen] = useState(() => variant === 'fullscreen' && ! isLivePreview);
+    const [isInspectorOpen, setInspectorOpen] = useState(true);
+    const [isCompactSplitView, setCompactSplitView] = useState(false);
     const [assetQuery, setAssetQuery] = useState('');
     const [assets, setAssets] = useState([]);
     const [assetFolderTree, setAssetFolderTree] = useState([]);
@@ -804,6 +816,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     const mediaPickerCallbackRef = useRef(null);
     const uploadInputRef = useRef(null);
     const editorContentRef = useRef(null);
+    const editorRootRef = useRef(null);
     const codeHighlightRef = useRef(null);
     const selectedBlock = useSelect(
         (select) => select(blockEditorStore).getSelectedBlock(),
@@ -1354,6 +1367,38 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     }, [assetMetadata, focusedAsset, meta.mediaUrl]);
 
     const isFullscreen = variant === 'fullscreen';
+    const hasProjectTheme = Boolean(meta.themeJson);
+
+    useEffect(() => {
+        if (! isLivePreview || ! editorRootRef.current || typeof ResizeObserver !== 'function') {
+            return undefined;
+        }
+
+        const updateCompactMode = (width) => {
+            const compact = width < 980;
+            setCompactSplitView(compact);
+
+            if (compact) {
+                setListViewOpen(false);
+                setInspectorOpen(false);
+            }
+        };
+        const observer = new ResizeObserver((entries) => {
+            updateCompactMode(entries[0]?.contentRect?.width || editorRootRef.current?.clientWidth || 0);
+        });
+        const handleOverlayResize = () => {
+            updateCompactMode(editorRootRef.current?.clientWidth || 0);
+        };
+
+        observer.observe(editorRootRef.current);
+        window.addEventListener('sgb:overlay-resize', handleOverlayResize);
+        updateCompactMode(editorRootRef.current.clientWidth || 0);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('sgb:overlay-resize', handleOverlayResize);
+        };
+    }, [customBlocksReady, isLivePreview]);
 
     const settings = useMemo(() => applyPatternSettings(applyThemeJsonSettings({
         ...EDITOR_THEME_SETTINGS,
@@ -1419,7 +1464,31 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                         label="List view"
                         isPressed={isListViewOpen}
                         disabled={editorMode === 'code'}
-                        onClick={() => setListViewOpen((isOpen) => ! isOpen)}
+                        onClick={() => setListViewOpen((isOpen) => {
+                            const nextOpen = ! isOpen;
+
+                            if (nextOpen && isCompactSplitView) {
+                                setInspectorOpen(false);
+                            }
+
+                            return nextOpen;
+                        })}
+                    />
+                ) : null}
+                {isFullscreen && isLivePreview && editorMode === 'visual' ? (
+                    <Button
+                        icon={settingsIcon}
+                        label="Block settings"
+                        isPressed={isInspectorOpen}
+                        onClick={() => setInspectorOpen((isOpen) => {
+                            const nextOpen = ! isOpen;
+
+                            if (nextOpen && isCompactSplitView) {
+                                setListViewOpen(false);
+                            }
+
+                            return nextOpen;
+                        })}
                     />
                 ) : null}
             </div>
@@ -1754,7 +1823,15 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
     return (
         <SlotFillProvider>
             <div
-                className={`sgb-editor sgb-editor--${variant} sgb-editor--mode-${editorMode}`}
+                ref={editorRootRef}
+                className={[
+                    'sgb-editor',
+                    `sgb-editor--${variant}`,
+                    `sgb-editor--mode-${editorMode}`,
+                    hasProjectTheme ? 'sgb-editor--has-theme-json' : 'sgb-editor--no-theme-json',
+                    isLivePreview ? 'sgb-editor--live-preview' : '',
+                    isCompactSplitView ? 'sgb-editor--compact-split' : '',
+                ].filter(Boolean).join(' ')}
                 onKeyDownCapture={handleEditorKeyDown}
             >
                 {themeJsonSvgs ? (
@@ -1779,6 +1856,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                         className={[
                             'sgb-editor__workspace',
                             isFullscreen && isListViewOpen && editorMode === 'visual' ? 'sgb-editor__workspace--list-open' : '',
+                            isFullscreen && isInspectorOpen && editorMode === 'visual' ? 'sgb-editor__workspace--inspector-open' : '',
                             editorMode === 'code' ? 'sgb-editor__workspace--code' : '',
                         ].filter(Boolean).join(' ')}
                     >
@@ -1827,7 +1905,7 @@ export function GutenbergEditor({ value, config, meta = {}, onChange, onValidity
                                 </div>
                             )}
                         </main>
-                        {isFullscreen && editorMode === 'visual' ? (
+                        {isFullscreen && isInspectorOpen && editorMode === 'visual' ? (
                             <aside className="sgb-inspector">
                                 <section className="sgb-inspector__section">
                                     <h2>Block settings</h2>

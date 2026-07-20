@@ -12,9 +12,10 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('--sgb-editor-content-track-size: min(var(--wp--style--global--content-size), 100%)', $css);
         $this->assertStringContainsString('--sgb-editor-wide-track-side-size: max(0px, calc((min(var(--wp--style--global--wide-size), 100%) - var(--sgb-editor-content-track-size)) / 2))', $css);
         $this->assertStringContainsString('[content-start] minmax(0, var(--sgb-editor-content-track-size))', $css);
+        $this->assertStringContainsString('.sgb-editor--fullscreen.sgb-editor--no-theme-json .sgb-page-frame h2', $css);
         $this->assertStringContainsString('font-size: clamp(2rem, 4vw, 3rem)', $css);
         $this->assertStringContainsString('font-weight: 700', $css);
-        $this->assertStringContainsString('.sgb-editor .sgb-page-frame .wp-block-heading.block-editor-rich-text__editable', $css);
+        $this->assertStringContainsString('.sgb-editor--no-theme-json .sgb-page-frame .wp-block-heading.block-editor-rich-text__editable', $css);
         $this->assertStringContainsString('margin-block-start: var(--wp--style--block-gap)', $css);
         $this->assertStringContainsString('.sgb-editor--fullscreen .sgb-page-frame .wp-block-image', $css);
         $this->assertStringContainsString('list-style-type: disc', $css);
@@ -66,6 +67,63 @@ class EditorCssParityTest extends TestCase
         $this->assertStringContainsString('color: var(--wp--style--color--link)', $css);
         $this->assertStringContainsString('.sgb-content :where(.has-blue-to-green-gradient-background)', $css);
         $this->assertStringContainsString('background: var(--wp--preset--gradient--blue-to-green) !important', $css);
+    }
+
+    public function test_project_theme_typography_wins_over_editor_fallbacks(): void
+    {
+        $css = file_get_contents(__DIR__.'/../resources/css/addon.css');
+        $editor = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergEditor.jsx');
+
+        $this->assertStringContainsString("hasProjectTheme ? 'sgb-editor--has-theme-json' : 'sgb-editor--no-theme-json'", $editor);
+        $this->assertStringContainsString(
+            '.sgb-editor--fullscreen.sgb-editor--no-theme-json .sgb-page-frame p',
+            $css
+        );
+        $this->assertStringNotContainsString(
+            ".sgb-editor--fullscreen .sgb-page-frame p,\n.sgb-editor--fullscreen .sgb-page-frame li",
+            $css
+        );
+        $this->assertStringContainsString(
+            '.sgb-editor--fullscreen .sgb-page-frame .has-small-font-size',
+            $css
+        );
+        $this->assertStringContainsString(
+            'font-size: var(--wp--preset--font-size--small)',
+            $css
+        );
+    }
+
+    public function test_live_preview_uses_split_view_drawers_without_changing_entry_overlay(): void
+    {
+        $css = file_get_contents(__DIR__.'/../resources/css/addon.css');
+        $fieldtype = file_get_contents(__DIR__.'/../resources/js/components/fieldtypes/StatamicGutenberg.vue');
+        $editor = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergEditor.jsx');
+        $window = file_get_contents(__DIR__.'/../resources/js/gutenberg/GutenbergWindow.jsx');
+
+        $this->assertStringContainsString('resolveOverlayLayout(document, window, origin)', $fieldtype);
+        $this->assertStringContainsString('window.StatamicGutenbergEditorOpeners ||= new Map()', $fieldtype);
+        $this->assertStringContainsString("document.addEventListener('click', (event) =>", $fieldtype);
+        $this->assertStringContainsString("    }, true);", $fieldtype);
+        $this->assertStringContainsString('opener?.(button)', $fieldtype);
+        $this->assertStringContainsString('editorOpeners.set(channel, openEditor)', $fieldtype);
+        $this->assertStringContainsString(':data-sgb-open-editor="channel"', $fieldtype);
+        $this->assertStringContainsString("activeOverlayLayout?.mode === 'live-preview'", $fieldtype);
+        $this->assertStringContainsString('overlayHost?.isConnected', $fieldtype);
+        $this->assertStringContainsString("activeOverlayLayout.mode === 'live-preview'", $fieldtype);
+        $this->assertStringContainsString('new ResizeObserver', $fieldtype);
+        $this->assertStringContainsString('new MutationObserver', $fieldtype);
+        $this->assertStringContainsString('! activeOverlayLayout?.parent?.isConnected', $fieldtype);
+        $this->assertStringContainsString("layoutMode: activeOverlayLayout?.mode || 'entry'", $fieldtype);
+        $this->assertStringContainsString("layoutMode === 'live-preview'", $window);
+        $this->assertStringContainsString("const isLivePreview = layoutMode === 'live-preview'", $editor);
+        $this->assertStringContainsString('const compact = width < 980', $editor);
+        $this->assertStringContainsString('}, [customBlocksReady, isLivePreview])', $editor);
+        $this->assertStringContainsString('icon={settingsIcon}', $editor);
+        $this->assertStringContainsString('.sgb-overlay-host--live-preview', $css);
+        $this->assertStringContainsString('inset: 0 16px 0 0', $css);
+        $this->assertStringContainsString('.sgb-editor--compact-split :is(.sgb-list-view, .sgb-inspector)', $css);
+        $this->assertStringContainsString('.sgb-overlay-host {', $css);
+        $this->assertStringContainsString('left: var(--sgb-overlay-left, 192px)', $css);
     }
 
     public function test_fullscreen_editor_does_not_render_the_entry_title_in_the_canvas(): void

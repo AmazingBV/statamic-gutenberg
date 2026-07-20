@@ -1,0 +1,56 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/theme.json",
+    "version": 3,
+    "settings": {
+        "typography": {
+            "fontFamilies": [
+                {
+                    "name": "Variable Test",
+                    "slug": "variable-test",
+                    "fontFamily": "\"Variable Test\", monospace",
+                    "fontFace": [
+                        {
+                            "fontFamily": "\"Variable Test\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "fontStretch": "75% 125%",
+                            "fontDisplay": "swap",
+                            "fontFeatureSettings": "\"liga\" 1",
+                            "fontVariationSettings": "\"wght\" 450",
+                            "ascentOverride": "92%",
+                            "descentOverride": "24%",
+                            "lineGapOverride": "0%",
+                            "sizeAdjust": "102%",
+                            "unicodeRange": "U+0000-00FF, U+0100-024F",
+                            "src": [
+                                "file:./fonts/variable-test-latin.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "\"Variable Test\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "unicodeRange": "U+0400-04FF, U+4??",
+                            "src": [
+                                "file:./fonts/variable-test-extended.woff2"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "fontSizes": [
+                {
+                    "name": "Small",
+                    "slug": "small",
+                    "size": "13px"
+                }
+            ]
+        }
+    },
+    "styles": {
+        "typography": {
+            "fontFamily": "var:preset|font-family|variable-test",
+            "fontSize": "16px"
+        }
+    }
+}

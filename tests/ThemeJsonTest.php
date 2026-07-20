@@ -461,6 +461,100 @@ class ThemeJsonTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_variable_font_faces_support_wordpress_descriptors_and_unicode_subsets(): void
+    {
+        $fixture = json_decode(
+            file_get_contents(__DIR__.'/Fixtures/theme-json/variable-font/theme.json'),
+            true,
+            flags: JSON_THROW_ON_ERROR
+        );
+
+        $this->writeThemeJson($fixture, [
+            'fonts/variable-test-latin.woff2' => 'latin-font-data',
+            'fonts/variable-test-extended.woff2' => 'extended-font-data',
+        ]);
+
+        $frontendCss = app(ThemeJson::class)->frontendCss();
+        $editorCss = app(ThemeJson::class)->editorPayload()['css'];
+
+        $this->assertSame(2, substr_count($frontendCss, '@font-face'));
+        $this->assertStringContainsString('ascent-override: 92%', $frontendCss);
+        $this->assertStringContainsString('descent-override: 24%', $frontendCss);
+        $this->assertStringContainsString('font-display: swap', $frontendCss);
+        $this->assertStringContainsString('font-feature-settings: "liga" 1', $frontendCss);
+        $this->assertStringContainsString('font-stretch: 75% 125%', $frontendCss);
+        $this->assertStringContainsString('font-variation-settings: "wght" 450', $frontendCss);
+        $this->assertStringContainsString('line-gap-override: 0%', $frontendCss);
+        $this->assertStringContainsString('size-adjust: 102%', $frontendCss);
+        $this->assertStringContainsString('unicode-range: U+0000-00FF, U+0100-024F', $frontendCss);
+        $this->assertStringContainsString('unicode-range: U+0400-04FF, U+4??', $frontendCss);
+        $this->assertStringContainsString('/vendor/statamic-gutenberg/theme/fonts/variable-test-latin.woff2', $frontendCss);
+        $this->assertStringContainsString('/vendor/statamic-gutenberg/theme/fonts/variable-test-extended.woff2', $frontendCss);
+        $this->assertStringContainsString('unicode-range: U+0000-00FF, U+0100-024F', $editorCss);
+        $this->assertStringContainsString('unicode-range: U+0400-04FF, U+4??', $editorCss);
+
+        $this->get('/vendor/statamic-gutenberg/theme/fonts/variable-test-latin.woff2')->assertOk();
+        $this->get('/vendor/statamic-gutenberg/theme/fonts/variable-test-extended.woff2')->assertOk();
+    }
+
+    public function test_invalid_unicode_ranges_are_not_rendered(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'settings' => [
+                'typography' => [
+                    'fontFamilies' => [
+                        [
+                            'name' => 'Invalid Range',
+                            'slug' => 'invalid-range',
+                            'fontFamily' => '"Invalid Range"',
+                            'fontFace' => [
+                                [
+                                    'fontFamily' => '"Invalid Range"',
+                                    'fontWeight' => '400',
+                                    'unicodeRange' => 'U+110000-120000, not-a-range',
+                                    'src' => ['file:./assets/fonts/invalid-range.woff2'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ], [
+            'assets/fonts/invalid-range.woff2' => 'font-data',
+        ]);
+
+        $css = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('@font-face', $css);
+        $this->assertStringNotContainsString('unicode-range:', $css);
+        $this->assertStringNotContainsString('not-a-range', $css);
+    }
+
+    public function test_border_color_and_radius_do_not_create_a_visible_border_without_width_or_style(): void
+    {
+        $this->writeThemeJson([
+            'version' => 3,
+            'styles' => [
+                'blocks' => [
+                    'core/paragraph' => [
+                        'border' => [
+                            'color' => '#123456',
+                            'radius' => '8px',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $css = app(ThemeJson::class)->frontendCss();
+
+        $this->assertStringContainsString('border-color: #123456', $css);
+        $this->assertStringContainsString('border-radius: 8px', $css);
+        $this->assertStringNotContainsString('border-width:', $css);
+        $this->assertStringNotContainsString('border-style:', $css);
+    }
+
     private function writeThemeJson(array $data, array $assets = []): void
     {
         $this->themeJsonDirectory = sys_get_temp_dir().'/sgb-theme-json-'.bin2hex(random_bytes(6));

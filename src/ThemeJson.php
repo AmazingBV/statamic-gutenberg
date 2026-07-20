@@ -244,21 +244,70 @@ class ThemeJson
     private function fontFaceDeclarations(array $fontFace): array
     {
         $map = [
-            'fontFamily' => 'font-family',
-            'fontStyle' => 'font-style',
-            'fontWeight' => 'font-weight',
+            'ascentOverride' => 'ascent-override',
+            'descentOverride' => 'descent-override',
             'fontDisplay' => 'font-display',
+            'fontFamily' => 'font-family',
+            'fontFeatureSettings' => 'font-feature-settings',
+            'fontStyle' => 'font-style',
             'fontStretch' => 'font-stretch',
+            'fontVariationSettings' => 'font-variation-settings',
+            'fontWeight' => 'font-weight',
+            'lineGapOverride' => 'line-gap-override',
+            'sizeAdjust' => 'size-adjust',
         ];
 
         $declarations = $this->propertyDeclarations($fontFace, $map);
         $src = $this->fontFaceSource($fontFace['src'] ?? null);
+        $unicodeRange = $this->unicodeRange($fontFace['unicodeRange'] ?? null);
 
         if ($src) {
             $declarations[] = 'src: '.$src;
         }
 
+        if ($unicodeRange) {
+            $declarations[] = 'unicode-range: '.$unicodeRange;
+        }
+
         return $declarations;
+    }
+
+    private function unicodeRange(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $ranges = array_map('trim', explode(',', $value));
+
+        if (! $ranges || in_array('', $ranges, true)) {
+            return null;
+        }
+
+        foreach ($ranges as $range) {
+            if (preg_match('/^U\+([0-9A-F]{1,6})(?:-([0-9A-F]{1,6}))?$/i', $range, $matches)) {
+                $start = hexdec($matches[1]);
+                $end = isset($matches[2]) ? hexdec($matches[2]) : $start;
+
+                if ($start > 0x10FFFF || $end > 0x10FFFF || $start > $end) {
+                    return null;
+                }
+
+                continue;
+            }
+
+            if (! preg_match('/^U\+([0-9A-F]{0,5}\\?{1,6})$/i', $range, $matches)) {
+                return null;
+            }
+
+            $wildcard = $matches[1];
+
+            if (strlen($wildcard) > 6 || hexdec(str_replace('?', 'F', $wildcard)) > 0x10FFFF) {
+                return null;
+            }
+        }
+
+        return implode(', ', $ranges);
     }
 
     private function fontFaceSource(mixed $value): ?string

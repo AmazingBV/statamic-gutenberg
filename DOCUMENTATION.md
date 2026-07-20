@@ -32,6 +32,63 @@ The addon includes:
 - Project-local custom blocks based on `block.json`.
 - Blade, PHP, and sanitized static HTML rendering on the frontend.
 
+## Content Field, Not An Entry Editor
+
+Block Editor for Statamic edits body content inside a Statamic field. Statamic
+remains the entry editor and the source of truth for title, slug, publication
+status, date, taxonomies, SEO fields, revisions, permissions, and separate cover
+fields. Those fields are intentionally not duplicated inside the Block Editor.
+
+Use the Block Editor where a blueprint would normally contain a rich body
+field. A recommended structure is:
+
+- **Main**: Statamic title field followed by the Block Editor body field.
+- **Sidebar**: slug, date, taxonomy terms, cover image, and publishing controls.
+- **SEO**: project-specific SEO fields and previews.
+
+For example:
+
+```yaml
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          -
+            handle: title
+            field:
+              type: text
+              required: true
+          -
+            handle: content
+            field:
+              type: gutenberg
+              display: Body content
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          -
+            handle: topics
+            field:
+              type: terms
+              taxonomies:
+                - topics
+          -
+            handle: cover_image
+            field:
+              type: assets
+              container: assets
+              max_files: 1
+```
+
+Statamic supplies its normal slug, date, status, revision, and publishing UI
+around this blueprint. Render a visible entry title in the Statamic template,
+or insert a Heading block when the title belongs to the body layout. No title is
+automatically rendered above the Block Editor canvas.
+
 ## Installation
 
 ### Requirements
@@ -166,6 +223,21 @@ The editor includes the standard block inserter, list view, block toolbar,
 document sidebar, block inspector, pattern browser, undo and redo history, and
 visual and code editing modes. The Code Editor view provides syntax highlighting
 for the serialized HTML and JSON block attributes.
+
+### Live Preview split view
+
+When the field is opened from Statamic Live Preview, the overlay mounts inside
+the Live Preview editor pane instead of covering the preview iframe. The editor
+pane is widened within the available viewport and remains resizable with
+Statamic's divider.
+
+List View starts closed in this mode. When the editor pane is compact, List View
+and Block settings open as drawers over the canvas so the editor and preview do
+not become a vertically stacked interface.
+
+In Live Preview, **Apply** updates the field value and refreshes the preview
+without saving the entry. Use **Apply and save** when the entry should be saved,
+or **Apply and close** to update the field and return to the Statamic form.
 
 ### Content widths
 
@@ -636,6 +708,78 @@ Reference them with WordPress-compatible `file:./...` paths:
     }
 }
 ```
+
+### Variable fonts with Unicode subsets
+
+The supported WordPress `fontFace` descriptors are:
+
+- `ascentOverride`
+- `descentOverride`
+- `fontDisplay`
+- `fontFamily`
+- `fontFeatureSettings`
+- `fontStyle`
+- `fontStretch`
+- `fontVariationSettings`
+- `fontWeight`
+- `lineGapOverride`
+- `sizeAdjust`
+- `src`
+- `unicodeRange`
+
+Multiple records may use the same family, style, and variable weight range when
+each record points to another WOFF2 subset:
+
+```text
+resources/vendor/statamic-gutenberg/theme.json
+resources/vendor/statamic-gutenberg/assets/fonts/project-mono-latin.woff2
+resources/vendor/statamic-gutenberg/assets/fonts/project-mono-extended.woff2
+```
+
+```json
+{
+    "version": 3,
+    "settings": {
+        "typography": {
+            "fontFamilies": [
+                {
+                    "name": "Project Mono",
+                    "slug": "project-mono",
+                    "fontFamily": "\"Project Mono\", monospace",
+                    "fontFace": [
+                        {
+                            "fontFamily": "\"Project Mono\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "fontDisplay": "swap",
+                            "fontVariationSettings": "\"wght\" 100",
+                            "unicodeRange": "U+0000-00FF",
+                            "src": [
+                                "file:./assets/fonts/project-mono-latin.woff2"
+                            ]
+                        },
+                        {
+                            "fontFamily": "\"Project Mono\"",
+                            "fontStyle": "normal",
+                            "fontWeight": "100 900",
+                            "fontDisplay": "swap",
+                            "unicodeRange": "U+0100-024F, U+1E00-1EFF",
+                            "src": [
+                                "file:./assets/fonts/project-mono-extended.woff2"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+```
+
+`unicodeRange` accepts comma-separated Unicode values, ranges, and wildcards
+such as `U+0000-00FF` or `U+4??`. Invalid ranges are omitted from generated CSS.
+Every safe `file:./...` source is added to the theme asset allowlist and served
+through the addon.
 
 The addon serves safe relative files through:
 
@@ -1269,6 +1413,34 @@ Check that:
 Theme CSS should affect `.sgb-editor .sgb-canvas`, not editor toolbars or
 Control Panel modals.
 
+### A theme font does not load
+
+Check all of the following:
+
+- Every `file:./...` path is relative to the configured `theme.json`.
+- The file exists inside the theme directory and Laravel can read it.
+- The path does not contain `..` or escape the theme directory.
+- Every `unicodeRange` is a valid comma-separated set of `U+...` values, ranges,
+  or wildcards.
+- The selected content uses the configured font-family preset or root style.
+
+Reload the Control Panel after changing `theme.json` or font files.
+
+### A font-size preset is overridden
+
+Define sizes in `settings.typography.fontSizes` and select them through the
+native Typography control. The editor and frontend both use the generated
+`--wp--preset--font-size--{slug}` variable. Fixed editor typography is only used
+when no project `theme.json` exists. Inspect project CSS for a more specific
+selector when an explicit preset class is still overridden.
+
+### A border appears without an intended border
+
+A color or radius alone does not make a border visible. Theme and block styles
+must provide an explicit width or style before a border is drawn. Inspect the
+active block style, project CSS, and saved `style.border.width` or
+`style.border.style` attributes when a border remains visible.
+
 ### A block style is not visible
 
 Check that the block name and style `name` are valid, that the block is allowed
@@ -1315,6 +1487,8 @@ layer, not a complete WordPress runtime.
 
 The following are intentionally outside the current scope:
 
+- Moving Statamic entry title, slug, status, date, taxonomies, SEO fields,
+  revisions, or separate cover fields into the Block Editor.
 - Installing arbitrary WordPress plugins and expecting their PHP hooks, REST
   endpoints, data stores, or global runtime to exist.
 - WordPress Media Library deletion, crop, rotate, and destructive image editing.
